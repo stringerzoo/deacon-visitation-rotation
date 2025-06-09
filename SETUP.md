@@ -20,11 +20,12 @@ Before starting, ensure you have:
 **Important**: Always begin setup and testing with fake sample data to protect member privacy.
 
 #### **Recommended Sample Data Pattern:**
-**Deacons:** Andy A, Brian B, Chris C, Darell D
-**Households:** Alan & Alexa Adams, Barbara Baker, Chloe Cooper, Delilah Danvers
-**Phone:** (555) 123-XXXX format
-**Addresses:** Use generic examples or your church's public address
-
+```
+Deacons: Andy A, Brian B, Chris C, Darell D
+Households: Alan & Alexa Adams, Barbara Baker, Chloe Cooper, Delilah Danvers
+Phone: (555) 123-XXXX format
+Addresses: Use generic examples or your church's public address
+```
 #### **Why Sample Data First?**
 - **Test all features safely** without exposing real member information
 - **Verify system functionality** before adding sensitive data
