@@ -14,6 +14,25 @@ Before starting, ensure you have:
 - **NEW**: Google Docs for visit notes (optional but recommended)
 - **NEW**: Internet connectivity (for URL shortening service)
 
+## 🔒 Data Privacy & Sample Data Setup
+
+### **Start with Sample Data**
+**Important**: Always begin setup and testing with fake sample data to protect member privacy.
+
+#### **Recommended Sample Data Pattern:**
+**Deacons:** Andy A, Brian B, Chris C, Darell D
+**Households:** Alan & Alexa Adams, Barbara Baker, Chloe Cooper, Delilah Danvers
+**Phone:** (555) 123-XXXX format
+**Addresses:** Use generic examples or your church's public address
+
+#### **Why Sample Data First?**
+- **Test all features safely** without exposing real member information
+- **Verify system functionality** before adding sensitive data
+- **Share for troubleshooting** without privacy concerns
+- **Train users** on the system with non-sensitive examples
+
+> ⚠️ **Privacy Note**: Complete all testing with sample data before adding real member information. This protects your congregation's privacy during setup and troubleshooting.
+
 ## 🔧 Understanding the Enhanced Architecture
 
 ### **New Integration Features in v24.1**
@@ -94,7 +113,7 @@ K7: Calendar Event Instructions:
 K8: Please call to confirm visit time. Contact family 1-2 days before scheduled date to arrange convenient time.
 ```
 
-#### **L-M: Core Data Lists** (Your input required)
+#### **L-M: Core Data Lists** (Start with sample data for testing)
 ```
 L1: Deacons                    M1: Households
 L2: Andy A                     M2: Alan & Alexa Adams
@@ -103,6 +122,7 @@ L4: Chris C                    M4: Chloe Cooper
 L5: Darell D                   M5: Delilah Danvers
 ... (continue with your data)
 ```
+💡 **Setup Tip**: Use this sample data pattern during initial setup and testing. Replace with real member information only when ready for production use.
 
 #### **N-O: Basic Contact Information** (Your input required)
 ```
@@ -305,6 +325,13 @@ Run **"🔄 Deacon Rotation" → "🧪 Run Tests"** to verify:
 4. **Test calendar events** on mobile devices for field use
 5. **Train deacons** on accessing links from calendar apps
 
+### **Data Security Best Practices:**
+1. **Complete all testing** with sample member data first
+2. **Use Google Workspace permissions** to restrict spreadsheet access
+3. **Regular access review** as deacon assignments change
+4. **Keep production data separate** from development/testing spreadsheets
+5. **Train on sample data** before transitioning to real member information
+
 ## 🆕 What's New in v24.1
 
 ### **Enhanced Integration Features**
@@ -414,6 +441,18 @@ If you're upgrading from v24.0 to v24.1:
 ---
 
 **Ready to transform your church's deacon visitation coordination with comprehensive church management integration!** 🎯
+
+## 🔐 Pre-Production Security Checklist
+
+Before transitioning from sample data to real member information:
+
+✅ **All features tested** with sample data  
+✅ **Google Sheets permissions** properly configured  
+✅ **Only authorized deacons** have edit access  
+✅ **Breeze CMS access** limited to appropriate users  
+✅ **Visit notes documents** have proper sharing settings  
+✅ **No sample data** mixed with real member information  
+✅ **Backup procedures** established for member data  
 
 ## 🎉 Success Checklist
 
