@@ -136,6 +136,24 @@ Please call to confirm visit time...
 3. **Test and combine** for deployment
 4. **Benefits**: Better organization, easier debugging, team collaboration
 
+## 🔐 Data Security Best Practices
+
+### **Development & Testing**
+- **Always test with sample data** before adding real member information
+- **Use obviously fake examples** (alphabetical patterns work well: Alan Adams, Barbara Baker, etc.)
+- **Keep development spreadsheets separate** from production data
+
+### **Production Deployment**
+- **Restrict spreadsheet access** to authorized deacons only
+- **Use Google Workspace permissions** to control data visibility
+- **Regular security review** of who has access to church member data
+
+### **Contributing with Sample Data**
+When reporting issues or requesting features:
+- **Replace real member data** with sample information
+- **Use the established pattern**: Andy A, Barbara Baker, Chloe Cooper
+- **Test with fake data** before sharing spreadsheets for troubleshooting
+
 For detailed setup instructions, see [SETUP.md](SETUP.md).
 
 ## 🔧 New Functionality in v24.1
@@ -222,8 +240,9 @@ Contributions welcome! Whether you're fixing bugs, improving documentation, addi
 1. Fork the repository
 2. Create a feature branch
 3. Work on individual modules for easier review
-4. Test integration features with sample data
-5. Submit a pull request
+4. **Test integration features with sample data**
+5. **Use fake member information** when creating examples or reporting issues
+6. Submit a pull request
 
 ### **Contributing to Integration Features**
 - **Module 1**: Configuration and validation for new church management systems
