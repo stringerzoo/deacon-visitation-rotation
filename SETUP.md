@@ -1,6 +1,6 @@
-# Setup Guide - Deacon Visitation Rotation System
+# Setup Guide - Deacon Visitation Rotation System v24.2
 
-This guide will walk you through setting up the deacon visitation rotation system for your church with the **enhanced Breeze Church Management System integration**, **Google Docs visit notes connectivity**, and **automatic URL shortening**.
+This guide will walk you through setting up the enhanced deacon visitation rotation system with **smart calendar update capabilities**, **Breeze Church Management System integration**, **Google Docs visit notes connectivity**, and **native modular architecture**.
 
 ## 📋 Prerequisites
 
@@ -10,13 +10,41 @@ Before starting, ensure you have:
 - List of deacon names/initials
 - List of household names to visit
 - Contact information for households (phone numbers and addresses)
-- **NEW**: Breeze Church Management System access (for profile integration)
-- **NEW**: Google Docs for visit notes (optional but recommended)
-- **NEW**: Internet connectivity (for URL shortening service)
+- **Breeze Church Management System access** (for profile integration)
+- **Google Docs for visit notes** (optional but recommended)
+- **Internet connectivity** (for URL shortening service)
+
+## 🧪 Understanding Intelligent Test Mode Detection (NEW v24.2)
+
+The system now automatically detects whether you're working with test data or live member data:
+
+### **How It Works:**
+- **Analyzes your spreadsheet data** for test patterns
+- **Automatically switches** between test and production calendars
+- **No manual configuration** required
+
+### **Test Mode Triggers:**
+- ✅ Household names like "Alan Adams", "Barbara Baker", "Chloe Cooper"
+- ✅ Phone numbers with "555" prefix  
+- ✅ Breeze numbers starting with "12345"
+- ✅ Spreadsheet name containing "test" or "sample"
+
+### **Visual Indicators:**
+- **Cell K11**: "Current Mode:" label
+- **Cell K12**: "🧪 TEST MODE" (yellow) or "✅ PRODUCTION" (green)
+- **Menu**: Shows 🧪 or ✅ icon next to "Show Current Mode"
+- **Dialogs**: All confirmations indicate current mode
+
+### **Benefits:**
+- **Safe testing** - prevents accidental live calendar modifications
+- **Automatic transition** - switches to production when you use real data
+- **Clear communication** - always know which environment you're in
+
+> 💡 **Tip**: Start with the sample data provided in this guide. The system will automatically use test mode, then seamlessly switch to production when you replace with real member information.
+
+
 
 ## 🔒 Data Privacy & Sample Data Setup
-
-### **Start with Sample Data**
 **Important**: Always begin setup and testing with fake sample data to protect member privacy.
 
 #### **Recommended Sample Data Pattern:**
@@ -28,69 +56,42 @@ Addresses: Use generic examples or your church's public address
 ```
 #### **Why Sample Data First?**
 - **Test all features safely** without exposing real member information
-- **Verify system functionality** before adding sensitive data
+- **Verify smart calendar functions** before adding sensitive data
 - **Share for troubleshooting** without privacy concerns
-- **Train users** on the system with non-sensitive examples
+- **Train users** on the new update options with non-sensitive examples
 
 > ⚠️ **Privacy Note**: Complete all testing with sample data before adding real member information. This protects your congregation's privacy during setup and troubleshooting.
 
-## 🔧 Understanding the Enhanced Architecture
+## 🏗️ Step 1: Set Up Native Modular Architecture (v24.2)
 
-### **New Integration Features in v24.1**
-The system now integrates with external church management tools to provide comprehensive pastoral care support:
-
-- **Breeze CMS Integration**: Direct access to household profiles during visits
-- **Google Docs Notes**: Centralized visit documentation with easy access
-- **URL Shortening**: Clean, mobile-friendly links in calendar events
-- **Enhanced Calendar Events**: Rich descriptions with clickable management links
-
-### **Why These Enhancements?**
-- **Field accessibility**: Deacons can quickly access household info during visits
-- **Centralized documentation**: All visit notes stored in accessible Google Docs
-- **Professional presentation**: Shortened URLs provide clean calendar events
-- **Comprehensive information**: Everything needed for effective pastoral care in one place
-
-## 🚀 Step 1: Choose Your Development Approach
-
-### **Option A: Simple Deployment (Most Users)**
-**Use the pre-combined file for quick setup with full integration**
+### **Google Apps Script Project Setup**
 
 1. **Go to Google Apps Script**: [script.google.com](https://script.google.com)
 2. **Click "New Project"**
-3. **Delete the default code** in the editor
-4. **Copy the entire code** from `deacon-rotation-combined.js` (v24.1)
-5. **Paste into the script editor**
-6. **Save the project** (Ctrl+S or Cmd+S)
-7. **Name your project**: "Deacon Visitation Rotation"
-8. **Authorize permissions** (now includes external URL access for shortening)
+3. **Delete the default `Code.gs` file**
+4. **Create 4 separate files** by clicking the `+` next to "Files":
 
-### **Option B: Modular Development (Advanced Users)**
-**Work with enhanced individual modules**
-
-#### **1. Set Up Enhanced Modular Environment**
-1. **Go to Google Apps Script**: [script.google.com](https://script.google.com)
-2. **Click "New Project"**
-3. **Create separate files** for each enhanced module:
-   - `module1-core-config` (enhanced with Breeze/Notes configuration)
-   - `module2-algorithm` (unchanged)
-   - `module3-export-utils` (enhanced with URL shortening)
-
-#### **2. Copy Enhanced Module Content**
-- **Module 1**: Enhanced configuration loading with Breeze and Notes data
-- **Module 2**: Core algorithm (unchanged from v24.0)
-- **Module 3**: Enhanced with URL shortening and improved calendar export
-
-#### **3. Create Enhanced Combined File**
-```javascript
-// Enhanced v24.1 with Breeze CMS and Google Docs integration
-// Copy entire contents of enhanced module1-core-config.js
-// Copy entire contents of module2-algorithm.js  
-// Copy entire contents of enhanced module3-export-utils.js
+#### **File Structure:**
 ```
+📁 Your Apps Script Project
+├── Module1_Core_Config.gs          (~500 lines)
+├── Module2_Algorithm.gs             (~470 lines)
+├── Module3_Smart_Calendar.gs        (~200 lines)
+└── Module4_Export_Menu.gs           (~400 lines)
+```
+
+### **Copy Module Content**
+1. **Module1_Core_Config.gs**: Copy content from `src/module1-core-config.js`
+2. **Module2_Algorithm.gs**: Copy content from `src/module2-algorithm.js`
+3. **Module3_Smart_Calendar.gs**: Copy content from `src/module3-smart-calendar.js`
+4. **Module4_Export_Menu.gs**: Copy content from `src/module4-export-menu.js`
+
+### **Configuration Note**
+The `TEST_MODE` constant should be set to `false` in Module 3 for production use, or `true` for testing with a separate calendar.
 
 ## 📊 Step 2: Create Enhanced Google Spreadsheet Layout
 
-### **Enhanced Column Structure (v24.1):**
+### **Enhanced Column Structure (v24.2):**
 
 #### **A-E: Main Rotation Schedule** (Auto-generated)
 - **A**: Cycle, **B**: Week, **C**: Week of, **D**: Household, **E**: Deacon
@@ -105,7 +106,7 @@ The system now integrates with external church management tools to provide compr
 #### **K: Configuration Settings** (Your input required)
 ```
 K1: Start Date
-K2: 6/9/2025 (or your preferred start date)
+K2: 7/7/2025 (or your preferred start date)
 K3: Visits every x weeks (1,2,3,4)
 K4: 2 (for bi-weekly visits)
 K5: Length of schedule in weeks  
@@ -134,7 +135,7 @@ N4: (555) 123-5723            O4: 1801 Lynn Way, Louisville, KY 40205
 ... (continue with contact info)
 ```
 
-#### **P-S: NEW - Church Management Integration**
+#### **P-S: Church Management Integration**
 
 ##### **Column P: Breeze Link Numbers** (Your input required)
 ```
@@ -182,288 +183,265 @@ R3: http://tinyurl.com/ghi789 S3: http://tinyurl.com/jkl012
 ... (Generated automatically by the system)
 ```
 
-## 🔧 Step 3: Run and Configure the Enhanced System
+## 🔧 Step 3: Test the Native Modular System
 
 1. **Refresh your spreadsheet** (F5 or Ctrl+R)
-2. **You should see a new menu**: "🔄 Deacon Rotation"
+2. **You should see the enhanced menu**: "🔄 Deacon Rotation"
 3. **If the menu doesn't appear**:
    - Go back to Apps Script
-   - Click **Run** → **onOpen** 
-   - **Authorize new permissions** (external URL access for shortening)
+   - Click **Run** → **onOpen** from any module
+   - **Authorize permissions** (external URL access for shortening)
    - Refresh the spreadsheet
 
-## ✅ Step 4: Generate Enhanced Schedule and Links
+## ✅ Step 4: Generate Schedule and Test Smart Calendar Features
 
 ### **4.1: Validate Enhanced Setup**
 1. **Click "🔄 Deacon Rotation" → "🔧 Validate Setup"**
-   - Now reports Breeze links and Notes links counts
+   - Reports Breeze links and Notes links counts
    - Validates new column structure
-   - Checks Breeze number formats
+   - Checks all module integration
 
 ### **4.2: Generate Schedule**
 1. **Click "🔄 Deacon Rotation" → "📅 Generate Schedule"**
    - Creates rotation in columns A-E
    - Generates deacon reports in columns G-I
 
-### **4.3: Generate Shortened URLs** (NEW!)
+### **4.3: Generate Shortened URLs**
 1. **Click "🔄 Deacon Rotation" → "🔗 Generate Shortened URLs"**
    - Builds full Breeze URLs from numbers in column P
    - Shortens both Breeze and Notes URLs
    - Stores results in columns R and S
    - **Process time**: ~0.5 seconds per household (includes API delays)
 
-### **4.4: Export Enhanced Calendar**
-1. **Click "🔄 Deacon Rotation" → "📆 Export to Google Calendar"**
-   - **Option 1**: Generate shortened URLs first (recommended)
-   - **Option 2**: Use full URLs if shortening skipped
-   - Creates rich calendar events with clickable links
-   - **Rate limiting**: Handles Google Calendar API limits automatically (you can read more about the export process and built-in rate limits [here](SETUP-CAL.md))
+### **4.4: Test Smart Calendar Functions** ⭐ **NEW**
 
-## 🧪 Step 5: Test the Enhanced System
+#### **Initial Calendar Setup**
+1. **Click "🔄 Deacon Rotation" → "📆 Calendar Functions" → "🚨 Full Calendar Regeneration"**
+   - Creates initial calendar with all events
+   - **Important**: This step is required before smart updates work
 
-### **Test Shortened URLs:**
-- **Check columns R and S** for generated short URLs
-- **Click test links** to verify they work
-- **Breeze links** should open to correct profiles
-- **Notes links** should open to Google Docs
+#### **Test Contact Info Updates**
+1. **Change a phone number** in column N (e.g., Adams from (555) 123-1748 to (555) 999-0001)
+2. **Click "📆 Calendar Functions" → "📞 Update Contact Info Only"**
+3. **Verify**: Calendar event keeps original time but shows new phone number
 
-### **Test Enhanced Calendar Events:**
-- **Export a small schedule** (4-6 weeks) first
-- **Check calendar event descriptions** for:
-  - Household name and Breeze profile link
-  - Contact information (phone and address)
-  - Visit notes page link
-  - Custom instructions
-- **Verify links work** from calendar events
+#### **Test Future Events Updates**
+1. **Manually modify current week's calendar event** (change time from 2 PM to 4 PM)
+2. **Change an address** in column O  
+3. **Click "📆 Calendar Functions" → "🔄 Update Future Events Only"**
+4. **Verify**: Current week event unchanged, future events have new address
 
-### **Test Rate Limiting:**
-- **Large schedules**: System pauses every 25 events
-- **Event deletion**: System pauses every 10 deletions
-- **Progress tracking**: Watch console logs for updates
+## 🎯 Step 5: Understanding Smart Calendar Update Options
 
-## 🚨 Troubleshooting Enhanced Features
+### **📞 Update Contact Info Only** ⭐ **SAFEST OPTION**
+**When to use**: Contact information changes (phone, address, Breeze numbers, notes links)
+
+**What it preserves**:
+- ✅ Custom event times and dates
+- ✅ Guest lists and invitations  
+- ✅ Location details
+- ✅ All scheduling customizations
+
+**What it updates**:
+- 🔄 Phone numbers
+- 🔄 Addresses  
+- 🔄 Breeze profile links
+- 🔄 Notes page links
+- 🔄 Calendar instructions
+
+**Process**: Updates event descriptions only, preserving all other event details.
+
+### **🔄 Update Future Events Only**
+**When to use**: Contact changes during the week without affecting current week scheduling
+
+**What it preserves**:
+- ✅ This week's scheduling details and customizations
+- ✅ Any current week modifications deacons have made
+
+**What it updates**:
+- 🔄 Events starting next week with current contact info
+- 🔄 Future deacon assignments if schedule changed
+
+**Process**: Deletes and recreates events starting next week only.
+
+### **🚨 Full Calendar Regeneration**
+**When to use**: Major structural changes (new deacons, household changes, schedule rebuild)
+
+**What it preserves**:
+- ❌ Nothing - complete rebuild
+
+**What it updates**:
+- 🔄 Everything with enhanced warnings
+- 🔄 Complete event recreation
+
+**Process**: Deletes ALL events and recreates from current spreadsheet data.
+
+## 🧪 Step 6: Test with Sample Data Scenarios
+
+### **Scenario 1: Mid-Week Contact Update**
+```
+Situation: It's Wednesday, Adams family got new phone number
+Solution: Use "📞 Update Contact Info Only"
+Result: All events keep custom scheduling, phone number updated
+```
+
+### **Scenario 2: Future Planning Changes**
+```
+Situation: Next month's assignments need updating, this week is planned
+Solution: Use "🔄 Update Future Events Only"  
+Result: Current week untouched, future events refreshed
+```
+
+### **Scenario 3: Major Schedule Overhaul**
+```
+Situation: New deacon added, household list changed significantly
+Solution: Use "🚨 Full Calendar Regeneration" (with warnings)
+Result: Complete rebuild with all current data
+```
+
+## 🚨 Troubleshooting Smart Calendar Features
 
 ### **Common Issues:**
 
-**"Menu doesn't show URL shortening option"**
-- Re-authorize script permissions (external URL access required)
+**"Menu doesn't show Calendar Functions submenu"**
+- Verify all 4 modules copied correctly to Apps Script
+- Re-authorize script permissions 
 - Run onOpen function manually from Apps Script
-- Refresh spreadsheet after authorization
+- Refresh spreadsheet after module setup
 
-**"URL shortening failed"**
-- Check internet connectivity
-- Verify URLs in column Q are valid (start with https://)
-- Try again later (TinyURL may have temporary limits)
-- System falls back to full URLs if shortening fails
+**"Update Contact Info Only doesn't find events"**
+- Ensure calendar exists (run Full Calendar Regeneration first)
+- Check event titles match "[Deacon] visits [Household]" format
+- Verify household names in spreadsheet match calendar events exactly
 
-**"Calendar export fails with 'too many operations'"**
-- **Wait 5-10 minutes** for Google's rate limit to reset
-- **Use smaller schedule** for initial testing
-- **Don't clear existing events** unless necessary
-- System now includes automatic rate limiting
+**"Future Events Only deletes too many events"**
+- Function preserves current week (7 days from today)
+- Check dates to ensure proper week boundary
+- Use Contact Info Only for safer updates
 
-**"Breeze links don't work"**
-- Verify 8-digit numbers in column P are correct
-- Check Breeze CMS access and permissions
-- Ensure church domain matches in buildBreezeUrl function
-
-**"Enhanced calendar events missing information"**
-- Run "Generate Shortened URLs" before calendar export
+**"Smart updates missing information"**
+- Run "Generate Shortened URLs" before calendar updates
 - Verify contact information in columns N-O
 - Check Breeze numbers and Notes links in columns P-Q
 
 ### **Enhanced System Tests:**
 Run **"🔄 Deacon Rotation" → "🧪 Run Tests"** to verify:
-- Configuration loading (including new columns)
+- All module integration working correctly
 - URL shortening functionality
 - Breeze URL construction
-- Script permissions for external access
+- Calendar access permissions
+- Script permissions for external services
 
-## 🔍 Step 6: Customize Enhanced Features
+## 🎛️ Step 7: Master the Enhanced Menu System
 
-### **Breeze Integration Customization:**
-- **Different church**: Update domain in Module 3's `buildBreezeUrl` function
-- **Profile format**: Modify URL structure if your Breeze setup differs
-- **Additional fields**: Add more Breeze data columns as needed
+### **Menu Structure (v24.2):**
+```
+🔄 Deacon Rotation
+├── 📅 Generate Schedule
+├── 🔗 Generate Shortened URLs
+├── 📆 Calendar Functions                    ⭐ NEW SUBMENU
+│   ├── 🚨 Full Calendar Regeneration       (Complete rebuild)
+│   ├── 📞 Update Contact Info Only         (Safest updates)
+│   └── 🔄 Update Future Events Only        (Current week safe)
+├── 📊 Export Individual Schedules
+├── 📁 Archive Current Schedule
+├── 🗓️ Generate Next Year
+├── 🔧 Validate Setup
+├── 🧪 Run Tests
+└── ❓ Setup Instructions
+```
 
-### **Notes Page Customization:**
-- **Template standardization**: Create consistent Google Doc templates
-- **Folder organization**: Store all household docs in shared church folder
-- **Access permissions**: Ensure deacons have edit access to notes docs
+### **Recommended Usage Flow:**
+1. **Initial Setup**: Full Calendar Regeneration
+2. **Regular Updates**: Update Contact Info Only  
+3. **Weekly Planning**: Update Future Events Only (if needed)
+4. **Major Changes**: Full Calendar Regeneration (with caution)
 
-### **URL Shortening Customization:**
-- **Alternative services**: Replace TinyURL with is.gd or v.gd in Module 3
-- **Custom domains**: Some URL shorteners support custom domains
-- **Batch processing**: Adjust delays in `generateAndStoreShortUrls` function
+## 🔄 Step 8: Development and Maintenance Workflow
 
-## 🎯 Best Practices for Enhanced System
+### **Module-Based Updates:**
+When you need to make changes:
+1. **Identify the module** containing the functionality you want to modify
+2. **Edit in GitHub** (or directly in Apps Script for quick fixes)
+3. **Copy just that module** to the corresponding .gs file
+4. **Test the specific functionality**
+5. **Update other modules** only if needed
 
-### **Breeze Integration Best Practices:**
-1. **Test with sample households** before full deployment
-2. **Verify Breeze permissions** for all deacons who will use links
-3. **Keep Breeze numbers updated** when profiles change
-4. **Document your Breeze URL format** for future reference
-5. **Train deacons** on accessing Breeze profiles from calendar events
+### **Module Responsibilities Quick Reference:**
+- **Module 1**: Configuration, validation, header setup
+- **Module 2**: Core algorithm, schedule generation, deacon reports  
+- **Module 3**: Smart calendar updates, contact preservation
+- **Module 4**: Full calendar export, individual schedules, menu system
 
-### **Google Docs Notes Best Practices:**
-1. **Create consistent templates** for all household notes documents
-2. **Use shared church folder** for organized storage
-3. **Set proper sharing permissions** (deacons can edit, pastors can view)
-4. **Include contact header** in each document for offline reference
-5. **Regular backup** of important visit notes
-
-### **URL Shortening Best Practices:**
-1. **Generate URLs in batches** rather than individually
-2. **Re-use existing short URLs** when possible (stored in columns R-S)
-3. **Test shortened links** before major calendar exports
-4. **Have backup plan** (system automatically falls back to full URLs)
-5. **Monitor TinyURL service** status if issues arise
-
-### **Calendar Export Best Practices:**
-1. **Start with small schedules** (4-6 weeks) for testing
-2. **Use "Add to existing"** rather than clearing all events frequently
-3. **Let rate limiting work** - don't interrupt the process
-4. **Test calendar events** on mobile devices for field use
-5. **Train deacons** on accessing links from calendar apps
-
-### **Data Security Best Practices:**
-1. **Complete all testing** with sample member data first
-2. **Use Google Workspace permissions** to restrict spreadsheet access
-3. **Regular access review** as deacon assignments change
-4. **Keep production data separate** from development/testing spreadsheets
-5. **Train on sample data** before transitioning to real member information
-
-## 🆕 What's New in v24.1
-
-### **Enhanced Integration Features**
-- **Breeze CMS connectivity**: Direct household profile access
-- **Google Docs integration**: Centralized visit documentation
-- **Automatic URL shortening**: Clean, mobile-friendly links
-- **Rich calendar events**: Comprehensive information in structured format
-
-### **Improved Reliability**
-- **Rate limiting protection**: Handles Google Calendar API limits gracefully
-- **Batch processing**: Efficient handling of large schedules
-- **Fallback systems**: Works even if external services are unavailable
-- **Enhanced error handling**: Better feedback and recovery options
-
-### **User Experience Improvements**
-- **Adjacent information**: All related data logically grouped
-- **One-click access**: Direct links to management systems
-- **Mobile-friendly**: Shortened URLs work well on phones
-- **Professional presentation**: Clean, organized calendar events
-
-## 🔄 Step 7: Regular Maintenance
-
-### **Weekly Tasks:**
-- **Review shortened URLs** in columns R-S for any failures
-- **Update Breeze numbers** for new households
-- **Create Google Docs** for new household notes pages
-- **Test calendar links** occasionally to ensure connectivity
-
-### **Monthly Tasks:**
-- **Audit Breeze integration** for accuracy
-- **Review visit notes** documentation consistency
-- **Update deacon access permissions** as needed
-- **Export individual schedules** with enhanced information
-
-### **Yearly Tasks:**
-- **Archive previous year's** notes and schedules
-- **Update Breeze profile links** for any household changes
-- **Review URL shortening** performance and alternatives
-- **Train new deacons** on enhanced system features
-
-## 🤝 Getting Help with Enhanced Features
-
-### **Breeze Integration Support:**
-1. **Breeze CMS documentation** for profile URL formats
-2. **Church IT administrator** for access and permissions
-3. **Breeze support** for technical issues with their system
-
-### **Google Docs Issues:**
-1. **Google Workspace admin** for sharing and permissions
-2. **Document template** questions - check church standards
-3. **Access problems** - verify deacon Google accounts
-
-### **URL Shortening Problems:**
-1. **TinyURL status page** for service availability
-2. **Alternative services** (is.gd, v.gd) if TinyURL fails
-3. **Network connectivity** issues with your internet provider
-
-### **General System Support:**
-1. **Run enhanced system tests** for comprehensive diagnostics
-2. **Check this setup guide** for troubleshooting steps
-3. **Review the [Enhanced Features Documentation](FEATURES.md)**
-4. **Open an issue** on the GitHub repository
-
-## 🔄 Migration from v24.0
-
-If you're upgrading from v24.0 to v24.1:
-
-### **1. Update Your Codebase**
-- **Replace Module 1** with enhanced version (Breeze/Notes support)
-- **Keep Module 2** unchanged (core algorithm)
-- **Replace Module 3** with enhanced version (URL shortening)
-- **Create new combined file** with all enhancements
-
-### **2. Enhance Your Spreadsheet**
-- **Add column headers** P, Q, R, S if not present
-- **Populate Breeze numbers** in column P
-- **Add Google Doc URLs** in column Q
-- **Leave columns R and S** empty (auto-generated)
-
-### **3. Test Enhanced Features**
-- **Validate setup** to check new columns
-- **Generate shortened URLs** for existing data
-- **Export test calendar** to verify enhanced events
-- **Train deacons** on new link features
-
-### **4. Deploy Gradually**
-- **Start with subset** of households for testing
-- **Verify Breeze integration** works correctly
-- **Test Notes access** from calendar events
-- **Roll out to full schedule** once confident
-
-## 📱 Mobile Usage Tips
-
-### **For Deacons in the Field:**
-- **Calendar apps**: Links work directly from mobile calendar events
-- **Breeze mobile**: Access household profiles on phones/tablets
-- **Google Docs mobile**: Edit visit notes from mobile devices
-- **Offline access**: Take screenshots of key info before visits
-
-### **Recommended Mobile Workflow:**
-1. **Check calendar event** for household information
-2. **Click Breeze link** to review household profile
-3. **Conduct pastoral visit** with full context
-4. **Click Notes link** to document visit immediately
-5. **Update contact info** if needed during visit
-
----
-
-**Ready to transform your church's deacon visitation coordination with comprehensive church management integration!** 🎯
+### **Regular Maintenance Tasks:**
+- **Weekly**: Test smart calendar updates with sample data
+- **Monthly**: Review shortened URLs in columns R-S for any failures
+- **Quarterly**: Run system tests to verify all integrations
+- **Yearly**: Archive previous schedules and generate next year
 
 ## 🔐 Pre-Production Security Checklist
 
 Before transitioning from sample data to real member information:
 
-✅ **All features tested** with sample data  
+✅ **All smart calendar features tested** with sample data  
 ✅ **Google Sheets permissions** properly configured  
 ✅ **Only authorized deacons** have edit access  
 ✅ **Breeze CMS access** limited to appropriate users  
 ✅ **Visit notes documents** have proper sharing settings  
 ✅ **No sample data** mixed with real member information  
 ✅ **Backup procedures** established for member data  
+✅ **Smart update options** understood by all users
+
+## 🎯 Best Practices for Smart Calendar Updates
+
+### **Contact Info Updates:**
+1. **Always use "Update Contact Info Only"** for simple contact changes
+2. **Generate shortened URLs first** when Breeze numbers or Notes links change
+3. **Test with one household** before batch updates
+4. **Train deacons** on which update option to use when
+
+### **Scheduling Preservation:**
+1. **Document custom scheduling** before any updates
+2. **Use Future Events Only** when current week has custom scheduling
+3. **Avoid Full Regeneration** unless absolutely necessary
+4. **Communicate with deacons** before major calendar updates
+
+### **Weekly Planning:**
+1. **Monday mornings**: Safe time for Future Events Only updates
+2. **Mid-week**: Use Contact Info Only for urgent contact changes
+3. **Friday planning**: Avoid calendar updates during active deacon coordination
+4. **Emergency changes**: Contact Info Only preserves all scheduling details
+
+## 📱 Mobile Usage with Smart Calendar Updates
+
+### **For Deacons in the Field:**
+- **Calendar apps**: All update methods maintain mobile compatibility
+- **Breeze mobile**: Smart updates preserve clickable profile links
+- **Google Docs mobile**: Notes links remain accessible after all updates
+- **Offline planning**: Contact Info Only updates don't affect saved/downloaded schedules
+
+### **Recommended Mobile Workflow:**
+1. **Check calendar event** for current household information  
+2. **Click Breeze link** to review household profile (works after smart updates)
+3. **Conduct pastoral visit** with confidence in current information
+4. **Click Notes link** to document visit (preserved through updates)
+5. **Report contact changes** for smart calendar updates
+
+---
+
+**Your enhanced deacon visitation system with smart calendar updates is now ready for real-world pastoral care coordination that preserves the human touch of scheduling while maintaining current information!** 🚀
 
 ## 🎉 Success Checklist
 
-✅ **Enhanced codebase deployed** with v24.1 features  
+✅ **Native modular architecture** deployed with 4 separate .gs files  
 ✅ **Spreadsheet configured** with P-S columns for integration  
 ✅ **Breeze numbers added** for household profile access  
 ✅ **Google Docs created** for visit documentation  
 ✅ **Shortened URLs generated** for clean presentation  
-✅ **Calendar export tested** with enhanced event descriptions  
-✅ **Deacon training completed** on new link features  
+✅ **Smart calendar functions tested** with sample data  
+✅ **Contact info only updates** verified to preserve scheduling  
+✅ **Future events only updates** confirmed to protect current week  
+✅ **Deacon training completed** on new update options  
 ✅ **Mobile access verified** for field use  
 
-**Your enhanced deacon visitation system is now ready for comprehensive pastoral care coordination!** 🚀
+**Ready for comprehensive pastoral care coordination with smart calendar management!** 🎯
