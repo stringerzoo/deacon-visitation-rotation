@@ -670,9 +670,15 @@ function runSystemTests() {
 }
 
 // ===== ENHANCED MENU SYSTEM (v24.2) =====
-
+// Automatically detects and communicates "test mode"
 function createMenuItems() {
   const ui = SpreadsheetApp.getUi();
+  
+  // Get current mode for menu display
+  const properties = PropertiesService.getScriptProperties();
+  const mode = properties.getProperty('DETECTED_MODE') || 'UNKNOWN';
+  const modeIcon = mode.includes('TEST') ? '🧪' : '✅';
+  
   ui.createMenu('🔄 Deacon Rotation')
     .addItem('📅 Generate Schedule', 'generateRotationSchedule')
     .addSeparator()
@@ -691,14 +697,33 @@ function createMenuItems() {
     .addSeparator()
     .addItem('🔧 Validate Setup', 'validateSetupOnly')
     .addItem('🧪 Run Tests', 'runSystemTests')
+    .addSeparator()
+    .addItem(`${modeIcon} Show Current Mode`, 'showModeNotification')
     .addItem('❓ Setup Instructions', 'showSetupInstructions')
     .addToUi();
+  
+  // Add mode indicator to spreadsheet
+  addModeIndicatorToSheet();
 }
 
 // Create menu when spreadsheet opens
 function onOpen() {
   try {
     createMenuItems();
+    
+    // Show mode notification on first open (only once per session)
+    const properties = PropertiesService.getScriptProperties();
+    const sessionId = Utilities.getUuid();
+    const lastSessionId = properties.getProperty('LAST_SESSION_ID');
+    
+    if (lastSessionId !== sessionId) {
+      properties.setProperty('LAST_SESSION_ID', sessionId);
+      
+      // Small delay to let the spreadsheet load, then show notification
+      Utilities.sleep(1000);
+      showModeNotification();
+    }
+    
     console.log('Enhanced Deacon Rotation menu created successfully (v24.2)');
   } catch (error) {
     console.error('Failed to create menu:', error);
