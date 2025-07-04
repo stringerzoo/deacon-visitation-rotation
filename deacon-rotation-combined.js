@@ -6,7 +6,7 @@
  * Module Structure:
  * - Module 1: Core Functions & Configuration (Lines 40-570)
  * - Module 2: Algorithm & Schedule Generation (Lines 571-1038)  
- * - Module 3: Export, Menu & Utility Functions (Lines 1039-2290)
+ * - Module 3: Export, Menu, Utility, & Testing Functions (Lines 1039-2290)
  * 
  * NEW in v24.2 - Smart Calendar Update System:
  * - Contact info only updates (preserves ALL scheduling customizations)
@@ -1048,6 +1048,38 @@ function getScheduleFromSheet(sheet) {
  * - Preserves custom scheduling details
  */
 
+// TEMPORARY TESTING MODIFICATION for Module 3
+// Add this at the top of your module3-export-utils.js for testing
+
+// TEST MODE CONFIGURATION
+const TEST_MODE = true; // Set to false when ready for production
+const TEST_CALENDAR_NAME = TEST_MODE ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
+
+// Modified helper function for testing
+function getOrCreateCalendar() {
+  /**
+   * Gets existing calendar or returns null if not found
+   * MODIFIED: Uses test calendar name when in test mode
+   */
+  const calendarName = TEST_CALENDAR_NAME; // Uses test name when TEST_MODE = true
+  
+  try {
+    const calendars = CalendarApp.getCalendarsByName(calendarName);
+    if (calendars.length > 0) {
+      return calendars[0];
+    } else {
+      SpreadsheetApp.getUi().alert(
+        'Calendar Not Found',
+        `Calendar "${calendarName}" not found.\n\nPlease run "📆 Export to Google Calendar" first to create the calendar.`,
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+      return null;
+    }
+  } catch (error) {
+    throw new Error(`Calendar access failed: ${error.message}`);
+  }
+}
+
 // ===== SMART CALENDAR UPDATE FUNCTIONS =====
 
 function updateContactInfoOnly() {
@@ -1817,7 +1849,7 @@ function exportToGoogleCalendar() {
     
     // Create or get the deacon visitation calendar
     let calendar;
-    const calendarName = 'Deacon Visitation Schedule';
+    const calendarName = TEST_CALENDAR_NAME; // Changed this line
     
     try {
       const calendars = CalendarApp.getCalendarsByName(calendarName);
@@ -1825,8 +1857,8 @@ function exportToGoogleCalendar() {
         calendar = calendars[0];
         
         const response = SpreadsheetApp.getUi().alert(
-          'Full Calendar Regeneration',
-          `⚠️ This will completely rebuild the calendar "${calendarName}".\n\n` +
+          TEST_MODE ? 'TEST: Full Calendar Regeneration' : 'Full Calendar Regeneration',
+          `${TEST_MODE ? '🧪 TEST MODE: ' : ''}⚠️ This will completely rebuild the calendar "${calendarName}".\n\n` +
           `🚨 WARNING: This will delete ALL existing events and lose any custom scheduling details!\n\n` +
           `For safer updates, consider:\n` +
           `• "📞 Update Contact Info Only" - Preserves all scheduling\n` +
@@ -1834,6 +1866,7 @@ function exportToGoogleCalendar() {
           `Continue with full regeneration?`,
           SpreadsheetApp.getUi().ButtonSet.YES_NO_CANCEL
         );
+
         
         if (response === SpreadsheetApp.getUi().Button.CANCEL) return;
         
@@ -1868,8 +1901,8 @@ function exportToGoogleCalendar() {
         }
       } else {
         calendar = CalendarApp.createCalendar(calendarName);
-        calendar.setDescription('Automated schedule for deacon household visitations with contact information and management links');
-        calendar.setColor(CalendarApp.Color.BLUE);
+        calendar.setDescription(`${TEST_MODE ? 'TEST: ' : ''}Automated schedule for deacon household visitations with contact information and management links`);
+        calendar.setColor(TEST_MODE ? CalendarApp.Color.RED : CalendarApp.Color.BLUE); // Red for test mode
       }
     } catch (calError) {
       throw new Error(`Calendar access failed: ${calError.message}. Make sure you have calendar permissions.`);
