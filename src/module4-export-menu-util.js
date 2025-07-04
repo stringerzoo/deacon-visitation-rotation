@@ -61,7 +61,8 @@ function exportToGoogleCalendar() {
     
     // Create or get the deacon visitation calendar
     let calendar;
-    const calendarName = TEST_CALENDAR_NAME;
+    const currentTestMode = getCurrentTestMode();
+    const calendarName = currentTestMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
     
     try {
       const calendars = CalendarApp.getCalendarsByName(calendarName);
@@ -69,8 +70,8 @@ function exportToGoogleCalendar() {
         calendar = calendars[0];
         
         const response = SpreadsheetApp.getUi().alert(
-          TEST_MODE ? 'TEST: Full Calendar Regeneration' : 'Full Calendar Regeneration',
-          `${TEST_MODE ? '🧪 TEST MODE: ' : ''}⚠️ This will completely rebuild the calendar "${calendarName}".\n\n` +
+          currentTestMode ? 'TEST: Full Calendar Regeneration' : 'Full Calendar Regeneration',
+          `${currentTestMode ? '🧪 TEST MODE: ' : ''}⚠️ This will completely rebuild the calendar "${calendarName}".\n\n` +
           `🚨 WARNING: This will delete ALL existing events and lose any custom scheduling details!\n\n` +
           `For safer updates, consider:\n` +
           `• "📞 Update Contact Info Only" - Preserves all scheduling\n` +
@@ -112,8 +113,8 @@ function exportToGoogleCalendar() {
         }
       } else {
         calendar = CalendarApp.createCalendar(calendarName);
-        calendar.setDescription(`${TEST_MODE ? 'TEST: ' : ''}Automated schedule for deacon household visitations with contact information and management links`);
-        calendar.setColor(TEST_MODE ? CalendarApp.Color.RED : CalendarApp.Color.BLUE);
+        calendar.setDescription(`${currentTestMode ? 'TEST: ' : ''}Automated schedule for deacon household visitations with contact information and management links`);
+        calendar.setColor(currentTestMode ? CalendarApp.Color.RED : CalendarApp.Color.BLUE);
       }
     } catch (calError) {
       throw new Error(`Calendar access failed: ${calError.message}. Make sure you have calendar permissions.`);
