@@ -1403,8 +1403,8 @@ ${config.calendarInstructions}`;
 
 function updateThisMonthEvents() {
   /**
-   * Updates events for the current month only
-   * Useful for monthly planning cycles
+   * DEBUG VERSION - Updates events for the current month only
+   * Added debugging for Breeze URL logic
    */
   try {
     const sheet = SpreadsheetApp.getActiveSheet();
@@ -1416,6 +1416,12 @@ function updateThisMonthEvents() {
       return;
     }
     
+    // DEBUG: Log Breeze data
+    console.log('=== DEBUG: Breeze Configuration ===');
+    console.log('Households:', config.households);
+    console.log('Breeze numbers:', config.breezeNumbers);
+    console.log('Breeze short links:', config.breezeShortLinks);
+    
     // Calculate current month date range
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -1424,8 +1430,9 @@ function updateThisMonthEvents() {
     // Confirm with user
     const ui = SpreadsheetApp.getUi();
     const response = ui.alert(
-      'Update This Month\'s Events',
-      `This will update calendar events from ${monthStart.toLocaleDateString()} to ${monthEnd.toLocaleDateString()}.\n\n` +
+      TEST_MODE ? 'TEST: Update This Month\'s Events (DEBUG)' : 'Update This Month\'s Events (DEBUG)',
+      `${TEST_MODE ? '🧪 TEST MODE: ' : ''}This will update calendar events from ${monthStart.toLocaleDateString()} to ${monthEnd.toLocaleDateString()}.\n\n` +
+      `⚠️ WARNING: This deletes and recreates events (loses custom times/dates)\n` +
       `✅ PRESERVES: Events outside this month\n` +
       `🔄 UPDATES: This month's events with current info\n\n` +
       `Continue?`,
@@ -1445,6 +1452,7 @@ function updateThisMonthEvents() {
     // Delete this month's events
     let deletedCount = 0;
     existingEvents.forEach((event, index) => {
+      console.log(`Deleting event: "${event.getTitle()}"`);
       event.deleteEvent();
       deletedCount++;
       
@@ -1452,6 +1460,8 @@ function updateThisMonthEvents() {
         Utilities.sleep(500);
       }
     });
+    
+    console.log(`Deleted ${deletedCount} events`);
     
     // Cooldown
     if (deletedCount > 0) {
@@ -1464,34 +1474,52 @@ function updateThisMonthEvents() {
       return visitDate >= monthStart && visitDate <= monthEnd;
     });
     
+    console.log(`Creating ${monthScheduleData.length} new events for this month`);
+    
     // Create new events for this month
     let eventsCreated = 0;
     monthScheduleData.forEach((visit, index) => {
       try {
         const eventTitle = `${visit.deacon} visits ${visit.household}`;
         
-        // Get current contact info (same logic as other functions)
+        // Get current contact info
         const householdIndex = config.households.indexOf(visit.household);
+        console.log(`\n--- Creating event for ${visit.household} ---`);
+        console.log(`Household index: ${householdIndex}`);
+        
         const phone = householdIndex >= 0 ? config.phones[householdIndex] || 'Phone not available' : 'Phone not available';
         const address = householdIndex >= 0 ? config.addresses[householdIndex] || 'Address not available' : 'Address not available';
         
-        // Get links (shortened if available)
+        // DEBUG: Detailed Breeze link logic
         let breezeLink = 'Not available';
-        let notesLink = 'Not available';
         
         if (householdIndex >= 0) {
-          // Breeze link
+          console.log(`Processing Breeze link for ${visit.household}:`);
+          
+          // Check for shortened link first
           const shortBreezeLink = config.breezeShortLinks[householdIndex];
+          console.log(`Short Breeze link: "${shortBreezeLink}"`);
+          
           if (shortBreezeLink && shortBreezeLink.trim().length > 0) {
             breezeLink = shortBreezeLink;
+            console.log(`✅ Using SHORT Breeze link: ${breezeLink}`);
           } else {
+            // Fall back to building from number
             const breezeNumber = config.breezeNumbers[householdIndex];
+            console.log(`Breeze number: "${breezeNumber}"`);
+            
             if (breezeNumber && breezeNumber.trim().length > 0) {
               breezeLink = buildBreezeUrl(breezeNumber);
+              console.log(`✅ Using FULL Breeze URL: ${breezeLink}`);
+            } else {
+              console.log(`❌ No Breeze number available`);
             }
           }
-          
-          // Notes link
+        }
+        
+        // Notes link (similar logic)
+        let notesLink = 'Not available';
+        if (householdIndex >= 0) {
           const shortNotesLink = config.notesShortLinks[householdIndex];
           if (shortNotesLink && shortNotesLink.trim().length > 0) {
             notesLink = shortNotesLink;
@@ -1515,6 +1543,8 @@ Visit Notes: ${notesLink}
 Instructions:
 ${config.calendarInstructions}`;
         
+        console.log(`Event description preview: "${eventDescription.substring(0, 150)}..."`);
+        
         const startTime = new Date(visit.date);
         startTime.setHours(14, 0, 0, 0);
         const endTime = new Date(startTime);
@@ -1527,6 +1557,7 @@ ${config.calendarInstructions}`;
         });
         
         eventsCreated++;
+        console.log(`✅ Created event: ${eventTitle}`);
         
         if ((index + 1) % 25 === 0) {
           Utilities.sleep(1000);
@@ -1537,17 +1568,23 @@ ${config.calendarInstructions}`;
       }
     });
     
+    console.log(`\n=== MONTHLY UPDATE SUMMARY ===`);
+    console.log(`Events deleted: ${deletedCount}`);
+    console.log(`Events created: ${eventsCreated}`);
+    
     ui.alert(
-      'This Month Update Complete',
+      'This Month Update Complete (DEBUG)',
       `✅ Updated this month's calendar events!\n\n` +
       `🗑️ Deleted: ${deletedCount} old events\n` +
       `📅 Created: ${eventsCreated} updated events\n` +
       `📅 Period: ${monthStart.toLocaleDateString()} - ${monthEnd.toLocaleDateString()}\n\n` +
-      `This month's events now have current information.`,
+      `⚠️ Custom scheduling details were reset (expected behavior)\n` +
+      `Check console logs for Breeze URL debugging details.`,
       ui.ButtonSet.OK
     );
     
   } catch (error) {
+    console.error('This Month Update Failed:', error);
     SpreadsheetApp.getUi().alert(
       'This Month Update Failed',
       `❌ ${error.message}`,
