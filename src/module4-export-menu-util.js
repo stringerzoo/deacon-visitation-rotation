@@ -11,10 +11,6 @@
  * - Testing and diagnostic utilities
  */
 
-// TEST MODE CONFIGURATION
-const TEST_MODE = false; // Set to true for testing with separate calendar
-const TEST_CALENDAR_NAME = TEST_MODE ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
-
 // ===== CALENDAR EXPORT FUNCTIONS =====
 
 function exportToGoogleCalendar() {
