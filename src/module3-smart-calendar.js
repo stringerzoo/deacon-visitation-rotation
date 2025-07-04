@@ -81,9 +81,12 @@ function detectAndCommunicateTestMode() {
 }
 
 /**
- * Show mode notification to user
+ * Enhanced show mode notification that refreshes detection first
  */
 function showModeNotification() {
+  // Refresh detection before showing notification
+  refreshModeDetection();
+  
   const properties = PropertiesService.getScriptProperties();
   const mode = properties.getProperty('DETECTED_MODE') || 'UNKNOWN';
   const triggers = properties.getProperty('MODE_TRIGGERS') || 'None';
@@ -139,7 +142,11 @@ function updateContactInfoOnly() {
    * Updates ONLY contact information in existing calendar events
    * Preserves: Custom times, dates, guests, locations, scheduling details
    * Updates: Phone numbers, addresses, Breeze links, Notes links, instructions
+   * Enhanced smart calendar functions that check mode dynamically
    */
+  const currentTestMode = getCurrentTestMode();
+  const currentCalendarName = currentTestMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
+  
   try {
     const sheet = SpreadsheetApp.getActiveSheet();
     const config = getConfiguration(sheet);
@@ -150,11 +157,12 @@ function updateContactInfoOnly() {
       return;
     }
     
-    // Confirm with user
+    // Confirm with user (showing current mode)
     const ui = SpreadsheetApp.getUi();
     const response = ui.alert(
-      TEST_MODE ? 'TEST: Update Contact Info Only' : 'Update Contact Info Only',
-      `${TEST_MODE ? '🧪 TEST MODE: ' : ''}This will update contact information in existing calendar events.\n\n` +
+      currentTestMode ? 'TEST: Update Contact Info Only' : 'Update Contact Info Only',
+      `${currentTestMode ? '🧪 TEST MODE: ' : ''}This will update contact information in existing calendar events.\n\n` +
+      `Calendar: "${currentCalendarName}"\n\n` +
       `✅ PRESERVES: Custom times, dates, guest lists, locations\n` +
       `🔄 UPDATES: Contact info, Breeze links, Notes links, instructions\n\n` +
       `💡 TIP: If you've updated Breeze numbers (column P) or Notes links (column Q),\n` +
@@ -165,8 +173,8 @@ function updateContactInfoOnly() {
     
     if (response !== ui.Button.YES) return;
     
-    // Get calendar
-    const calendar = getOrCreateCalendar();
+    // Get calendar using current mode
+    const calendar = getOrCreateCalendar(currentCalendarName);
     if (!calendar) return;
     
     // Get existing events
@@ -292,11 +300,14 @@ function updateFutureEventsOnly() {
     cutoffDate.setHours(0, 0, 0, 0);
     
     // Confirm with user
+    const currentTestMode = getCurrentTestMode();
+    const currentCalendarName = currentTestMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
+    
     const ui = SpreadsheetApp.getUi();
     const response = ui.alert(
-      TEST_MODE ? 'TEST: Update Future Events Only' : 'Update Future Events Only',
-      `${TEST_MODE ? '🧪 TEST MODE: ' : ''}This will update calendar events starting from ${cutoffDate.toLocaleDateString()}.\n\n` +
-      `✅ PRESERVES: This week's scheduling details and customizations\n` +
+      currentTestMode ? 'TEST: Update Future Events Only' : 'Update Future Events Only',
+      `${currentTestMode ? '🧪 TEST MODE: ' : ''}This will update calendar events starting from ${cutoffDate.toLocaleDateString()}.\n\n` +
+      `Calendar: "${currentCalendarName}"\n\n` +      `✅ PRESERVES: This week's scheduling details and customizations\n` +
       `🔄 UPDATES: Future events with current contact info and assignments\n\n` +
       `💡 TIP: For contact changes only, use "📞 Update Contact Info Only" instead.\n\n` +
       `Continue?`,
@@ -306,7 +317,7 @@ function updateFutureEventsOnly() {
     if (response !== ui.Button.YES) return;
     
     // Get calendar
-    const calendar = getOrCreateCalendar();
+    const calendar = getOrCreateCalendar(currentCalendarName);
     if (!calendar) return;
     
     // Get existing future events
@@ -449,12 +460,15 @@ ${config.calendarInstructions}`;
 
 // ===== HELPER FUNCTIONS =====
 
-function getOrCreateCalendar() {
-  /**
-   * Gets existing calendar or returns null if not found
-   * Used by update functions to ensure calendar exists
-   */
-  const calendarName = TEST_CALENDAR_NAME;
+/**
+ * Helper function for calendar access with dynamic mode
+ */
+function getOrCreateCalendar(calendarName = null) {
+  // Use provided name or detect current mode
+  if (!calendarName) {
+    const currentTestMode = getCurrentTestMode();
+    calendarName = currentTestMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
+  }
   
   try {
     const calendars = CalendarApp.getCalendarsByName(calendarName);
@@ -483,6 +497,33 @@ function buildBreezeUrl(breezeNumber) {
   
   const cleanNumber = breezeNumber.trim();
   return `https://immanuelky.breezechms.com/people/view/${cleanNumber}`;
+}
+
+/**
+ * Refresh mode detection and update all indicators
+ * Call this whenever you want to check/update the current mode
+ */
+function refreshModeDetection() {
+  // Re-run detection
+  const isTestMode = detectAndCommunicateTestMode();
+  
+  // Update the spreadsheet indicator immediately
+  addModeIndicatorToSheet();
+  
+  // Update the global variables (for any functions that use them)
+  // Note: This won't change the const declarations, but stores current state
+  const properties = PropertiesService.getScriptProperties();
+  properties.setProperty('CURRENT_TEST_MODE', isTestMode.toString());
+  properties.setProperty('CURRENT_CALENDAR_NAME', isTestMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule');
+  
+  return isTestMode;
+}
+
+/**
+ * Get current test mode (use this instead of the const when you need fresh detection)
+ */
+function getCurrentTestMode() {
+  return refreshModeDetection();
 }
 
 // END OF MODULE 3
