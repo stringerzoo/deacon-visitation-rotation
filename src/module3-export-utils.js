@@ -1055,30 +1055,6 @@ function getScheduleFromSheet(sheet) {
 const TEST_MODE = true; // Set to false when ready for production
 const TEST_CALENDAR_NAME = TEST_MODE ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
 
-// Modified helper function for testing
-function getOrCreateCalendar() {
-  /**
-   * Gets existing calendar or returns null if not found
-   * MODIFIED: Uses test calendar name when in test mode
-   */
-  const calendarName = TEST_CALENDAR_NAME; // Uses test name when TEST_MODE = true
-  
-  try {
-    const calendars = CalendarApp.getCalendarsByName(calendarName);
-    if (calendars.length > 0) {
-      return calendars[0];
-    } else {
-      SpreadsheetApp.getUi().alert(
-        'Calendar Not Found',
-        `Calendar "${calendarName}" not found.\n\nPlease run "📆 Export to Google Calendar" first to create the calendar.`,
-        SpreadsheetApp.getUi().ButtonSet.OK
-      );
-      return null;
-    }
-  } catch (error) {
-    throw new Error(`Calendar access failed: ${error.message}`);
-  }
-}
 
 // ===== SMART CALENDAR UPDATE FUNCTIONS =====
 
@@ -1587,7 +1563,7 @@ function getOrCreateCalendar() {
    * Gets existing calendar or returns null if not found
    * Used by update functions to ensure calendar exists
    */
-  const calendarName = 'Deacon Visitation Schedule';
+  const calendarName = TEST_CALENDAR_NAME;
   
   try {
     const calendars = CalendarApp.getCalendarsByName(calendarName);
