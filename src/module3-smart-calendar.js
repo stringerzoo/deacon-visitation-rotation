@@ -8,8 +8,128 @@
  * - Helper functions for calendar access
  */
 
+/**
+ * Smart test mode detection with user communication
+ */
+function detectAndCommunicateTestMode() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSheet();
+    
+    // Detection logic
+    const testIndicators = [
+      {
+        name: 'Test household names',
+        check: () => {
+          const households = sheet.getRange('M2:M10').getValues().flat().filter(cell => cell !== '');
+          const testPatterns = ['Alan & Alexa Adams', 'Barbara Baker', 'Chloe Cooper', 'test', 'sample'];
+          return households.some(household => 
+            testPatterns.some(pattern => 
+              String(household).toLowerCase().includes(pattern.toLowerCase())
+            )
+          );
+        }
+      },
+      {
+        name: 'Test phone numbers (555)',
+        check: () => {
+          const phones = sheet.getRange('N2:N10').getValues().flat().filter(cell => cell !== '');
+          return phones.some(phone => String(phone).includes('555'));
+        }
+      },
+      {
+        name: 'Test Breeze numbers (12345)',
+        check: () => {
+          const breezeNumbers = sheet.getRange('P2:P10').getValues().flat().filter(cell => cell !== '');
+          return breezeNumbers.some(number => String(number).startsWith('12345'));
+        }
+      },
+      {
+        name: 'Spreadsheet name contains "test"',
+        check: () => {
+          const spreadsheetName = SpreadsheetApp.getActiveSpreadsheet().getName().toLowerCase();
+          return spreadsheetName.includes('test') || spreadsheetName.includes('sample');
+        }
+      }
+    ];
+    
+    // Find which indicators triggered
+    const triggeredIndicators = testIndicators.filter(indicator => indicator.check());
+    const isTestMode = triggeredIndicators.length > 0;
+    
+    // Console logging
+    if (isTestMode) {
+      console.log('🧪 TEST MODE detected automatically');
+      console.log('Triggers found:', triggeredIndicators.map(i => i.name).join(', '));
+      console.log('Calendar will be: "TEST - Deacon Visitation Schedule"');
+    } else {
+      console.log('✅ PRODUCTION MODE detected');
+      console.log('Calendar will be: "Deacon Visitation Schedule"');
+    }
+    
+    // Store mode info for later display
+    const properties = PropertiesService.getScriptProperties();
+    properties.setProperty('DETECTED_MODE', isTestMode ? 'TEST' : 'PRODUCTION');
+    properties.setProperty('MODE_TRIGGERS', triggeredIndicators.map(i => i.name).join(', '));
+    
+    return isTestMode;
+    
+  } catch (error) {
+    console.warn('Could not detect test mode, defaulting to production:', error);
+    PropertiesService.getScriptProperties().setProperty('DETECTED_MODE', 'PRODUCTION (default)');
+    return false;
+  }
+}
+
+/**
+ * Show mode notification to user
+ */
+function showModeNotification() {
+  const properties = PropertiesService.getScriptProperties();
+  const mode = properties.getProperty('DETECTED_MODE') || 'UNKNOWN';
+  const triggers = properties.getProperty('MODE_TRIGGERS') || 'None';
+  
+  const isTestMode = mode.includes('TEST');
+  
+  const ui = SpreadsheetApp.getUi();
+  ui.alert(
+    isTestMode ? '🧪 Test Mode Detected' : '✅ Production Mode Active',
+    `${isTestMode ? '🧪 TEST MODE' : '✅ PRODUCTION MODE'} has been automatically detected.\n\n` +
+    `Calendar: "${isTestMode ? 'TEST - ' : ''}Deacon Visitation Schedule"\n\n` +
+    (isTestMode ? `Detected because: ${triggers}\n\n` : '') +
+    `${isTestMode ? 
+      '• Test calendar will be used for safety\n• Sample data detected - perfect for testing!\n• Switch to real member data to enable production mode' : 
+      '• Live calendar will be used\n• Real member data detected\n• All calendar functions ready for pastoral care'
+    }`,
+    ui.ButtonSet.OK
+  );
+}
+
+/**
+ * Add mode indicator to spreadsheet
+ */
+function addModeIndicatorToSheet() {
+  const sheet = SpreadsheetApp.getActiveSheet();
+  const properties = PropertiesService.getScriptProperties();
+  const mode = properties.getProperty('DETECTED_MODE') || 'UNKNOWN';
+  const isTestMode = mode.includes('TEST');
+  
+  // Add indicator in a visible but non-intrusive location (K12)
+  const indicatorCell = sheet.getRange('K12');
+  indicatorCell.setValue(isTestMode ? '🧪 TEST MODE' : '✅ PRODUCTION');
+  indicatorCell.setBackground(isTestMode ? '#ffeb3b' : '#4caf50'); // Yellow for test, green for production
+  indicatorCell.setFontColor(isTestMode ? '#333' : 'white');
+  indicatorCell.setFontWeight('bold');
+  indicatorCell.setHorizontalAlignment('center');
+  
+  // Add label above it
+  const labelCell = sheet.getRange('K11');
+  labelCell.setValue('Current Mode:');
+  labelCell.setFontWeight('bold');
+  labelCell.setBackground('#fff2cc');
+}
+
 // TEST MODE CONFIGURATION
-const TEST_MODE = false; // Set to true for testing with separate calendar
+const TEST_MODE = detectAndCommunicateTestMode();
 const TEST_CALENDAR_NAME = TEST_MODE ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
 
 // ===== SMART CALENDAR UPDATE FUNCTIONS =====
