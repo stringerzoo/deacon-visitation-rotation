@@ -279,10 +279,8 @@ For detailed setup instructions, see [SETUP.md](SETUP.md).
 ## 📖 Documentation
 
 - **[Setup Guide](SETUP.md)** - Complete installation including Breeze and Notes integration
-- **[Features Overview](FEATURES.md)** - Detailed feature explanations  
-- **[Calendar Export Timing](SETUP-CAL.md)** - Rate limiting and troubleshooting
 - **[Changelog](CHANGELOG.md)** - Version history including v24.2 enhancements
-- **[Test Data](Test%20Data%20for%20Columns%20M-S%20(5%20Households).md)** - Safe sample data for testing
+- **[Test Data](test/test_data_table.md)** - Safe sample data for testing
 
 ## 🎯 The Math Behind It
 
@@ -315,7 +313,6 @@ This project was developed for Immanuel Baptist Church but is shared freely for 
 
 For technical issues:
 - Check the [Setup Guide](SETUP.md) for common solutions including smart calendar setup
-- Review the [Features Documentation](FEATURES.md) for usage questions
 - Open an issue on GitHub for bugs or enhancement requests
 
 ## 🤝 Contributing
