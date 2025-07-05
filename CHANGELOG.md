@@ -109,8 +109,8 @@ All notable changes to this project will be documented in this file.
 ├── 📅 Generate Schedule
 ├── 🔗 Generate Shortened URLs
 ├── 📆 Calendar Functions                    ⭐ NEW SUBMENU
-│   ├── 🔄 Update Future Events Only        ⭐ NEW - Current week safe
 │   ├── 📞 Update Contact Info Only         ⭐ NEW - Safest option
+│   ├── 🔄 Update Future Events Only        ⭐ NEW - Current week safe
 │   └── 🚨 Full Calendar Regeneration       (Enhanced warnings)
 ├── 📊 Export Individual Schedules
 ├── 📁 Archive Current Schedule
