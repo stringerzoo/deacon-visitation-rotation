@@ -208,9 +208,9 @@ Please call to confirm visit time...
 ├── 📅 Generate Schedule
 ├── 🔗 Generate Shortened URLs
 ├── 📆 Calendar Functions                    ⭐ NEW SUBMENU
-│   ├── 🚨 Full Calendar Regeneration
 │   ├── 📞 Update Contact Info Only         ⭐ NEW
-│   └── 🔄 Update Future Events Only        ⭐ NEW
+│   ├── 🔄 Update Future Events Only        ⭐ NEW
+│   └── 🚨 Full Calendar Regeneration
 ├── 📊 Export Individual Schedules
 ├── 📁 Archive Current Schedule
 ├── 🗓️ Generate Next Year
