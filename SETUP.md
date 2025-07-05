@@ -340,9 +340,9 @@ Run **"🔄 Deacon Rotation" → "🧪 Run Tests"** to verify:
 ├── 📅 Generate Schedule
 ├── 🔗 Generate Shortened URLs
 ├── 📆 Calendar Functions                    ⭐ NEW SUBMENU
-│   ├── 🚨 Full Calendar Regeneration       (Complete rebuild)
 │   ├── 📞 Update Contact Info Only         (Safest updates)
-│   └── 🔄 Update Future Events Only        (Current week safe)
+│   ├── 🔄 Update Future Events Only        (Current week safe)
+│   └── 🚨 Full Calendar Regeneration       (Complete rebuild)
 ├── 📊 Export Individual Schedules
 ├── 📁 Archive Current Schedule
 ├── 🗓️ Generate Next Year
