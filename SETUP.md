@@ -1,6 +1,6 @@
 # Setup Guide - Deacon Visitation Rotation System v24.2
 
-This guide will walk you through setting up the enhanced deacon visitation rotation system with **smart calendar update capabilities**, **Breeze Church Management System integration**, **Google Docs visit notes connectivity**, and **native modular architecture**.
+This comprehensive guide covers setup, smart calendar features, and detailed calendar export timing information for the enhanced deacon visitation rotation system.
 
 ## 📋 Prerequisites
 
@@ -42,9 +42,9 @@ The system now automatically detects whether you're working with test data or li
 
 > 💡 **Tip**: Start with the sample data provided in this guide. The system will automatically use test mode, then seamlessly switch to production when you replace with real member information.
 
-
-
 ## 🔒 Data Privacy & Sample Data Setup
+
+### **Start with Sample Data**
 **Important**: Always begin setup and testing with fake sample data to protect member privacy.
 
 #### **Recommended Sample Data Pattern:**
@@ -87,7 +87,7 @@ Addresses: Use generic examples or your church's public address
 4. **Module4_Export_Menu.gs**: Copy content from `src/module4-export-menu.js`
 
 ### **Configuration Note**
-The `TEST_MODE` constant should be set to `false` in Module 3 for production use, or `true` for testing with a separate calendar.
+The system will automatically detect test mode based on your data - no manual configuration needed!
 
 ## 📊 Step 2: Create Enhanced Google Spreadsheet Layout
 
@@ -231,6 +231,137 @@ R3: http://tinyurl.com/ghi789 S3: http://tinyurl.com/jkl012
 3. **Click "📆 Calendar Functions" → "🔄 Update Future Events Only"**
 4. **Verify**: Current week event unchanged, future events have new address
 
+## 📅 Calendar Export Process & Timing
+
+### **What Happens During Calendar Export**
+
+The enhanced calendar export process includes several steps to ensure reliable operation:
+
+1. **Configuration Loading**: Reads all household data, contact info, and links
+2. **URL Preparation**: Uses shortened URLs if available, falls back to full URLs
+3. **Calendar Setup**: Creates or accesses calendar (automatically named based on test mode)
+4. **Optional Event Deletion**: If you choose to clear existing events (with delays)
+5. **Event Creation**: Creates enhanced events with rich descriptions (with rate limiting)
+6. **Progress Monitoring**: Logs progress and handles any individual failures
+
+### **Runtime Expectations**
+
+#### **Simple Heuristic:**
+**"Expect approximately 30-45 seconds per 100 events"**
+
+#### **Detailed Timing Formula:**
+```
+Total Runtime = (Number of Events × 0.35 seconds) + (Number of Events ÷ 25 seconds)
+                    ↑                                ↑
+            Google Calendar API processing    Rate limiting delays
+```
+
+#### **Real-World Examples:**
+| Events | Expected Time | What You'll See |
+|--------|---------------|-----------------|
+| 25 | 10-15 seconds | Very quick |
+| 50 | 20-30 seconds | Quick completion |
+| 100 | 30-45 seconds | Standard processing |
+| 150 | 45-60 seconds | Longer but reliable |
+| 200 | 60-90 seconds | Extended processing |
+| 300+ | 2-3 minutes | Large schedule handling |
+
+#### **Factors That Affect Runtime:**
+- **Internet connection speed** to Google's servers
+- **Google Calendar API load** (varies throughout the day)
+- **Event deletion** (if clearing existing events)
+- **Time of day** (Google services faster during off-peak hours)
+- **Update method**: Contact Info Only is fastest, Full Regeneration takes longest
+
+### **Rate Limiting Protection**
+
+The system includes intelligent delays to prevent "too many operations" errors:
+
+#### **During Event Creation:**
+- **Pause every 25 events**: 1-second delay
+- **Progress logging**: "Created X events so far..."
+- **Individual error isolation**: One failed event won't stop the process
+
+#### **During Event Deletion (if clearing existing):**
+- **Pause every 10 deletions**: 0.5-second delay
+- **Cooldown period**: 2-second wait before creating new events
+- **Batch processing**: Handles large numbers of existing events safely
+
+#### **During Smart Updates:**
+- **Contact Info Only**: Fastest option - only updates descriptions
+- **Future Events Only**: Moderate speed - deletes and recreates future events only
+- **Full Regeneration**: Slowest - complete rebuild with all safety delays
+
+### **What You'll Experience**
+
+#### **Normal Operation:**
+- **Progress appears steady** with occasional brief pauses
+- **Console logs show** event creation progress
+- **No error messages** during successful operation
+- **Final success dialog** appears with event count
+- **Calendar events** appear with rich descriptions and working links
+
+#### **If You See Long Delays:**
+- **This is normal** for larger schedules (150+ events)
+- **Don't interrupt the process** - let the rate limiting work
+- **Watch for progress messages** in the console
+- **Success dialog** will appear when complete
+
+### **Troubleshooting Long Runtimes**
+
+#### **If Export Takes Much Longer Than Expected:**
+
+**"Script running over 5 minutes for 100 events"**
+- **Check internet connection** - slow connection affects API calls
+- **Try during off-peak hours** (early morning or late evening)
+- **Reduce schedule size** to test with smaller batches first
+- **Use Contact Info Only** instead of Full Regeneration when possible
+
+**"Script seems frozen with no progress"**
+- **Check browser console** for error messages
+- **Don't refresh** - this will interrupt the process
+- **Wait for timeout** - script will eventually show error or success
+
+**"Getting 'too many operations' errors despite rate limiting"**
+- **Wait 10-15 minutes** for Google's rate limit to reset
+- **Try smaller batch** of events first
+- **Use Contact Info Only** instead of clearing all events
+- **Check if test mode** is properly detected to avoid conflicts
+
+### **Best Practices for Large Schedules**
+
+#### **For 200+ Events:**
+1. **Schedule during off-peak hours** (early morning recommended)
+2. **Test with smaller subset first** (4-6 weeks)
+3. **Ensure stable internet connection**
+4. **Don't use computer for other intensive tasks** during export
+5. **Be patient** - the system is designed for reliability over speed
+6. **Use smart updates** when possible instead of full regeneration
+
+#### **For Very Large Schedules (400+ Events):**
+- **Consider breaking into quarters** (export 13 weeks at a time)
+- **Use incremental approach** rather than clearing all events
+- **Plan for 5-10 minute processing time**
+- **Monitor system resources** during processing
+- **Prefer Contact Info Only updates** for contact changes
+
+### **Performance Optimization Tips**
+
+#### **To Reduce Runtime:**
+- **Generate shortened URLs first** (avoids real-time URL shortening)
+- **Use smart update options** instead of full regeneration:
+  - **Contact Info Only** - fastest, preserves all scheduling
+  - **Future Events Only** - moderate speed, protects current week
+- **Export during Google's off-peak hours**
+- **Ensure good internet connection**
+
+#### **To Improve Reliability:**
+- **Start with validation** to catch configuration errors early
+- **Test with small schedule first** before full year export
+- **Don't interrupt the process** once it starts
+- **Let rate limiting delays work** - they prevent failures
+- **Use test mode** for initial testing to avoid production calendar conflicts
+
 ## 🎯 Step 5: Understanding Smart Calendar Update Options
 
 ### **📞 Update Contact Info Only** ⭐ **SAFEST OPTION**
@@ -250,6 +381,7 @@ R3: http://tinyurl.com/ghi789 S3: http://tinyurl.com/jkl012
 - 🔄 Calendar instructions
 
 **Process**: Updates event descriptions only, preserving all other event details.
+**Speed**: Fastest option - typically 30-60 seconds for 100+ events.
 
 ### **🔄 Update Future Events Only**
 **When to use**: Contact changes during the week without affecting current week scheduling
@@ -263,6 +395,7 @@ R3: http://tinyurl.com/ghi789 S3: http://tinyurl.com/jkl012
 - 🔄 Future deacon assignments if schedule changed
 
 **Process**: Deletes and recreates events starting next week only.
+**Speed**: Moderate - depends on number of future events.
 
 ### **🚨 Full Calendar Regeneration**
 **When to use**: Major structural changes (new deacons, household changes, schedule rebuild)
@@ -272,9 +405,45 @@ R3: http://tinyurl.com/ghi789 S3: http://tinyurl.com/jkl012
 
 **What it updates**:
 - 🔄 Everything with enhanced warnings
-- 🔄 Complete event recreation
 
 **Process**: Deletes ALL events and recreates from current spreadsheet data.
+**Speed**: Slowest - full timing expectations apply.
+
+### **Success Indicators**
+
+#### **Your Export is Working Well When:**
+✅ **Steady progress** with occasional planned pauses  
+✅ **Console shows** "Created X events so far..." or "Updated X events so far..." messages  
+✅ **No error alerts** during processing  
+✅ **Final success dialog** appears with event count  
+✅ **Calendar events** appear with rich descriptions and working links  
+✅ **Test mode detection** shows correct environment
+
+#### **Example Success Messages:**
+
+**Contact Info Only:**
+```
+✅ Updated contact information in 135 calendar events!
+
+📞 Refreshed: Phone numbers, addresses, Breeze links, Notes links
+🔒 Preserved: All custom scheduling details, times, dates, guests
+
+All events now have current contact information.
+```
+
+**Full Regeneration:**
+```
+✅ Created 135 calendar events with enhanced information!
+
+📅 Calendar: "Deacon Visitation Schedule" (or "TEST - Deacon Visitation Schedule")
+🕐 Default time: 2:00 PM - 3:00 PM
+🔗 Includes: Breeze profiles and visit notes links
+📞 Contact info: Phone numbers and addresses
+📝 Instructions: Custom visit coordination text
+
+Each event title: "[Deacon] visits [Household]"
+View and modify these events in Google Calendar.
+```
 
 ## 🧪 Step 6: Test with Sample Data Scenarios
 
@@ -283,6 +452,7 @@ R3: http://tinyurl.com/ghi789 S3: http://tinyurl.com/jkl012
 Situation: It's Wednesday, Adams family got new phone number
 Solution: Use "📞 Update Contact Info Only"
 Result: All events keep custom scheduling, phone number updated
+Speed: ~30 seconds for 100+ events
 ```
 
 ### **Scenario 2: Future Planning Changes**
@@ -290,6 +460,7 @@ Result: All events keep custom scheduling, phone number updated
 Situation: Next month's assignments need updating, this week is planned
 Solution: Use "🔄 Update Future Events Only"  
 Result: Current week untouched, future events refreshed
+Speed: ~60 seconds for 100+ future events
 ```
 
 ### **Scenario 3: Major Schedule Overhaul**
@@ -297,6 +468,7 @@ Result: Current week untouched, future events refreshed
 Situation: New deacon added, household list changed significantly
 Solution: Use "🚨 Full Calendar Regeneration" (with warnings)
 Result: Complete rebuild with all current data
+Speed: ~2-3 minutes for 200+ events
 ```
 
 ## 🚨 Troubleshooting Smart Calendar Features
@@ -313,6 +485,7 @@ Result: Complete rebuild with all current data
 - Ensure calendar exists (run Full Calendar Regeneration first)
 - Check event titles match "[Deacon] visits [Household]" format
 - Verify household names in spreadsheet match calendar events exactly
+- Check if test mode is properly detected
 
 **"Future Events Only deletes too many events"**
 - Function preserves current week (7 days from today)
@@ -324,6 +497,19 @@ Result: Complete rebuild with all current data
 - Verify contact information in columns N-O
 - Check Breeze numbers and Notes links in columns P-Q
 
+**"Calendar export fails with 'too many operations'"**
+- **Wait 5-10 minutes** for Google's rate limit to reset
+- **Use smaller schedule** for initial testing
+- **Don't clear existing events** unless necessary
+- **Try Contact Info Only** instead of full regeneration
+- System includes automatic rate limiting - let it work
+
+**"Calendar events appear in wrong calendar (test vs production)"**
+- Check mode indicator in cells K11-K12
+- Use "Show Current Mode" menu option to verify detection
+- Ensure test data patterns are properly recognized
+- Mode detection happens automatically based on spreadsheet data
+
 ### **Enhanced System Tests:**
 Run **"🔄 Deacon Rotation" → "🧪 Run Tests"** to verify:
 - All module integration working correctly
@@ -331,6 +517,7 @@ Run **"🔄 Deacon Rotation" → "🧪 Run Tests"** to verify:
 - Breeze URL construction
 - Calendar access permissions
 - Script permissions for external services
+- Test mode detection accuracy
 
 ## 🎛️ Step 7: Master the Enhanced Menu System
 
@@ -348,6 +535,7 @@ Run **"🔄 Deacon Rotation" → "🧪 Run Tests"** to verify:
 ├── 🗓️ Generate Next Year
 ├── 🔧 Validate Setup
 ├── 🧪 Run Tests
+├── [🧪/✅] Show Current Mode               ⭐ NEW
 └── ❓ Setup Instructions
 ```
 
@@ -356,6 +544,7 @@ Run **"🔄 Deacon Rotation" → "🧪 Run Tests"** to verify:
 2. **Regular Updates**: Update Contact Info Only  
 3. **Weekly Planning**: Update Future Events Only (if needed)
 4. **Major Changes**: Full Calendar Regeneration (with caution)
+5. **Mode Checking**: Use "Show Current Mode" anytime
 
 ## 🔄 Step 8: Development and Maintenance Workflow
 
@@ -370,7 +559,7 @@ When you need to make changes:
 ### **Module Responsibilities Quick Reference:**
 - **Module 1**: Configuration, validation, header setup
 - **Module 2**: Core algorithm, schedule generation, deacon reports  
-- **Module 3**: Smart calendar updates, contact preservation
+- **Module 3**: Smart calendar updates, contact preservation, test mode detection
 - **Module 4**: Full calendar export, individual schedules, menu system
 
 ### **Regular Maintenance Tasks:**
@@ -378,6 +567,10 @@ When you need to make changes:
 - **Monthly**: Review shortened URLs in columns R-S for any failures
 - **Quarterly**: Run system tests to verify all integrations
 - **Yearly**: Archive previous schedules and generate next year
+
+---
+
+**Remember: The system prioritizes reliability over speed. The built-in delays and smart update options ensure your calendar operations complete successfully while preserving the scheduling customizations that deacons depend on for effective pastoral care!** 🎯
 
 ## 🔐 Pre-Production Security Checklist
 
@@ -391,45 +584,7 @@ Before transitioning from sample data to real member information:
 ✅ **No sample data** mixed with real member information  
 ✅ **Backup procedures** established for member data  
 ✅ **Smart update options** understood by all users
-
-## 🎯 Best Practices for Smart Calendar Updates
-
-### **Contact Info Updates:**
-1. **Always use "Update Contact Info Only"** for simple contact changes
-2. **Generate shortened URLs first** when Breeze numbers or Notes links change
-3. **Test with one household** before batch updates
-4. **Train deacons** on which update option to use when
-
-### **Scheduling Preservation:**
-1. **Document custom scheduling** before any updates
-2. **Use Future Events Only** when current week has custom scheduling
-3. **Avoid Full Regeneration** unless absolutely necessary
-4. **Communicate with deacons** before major calendar updates
-
-### **Weekly Planning:**
-1. **Monday mornings**: Safe time for Future Events Only updates
-2. **Mid-week**: Use Contact Info Only for urgent contact changes
-3. **Friday planning**: Avoid calendar updates during active deacon coordination
-4. **Emergency changes**: Contact Info Only preserves all scheduling details
-
-## 📱 Mobile Usage with Smart Calendar Updates
-
-### **For Deacons in the Field:**
-- **Calendar apps**: All update methods maintain mobile compatibility
-- **Breeze mobile**: Smart updates preserve clickable profile links
-- **Google Docs mobile**: Notes links remain accessible after all updates
-- **Offline planning**: Contact Info Only updates don't affect saved/downloaded schedules
-
-### **Recommended Mobile Workflow:**
-1. **Check calendar event** for current household information  
-2. **Click Breeze link** to review household profile (works after smart updates)
-3. **Conduct pastoral visit** with confidence in current information
-4. **Click Notes link** to document visit (preserved through updates)
-5. **Report contact changes** for smart calendar updates
-
----
-
-**Your enhanced deacon visitation system with smart calendar updates is now ready for real-world pastoral care coordination that preserves the human touch of scheduling while maintaining current information!** 🚀
+✅ **Test mode detection** verified with sample data patterns
 
 ## 🎉 Success Checklist
 
@@ -441,6 +596,7 @@ Before transitioning from sample data to real member information:
 ✅ **Smart calendar functions tested** with sample data  
 ✅ **Contact info only updates** verified to preserve scheduling  
 ✅ **Future events only updates** confirmed to protect current week  
+✅ **Test mode detection** working automatically
 ✅ **Deacon training completed** on new update options  
 ✅ **Mobile access verified** for field use  
 
