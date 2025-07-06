@@ -279,6 +279,7 @@ For detailed setup instructions, see [SETUP.md](SETUP.md).
 ## 📖 Documentation
 
 - **[Setup Guide](SETUP.md)** - Complete installation including Breeze and Notes integration
+- **[Technical Features Reference](FEATURES.md)** - Deep technical explanations and implementation details
 - **[Changelog](CHANGELOG.md)** - Version history including v24.2 enhancements
 - **[Test Data](test/test_data_table.md)** - Safe sample data for testing
 
