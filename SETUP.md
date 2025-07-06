@@ -519,6 +519,8 @@ Run **"🔄 Deacon Rotation" → "🧪 Run Tests"** to verify:
 - Script permissions for external services
 - Test mode detection accuracy
 
+For detailed technical explanations of these systems, see [Technical Features Reference](FEATURES.md).
+
 ## 🎛️ Step 7: Master the Enhanced Menu System
 
 ### **Menu Structure (v24.2):**
