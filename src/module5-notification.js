@@ -634,22 +634,36 @@ function validateScheduleDataSync() {
       const mismatchReport = mismatches.join('\n\n');
       
       const response = ui.alert(
-        'Schedule Data Mismatch',
+        'Schedule Data Mismatch Detected',
         `🔄 The schedule doesn't match your current household and deacon lists:\n\n${mismatchReport}\n\n` +
         `This may cause missing contact information in notifications.\n\n` +
-        `Generate a new schedule to fix these mismatches?`,
+        `Choose your action:\n` +
+        `• YES: Auto-fix by generating new schedule, then continue\n` +
+        `• NO: Continue anyway with missing contact info\n` +
+        `• CANCEL: Stop and let me fix this manually`,
         ui.ButtonSet.YES_NO_CANCEL
       );
       
       if (response === ui.Button.YES) {
-        // Generate new schedule
+        // Generate new schedule and continue
         try {
+          ui.alert(
+            'Generating New Schedule',
+            '🔄 Creating fresh schedule with current data...\n\nThis may take a moment.',
+            ui.ButtonSet.OK
+          );
           generateRotationSchedule();
+          
+          ui.alert(
+            'Schedule Updated Successfully',
+            '✅ New schedule generated!\n\nProceeding with notification using updated data.',
+            ui.ButtonSet.OK
+          );
           return true; // Schedule regenerated, can proceed
         } catch (scheduleError) {
           ui.alert(
             'Schedule Generation Failed',
-            `❌ Could not generate new schedule: ${scheduleError.message}`,
+            `❌ Could not generate new schedule: ${scheduleError.message}\n\nNotification cancelled.`,
             ui.ButtonSet.OK
           );
           return false;
@@ -657,10 +671,20 @@ function validateScheduleDataSync() {
       } else if (response === ui.Button.NO) {
         // User wants to proceed anyway
         console.log('User chose to proceed with mismatched data');
+        ui.alert(
+          'Proceeding with Current Data',
+          '⚠️ Continuing with existing schedule.\n\nSome contact information may show as "not available" in the notification.',
+          ui.ButtonSet.OK
+        );
         return true;
       } else {
         // User cancelled
         console.log('User cancelled notification due to data mismatches');
+        ui.alert(
+          'Notification Cancelled',
+          'ℹ️ Notification stopped.\n\nYou can fix the data mismatches and try again.',
+          ui.ButtonSet.OK
+        );
         return false;
       }
     }
