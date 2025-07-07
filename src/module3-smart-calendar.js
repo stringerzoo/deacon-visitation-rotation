@@ -156,7 +156,12 @@ function updateContactInfoOnly() {
       SpreadsheetApp.getUi().alert('No Schedule', 'Please generate a schedule first.', SpreadsheetApp.getUi().ButtonSet.OK);
       return;
     }
-    
+
+    // Validate that schedule matches current data
+    if (!validateScheduleDataSync()) {
+      return; // validateScheduleDataSync() shows its own error dialog
+    }
+
     // Confirm with user (showing current mode)
     const ui = SpreadsheetApp.getUi();
     const response = ui.alert(
@@ -292,6 +297,11 @@ function updateFutureEventsOnly() {
     if (scheduleData.length === 0) {
       SpreadsheetApp.getUi().alert('No Schedule', 'Please generate a schedule first.', SpreadsheetApp.getUi().ButtonSet.OK);
       return;
+    }
+
+    // Validate that schedule matches current data
+    if (!validateScheduleDataSync()) {
+      return; // validateScheduleDataSync() shows its own error dialog
     }
     
     // Calculate cutoff date (next week)
