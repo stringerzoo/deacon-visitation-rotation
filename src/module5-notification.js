@@ -35,6 +35,11 @@ function sendWeeklyVisitationChat() {
       return;
     }
     
+    // Validate that schedule matches current data
+    if (!validateScheduleDataSync()) {
+      return; // validateScheduleDataSync() shows its own error dialog
+    }
+    
     // Get current test mode from Module 3
     const currentTestMode = getCurrentTestMode();
     const chatPrefix = currentTestMode ? '🧪 TEST: ' : '';
@@ -79,7 +84,7 @@ function sendWeeklyVisitationChat() {
 function sendTomorrowReminders() {
   /**
    * Send reminders for visits happening tomorrow
-   * Useful for day-before preparation
+   * Asks user confirmation if no visits are scheduled
    */
   try {
     if (!isNotificationConfigured()) {
@@ -91,15 +96,39 @@ function sendTomorrowReminders() {
       return;
     }
     
+    // Validate that schedule matches current data
+    if (!validateScheduleDataSync()) {
+      return; // validateScheduleDataSync() shows its own error dialog
+    }
+    
     const currentTestMode = getCurrentTestMode();
     const chatPrefix = currentTestMode ? '🧪 TEST: ' : '';
+    const ui = SpreadsheetApp.getUi();
     
     // Get visits for tomorrow (1-2 days out)
     const tomorrowVisits = getUpcomingVisits(1, 2);
     
     if (tomorrowVisits.length === 0) {
-      const message = `${chatPrefix}⏰ **No visits scheduled for tomorrow**\n\nEnjoy your day! 😊`;
-      sendToChatSpace(message, currentTestMode);
+      // Ask user if they want to send "no visits" message
+      const response = ui.alert(
+        'No Visits Tomorrow',
+        'There are no visits scheduled for tomorrow.\n\n' +
+        'Do you still want to send a notification to the group to communicate this?',
+        ui.ButtonSet.YES_NO
+      );
+      
+      if (response === ui.Button.YES) {
+        const message = `${chatPrefix}⏰ No visits scheduled for tomorrow\n\nEnjoy your day! 😊`;
+        sendToChatSpace(message, currentTestMode);
+        
+        ui.alert(
+          'No-Visits Notification Sent',
+          `${chatPrefix}Sent "no visits tomorrow" message to chat.`,
+          ui.ButtonSet.OK
+        );
+      } else {
+        console.log('User chose not to send no-visits notification');
+      }
       return;
     }
     
@@ -107,7 +136,6 @@ function sendTomorrowReminders() {
     const reminderMessage = buildTomorrowMessage(tomorrowVisits, currentTestMode);
     sendToChatSpace(reminderMessage, currentTestMode);
     
-    const ui = SpreadsheetApp.getUi();
     ui.alert(
       currentTestMode ? '🧪 Test Tomorrow Reminders Sent' : '⏰ Tomorrow Reminders Sent',
       `${chatPrefix}Sent reminders for ${tomorrowVisits.length} visits happening tomorrow.`,
@@ -131,18 +159,19 @@ function sendTomorrowReminders() {
 function buildWeeklyMessage(visits, isTestMode = false) {
   /**
    * Build rich weekly summary message for Google Chat
+   * Uses simple formatting that works reliably in Google Chat
    */
   const chatPrefix = isTestMode ? '🧪 TEST: ' : '';
   const weekOf = visits[0]?.date?.toLocaleDateString() || 'Unknown';
   
-  let message = `${chatPrefix}📅 **Deacon Visits - Week of ${weekOf}**\n\n`;
+  let message = `${chatPrefix}📅 Deacon Visits - Week of ${weekOf}\n\n`;
   
   // Group visits by deacon for better organization
   const visitsByDeacon = groupVisitsByDeacon(visits);
   
   Object.keys(visitsByDeacon).sort().forEach(deaconName => {
     const deaconVisits = visitsByDeacon[deaconName];
-    message += `👤 **${deaconName}**:\n`;
+    message += `👤 ${deaconName}:\n`;
     
     deaconVisits.forEach(visit => {
       message += `   • ${visit.household}\n`;
@@ -160,8 +189,8 @@ function buildWeeklyMessage(visits, isTestMode = false) {
     });
   });
   
-  message += `💡 *Remember to call 1-2 days before to confirm timing*\n`;
-  message += `📱 *All links work on mobile for easy field access*`;
+  message += `📋 Contact families 1-2 days before to confirm timing\n`;
+  message += `📱 Mobile tip: Links work directly from this chat message`;
   
   return message;
 }
@@ -257,6 +286,11 @@ function getUpcomingVisits(startDays, endDays) {
       return [];
     }
     
+    // Debug logging
+    console.log(`Households in config: [${config.households.join(', ')}]`);
+    console.log(`Phone numbers count: ${config.phones.length}`);
+    console.log(`Phones array: [${config.phones.join(', ')}]`);
+    
     // Calculate date range
     const today = new Date();
     const startDate = new Date();
@@ -273,9 +307,18 @@ function getUpcomingVisits(startDays, endDays) {
       return visitDate >= startDate && visitDate <= endDate;
     });
     
-    // Enhance with contact information
+    // Enhance with contact information and debug each household
     const enhancedVisits = upcomingVisits.map(visit => {
       const householdIndex = config.households.indexOf(visit.household);
+      
+      // Debug logging for each visit
+      console.log(`Processing visit: ${visit.household}, Index: ${householdIndex}`);
+      if (householdIndex >= 0) {
+        console.log(`  Phone: "${config.phones[householdIndex]}"`);
+        console.log(`  Address: "${config.addresses[householdIndex]}"`);
+      } else {
+        console.log(`  ERROR: Household "${visit.household}" not found in config.households`);
+      }
       
       return {
         ...visit,
@@ -523,7 +566,119 @@ function testNotificationSystem() {
   }
 }
 
-// ===== HELPER FUNCTIONS =====
+// ===== DATA VALIDATION FUNCTIONS =====
+
+function validateScheduleDataSync() {
+  /**
+   * Check if schedule data matches current household and deacon configurations
+   * Prevents notifications from failing due to mismatched data
+   * Returns true if valid, false if mismatches found
+   */
+  try {
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const config = getConfiguration(sheet);
+    const scheduleData = getScheduleFromSheet(sheet);
+    
+    if (scheduleData.length === 0) {
+      SpreadsheetApp.getUi().alert(
+        'No Schedule Found',
+        '❌ No schedule data found.\n\nPlease generate a schedule first:\n🔄 Deacon Rotation → 📅 Generate Schedule',
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+      return false;
+    }
+    
+    // Get unique households and deacons from schedule
+    const scheduleHouseholds = [...new Set(scheduleData.map(visit => visit.household))];
+    const scheduleDeacons = [...new Set(scheduleData.map(visit => visit.deacon))];
+    
+    // Check for household mismatches
+    const missingHouseholds = scheduleHouseholds.filter(household => 
+      !config.households.includes(household)
+    );
+    
+    const extraHouseholds = config.households.filter(household => 
+      !scheduleHouseholds.includes(household)
+    );
+    
+    // Check for deacon mismatches
+    const missingDeacons = scheduleDeacons.filter(deacon => 
+      !config.deacons.includes(deacon)
+    );
+    
+    const extraDeacons = config.deacons.filter(deacon => 
+      !scheduleDeacons.includes(deacon)
+    );
+    
+    // Build mismatch report
+    const mismatches = [];
+    
+    if (missingHouseholds.length > 0) {
+      mismatches.push(`❌ Households in schedule but not in household list (column M):\n   ${missingHouseholds.join(', ')}`);
+    }
+    
+    if (extraHouseholds.length > 0) {
+      mismatches.push(`⚠️ Households in list (column M) but not in schedule:\n   ${extraHouseholds.join(', ')}`);
+    }
+    
+    if (missingDeacons.length > 0) {
+      mismatches.push(`❌ Deacons in schedule but not in deacon list (column L):\n   ${missingDeacons.join(', ')}`);
+    }
+    
+    if (extraDeacons.length > 0) {
+      mismatches.push(`⚠️ Deacons in list (column L) but not in schedule:\n   ${extraDeacons.join(', ')}`);
+    }
+    
+    if (mismatches.length > 0) {
+      const ui = SpreadsheetApp.getUi();
+      const mismatchReport = mismatches.join('\n\n');
+      
+      const response = ui.alert(
+        'Schedule Data Mismatch',
+        `🔄 The schedule doesn't match your current household and deacon lists:\n\n${mismatchReport}\n\n` +
+        `This may cause missing contact information in notifications.\n\n` +
+        `Generate a new schedule to fix these mismatches?`,
+        ui.ButtonSet.YES_NO_CANCEL
+      );
+      
+      if (response === ui.Button.YES) {
+        // Generate new schedule
+        try {
+          generateRotationSchedule();
+          return true; // Schedule regenerated, can proceed
+        } catch (scheduleError) {
+          ui.alert(
+            'Schedule Generation Failed',
+            `❌ Could not generate new schedule: ${scheduleError.message}`,
+            ui.ButtonSet.OK
+          );
+          return false;
+        }
+      } else if (response === ui.Button.NO) {
+        // User wants to proceed anyway
+        console.log('User chose to proceed with mismatched data');
+        return true;
+      } else {
+        // User cancelled
+        console.log('User cancelled notification due to data mismatches');
+        return false;
+      }
+    }
+    
+    // No mismatches found
+    console.log('Schedule data validation passed - no mismatches found');
+    return true;
+    
+  } catch (error) {
+    console.error('Error validating schedule data sync:', error);
+    SpreadsheetApp.getUi().alert(
+      'Validation Error',
+      `❌ Error checking schedule data: ${error.message}\n\nProceeding anyway...`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    return true; // Allow to proceed despite validation error
+  }
+}
 
 function buildBreezeUrl(breezeNumber) {
   /**
