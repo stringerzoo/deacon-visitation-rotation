@@ -747,9 +747,8 @@ function createWeeklyNotificationTrigger() {
     let currentSchedule = 'None configured';
     
     if (existingTrigger) {
-      const dayName = getDayName(existingTrigger.getEventType());
-      const hour = getHourFromTrigger(existingTrigger);
-      currentSchedule = `${dayName} at ${formatHour(hour)}`;
+      // For existing triggers, we'll show a simplified current status
+      currentSchedule = 'Currently enabled (exact timing unknown)';
     }
     
     // Ask user for preferred day and time
@@ -757,10 +756,10 @@ function createWeeklyNotificationTrigger() {
       'Configure Weekly Auto-Send',
       `Current schedule: ${currentSchedule}\n\n` +
       `Choose your preferred day for weekly visitation reminders:\n\n` +
-      `• SUNDAY: End of weekend, plan for upcoming week\n` +
-      `• FRIDAY: End of work week, weekend planning\n` +
-      `• MONDAY: Start of week planning\n\n` +
-      `Which day works best for your deacons?`,
+      `• YES: SUNDAY (end of weekend, plan for upcoming week)\n` +
+      `• NO: OTHER DAY (Friday or Monday)\n` +
+      `• CANCEL: Keep current settings\n\n` +
+      `Which option would you like?`,
       ui.ButtonSet.YES_NO_CANCEL
     );
     
@@ -822,9 +821,10 @@ function createWeeklyNotificationTrigger() {
       .atHour(hourInput)
       .create();
     
-    // Store hour in properties for future reference
+    // Store schedule details in properties for future reference
     const properties = PropertiesService.getScriptProperties();
     properties.setProperty('WEEKLY_TRIGGER_HOUR', hourInput.toString());
+    properties.setProperty('WEEKLY_TRIGGER_DAY', selectedDay.toString());
     
     const dayName = getDayName(selectedDay);
     const timeFormatted = formatHour(hourInput);
