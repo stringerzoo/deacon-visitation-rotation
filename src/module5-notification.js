@@ -44,8 +44,8 @@ function sendWeeklyVisitationChat() {
     const currentTestMode = getCurrentTestMode();
     const chatPrefix = currentTestMode ? '🧪 TEST: ' : '';
     
-    // Get upcoming visits (next 7-14 days)
-    const upcomingVisits = getUpcomingVisits(7, 14);
+    // Get upcoming visits (next 2-3 weeks for bi-weekly rhythm)
+    const upcomingVisits = getUpcomingVisits(7, 21);
     
     if (upcomingVisits.length === 0) {
       const message = `${chatPrefix}📅 **No scheduled visits for next week**\n\nAll caught up on visitations! 🎉`;
@@ -159,38 +159,55 @@ function sendTomorrowReminders() {
 function buildWeeklyMessage(visits, isTestMode = false) {
   /**
    * Build rich weekly summary message for Google Chat
-   * Uses simple formatting that works reliably in Google Chat
+   * Uses 2-week lookahead to match bi-weekly visitation rhythm
    */
   const chatPrefix = isTestMode ? '🧪 TEST: ' : '';
-  const weekOf = visits[0]?.date?.toLocaleDateString() || 'Unknown';
   
-  let message = `${chatPrefix}📅 Deacon Visits - Week of ${weekOf}\n\n`;
-  
-  // Group visits by deacon for better organization
-  const visitsByDeacon = groupVisitsByDeacon(visits);
-  
-  Object.keys(visitsByDeacon).sort().forEach(deaconName => {
-    const deaconVisits = visitsByDeacon[deaconName];
-    message += `👤 ${deaconName}:\n`;
-    
-    deaconVisits.forEach(visit => {
-      message += `   • ${visit.household}\n`;
-      message += `     📞 ${visit.phone || 'Phone not available'}\n`;
-      
-      if (visit.breezeLink) {
-        message += `     🔗 <${visit.breezeLink}|Breeze Profile>\n`;
-      }
-      
-      if (visit.notesLink) {
-        message += `     📝 <${visit.notesLink}|Visit Notes>\n`;
-      }
-      
-      message += `\n`;
-    });
+  // Group visits by week for better organization
+  const visitsByWeek = {};
+  visits.forEach(visit => {
+    const weekKey = visit.date.toLocaleDateString();
+    if (!visitsByWeek[weekKey]) {
+      visitsByWeek[weekKey] = [];
+    }
+    visitsByWeek[weekKey].push(visit);
   });
   
-  message += `📋 Contact families 1-2 days before to confirm timing\n`;
-  message += `📱 Mobile tip: Links work directly from this chat message`;
+  const weekKeys = Object.keys(visitsByWeek).sort((a, b) => new Date(a) - new Date(b));
+  
+  let message = `${chatPrefix}📅 Deacon Visitation Schedule - Next 2 Weeks\n\n`;
+  
+  weekKeys.forEach((weekKey, index) => {
+    const weekVisits = visitsByWeek[weekKey];
+    const weekLabel = index === 0 ? 'This Week' : index === 1 ? 'Next Week' : `Week of ${weekKey}`;
+    
+    message += `📆 ${weekLabel} (${weekKey}):\n`;
+    
+    // Group by deacon for this week
+    const deaconGroups = groupVisitsByDeacon(weekVisits);
+    Object.keys(deaconGroups).sort().forEach(deaconName => {
+      const deaconVisits = deaconGroups[deaconName];
+      
+      deaconVisits.forEach(visit => {
+        message += `   👤 ${visit.deacon} → ${visit.household}\n`;
+        message += `      📞 ${visit.phone || 'Phone not available'}\n`;
+        
+        if (visit.breezeLink) {
+          message += `      🔗 <${visit.breezeLink}|Breeze Profile>\n`;
+        }
+        
+        if (visit.notesLink) {
+          message += `      📝 <${visit.notesLink}|Visit Notes>\n`;
+        }
+      });
+    });
+    
+    message += `\n`;
+  });
+  
+  message += `📋 Contact families 1-2 days before your week to schedule\n`;
+  message += `📅 Update the shared calendar with your confirmed time\n`;
+  message += `📝 Document visit in notes page after completing`;
   
   return message;
 }
