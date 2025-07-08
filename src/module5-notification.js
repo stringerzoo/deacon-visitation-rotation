@@ -1029,3 +1029,200 @@ function showCurrentTriggerSchedule() {
     );
   }
 }
+
+// ===== TIMEZONE DIAGNOSTIC FUNCTIONS =====
+
+function checkTimezoneSettings() {
+  /**
+   * Diagnostic function to check timezone settings and current time
+   */
+  try {
+    const ui = SpreadsheetApp.getUi();
+    
+    // Get script timezone
+    const scriptTimezone = Session.getScriptTimeZone();
+    
+    // Get current time in script timezone
+    const now = new Date();
+    const scriptTime = Utilities.formatDate(now, scriptTimezone, 'yyyy-MM-dd HH:mm:ss z');
+    
+    // Get spreadsheet timezone (if different)
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const spreadsheetTimezone = spreadsheet.getSpreadsheetTimeZone();
+    const spreadsheetTime = Utilities.formatDate(now, spreadsheetTimezone, 'yyyy-MM-dd HH:mm:ss z');
+    
+    // Check existing triggers
+    const triggers = ScriptApp.getProjectTriggers();
+    const weeklyTriggers = triggers.filter(t => t.getHandlerFunction() === 'sendWeeklyVisitationChat');
+    
+    let triggerInfo = 'No weekly triggers found';
+    if (weeklyTriggers.length > 0) {
+      const trigger = weeklyTriggers[0];
+      const triggerSource = trigger.getTriggerSource();
+      const eventType = trigger.getEventType();
+      triggerInfo = `Found ${weeklyTriggers.length} weekly trigger(s)`;
+    }
+    
+    // Get configuration from spreadsheet
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const dayValue = sheet.getRange('K11').getValue();
+    const timeValue = sheet.getRange('K13').getValue();
+    
+    const message = `🕐 TIMEZONE DIAGNOSTIC REPORT:\n\n` +
+      `📍 Script Timezone: ${scriptTimezone}\n` +
+      `⏰ Current Script Time: ${scriptTime}\n\n` +
+      `📊 Spreadsheet Timezone: ${spreadsheetTimezone}\n` +
+      `🕒 Current Spreadsheet Time: ${spreadsheetTime}\n\n` +
+      `⚙️ Trigger Status: ${triggerInfo}\n\n` +
+      `📋 Configuration:\n` +
+      `• Day (K11): ${dayValue}\n` +
+      `• Hour (K13): ${timeValue}\n\n` +
+      `💡 If timezones don't match your location, triggers may fire at unexpected times!`;
+    
+    ui.alert('Timezone Diagnostic', message, ui.ButtonSet.OK);
+    
+    console.log('Timezone diagnostic completed');
+    console.log('Script timezone:', scriptTimezone);
+    console.log('Script time:', scriptTime);
+    console.log('Spreadsheet timezone:', spreadsheetTimezone);
+    console.log('Spreadsheet time:', spreadsheetTime);
+    
+  } catch (error) {
+    console.error('Timezone diagnostic failed:', error);
+    SpreadsheetApp.getUi().alert(
+      'Diagnostic Error',
+      `❌ Could not check timezone settings: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+function testNotificationNow() {
+  /**
+   * Test function to send notification immediately (bypasses trigger timing)
+   */
+  try {
+    const ui = SpreadsheetApp.getUi();
+    
+    const response = ui.alert(
+      'Test Notification',
+      '🧪 This will send a test notification immediately, bypassing the scheduled trigger.\n\n' +
+      'This helps verify that the notification system works, separate from timing issues.\n\n' +
+      'Continue?',
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (response === ui.Button.YES) {
+      // Call the notification function directly
+      sendWeeklyVisitationChat();
+      
+      ui.alert(
+        'Test Complete',
+        '✅ Test notification sent!\n\n' +
+        'Check your Google Chat space to see if it arrived.\n\n' +
+        'If this worked but the scheduled trigger didn\'t, it\'s likely a timezone issue.',
+        ui.ButtonSet.OK
+      );
+    }
+    
+  } catch (error) {
+    console.error('Test notification failed:', error);
+    SpreadsheetApp.getUi().alert(
+      'Test Failed',
+      `❌ Test notification failed: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+function createWeeklyNotificationTriggerWithTimezone() {
+  /**
+   * Enhanced trigger creation that accounts for timezone settings
+   */
+  try {
+    const ui = SpreadsheetApp.getUi();
+    const sheet = SpreadsheetApp.getActiveSheet();
+    
+    // Show timezone info first
+    const scriptTimezone = Session.getScriptTimeZone();
+    const now = new Date();
+    const currentTime = Utilities.formatDate(now, scriptTimezone, 'HH:mm z');
+    
+    // Get configuration
+    const triggerConfig = getWeeklyTriggerConfig(sheet);
+    
+    if (!triggerConfig.isValid) {
+      ui.alert(
+        'Invalid Configuration',
+        `❌ Please fix your trigger settings:\n\n${triggerConfig.errors.join('\n')}`,
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    // Show timezone-aware confirmation
+    const response = ui.alert(
+      'Create Trigger with Timezone Info',
+      `🕐 TIMEZONE AWARENESS:\n` +
+      `Script timezone: ${scriptTimezone}\n` +
+      `Current time: ${currentTime}\n\n` +
+      `📅 Trigger will fire:\n` +
+      `• Day: ${triggerConfig.dayName}\n` +
+      `• Time: ${triggerConfig.timeFormatted} ${scriptTimezone}\n\n` +
+      `⚠️ If this timezone doesn't match your location, the trigger will fire at the wrong time!\n\n` +
+      `Continue anyway?`,
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (response !== ui.Button.YES) {
+      return;
+    }
+    
+    // Remove existing triggers
+    const existingTriggers = ScriptApp.getProjectTriggers()
+      .filter(t => t.getHandlerFunction() === 'sendWeeklyVisitationChat');
+    
+    existingTriggers.forEach(trigger => {
+      ScriptApp.deleteTrigger(trigger);
+    });
+    
+    // Create new trigger
+    const trigger = ScriptApp.newTrigger('sendWeeklyVisitationChat')
+      .timeBased()
+      .everyWeeks(1)
+      .onWeekDay(triggerConfig.weekDay)
+      .atHour(triggerConfig.hour)
+      .create();
+    
+    // Store configuration
+    const properties = PropertiesService.getScriptProperties();
+    properties.setProperties({
+      'WEEKLY_TRIGGER_ID': trigger.getUniqueId(),
+      'WEEKLY_TRIGGER_DAY': triggerConfig.dayName,
+      'WEEKLY_TRIGGER_HOUR': triggerConfig.hour.toString(),
+      'WEEKLY_TRIGGER_TIMEZONE': scriptTimezone,
+      'WEEKLY_TRIGGER_CREATED': new Date().toISOString()
+    });
+    
+    ui.alert(
+      '✅ Trigger Created with Timezone Info',
+      `Weekly notifications scheduled!\n\n` +
+      `📅 Every ${triggerConfig.dayName} at ${triggerConfig.timeFormatted}\n` +
+      `🕐 Timezone: ${scriptTimezone}\n\n` +
+      `🧪 Use "Test Notification Now" to verify the system works.\n` +
+      `📋 Use "Check Timezone Settings" to diagnose timing issues.`,
+      ui.ButtonSet.OK
+    );
+    
+    console.log(`Created trigger: ${triggerConfig.dayName} at ${triggerConfig.hour}:00 ${scriptTimezone}`);
+    
+  } catch (error) {
+    console.error('Failed to create timezone-aware trigger:', error);
+    ui.alert(
+      'Trigger Creation Failed',
+      `❌ ${error.message}`,
+      ui.ButtonSet.OK
+    );
+  }
+}
+// ===== END of TIMEZONE DIAGNOSTIC FUNCTIONS =====
