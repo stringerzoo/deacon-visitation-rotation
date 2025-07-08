@@ -116,8 +116,8 @@ function addModeIndicatorToSheet() {
   const mode = properties.getProperty('DETECTED_MODE') || 'UNKNOWN';
   const isTestMode = mode.includes('TEST');
   
-  // Add indicator in a visible but non-intrusive location (K12)
-  const indicatorCell = sheet.getRange('K12');
+  // Add indicator in a visible but non-intrusive location (K16)
+  const indicatorCell = sheet.getRange('K16');
   indicatorCell.setValue(isTestMode ? '🧪 TEST MODE' : '✅ PRODUCTION');
   indicatorCell.setBackground(isTestMode ? '#ffeb3b' : '#4caf50'); // Yellow for test, green for production
   indicatorCell.setFontColor(isTestMode ? '#333' : 'white');
@@ -125,7 +125,7 @@ function addModeIndicatorToSheet() {
   indicatorCell.setHorizontalAlignment('center');
   
   // Add label above it
-  const labelCell = sheet.getRange('K11');
+  const labelCell = sheet.getRange('K15');
   labelCell.setValue('Current Mode:');
   labelCell.setFontWeight('bold');
   labelCell.setBackground('#fff2cc');
