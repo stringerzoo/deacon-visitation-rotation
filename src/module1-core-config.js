@@ -210,26 +210,49 @@ function setupHeaders(sheet) {
     sheet.setColumnWidth(11, 250);
   }
 
-  // NEW: Weekly notification configuration (K10-K13)
+  // NEW: Weekly notification configuration (K10-K13), with data validation
   if (!sheet.getRange('K10').getValue()) {
     sheet.getRange('K10').setValue('Weekly Notification Day:');
     sheet.getRange('K10').setFontWeight('bold').setBackground('#d4edda');
   }
   
+  // K11: Day selector with dropdown validation
   if (!sheet.getRange('K11').getValue()) {
     sheet.getRange('K11').setValue('Sunday');
     sheet.getRange('K11').setBackground('#f8f9fa');
   }
+  
+  // Set up data validation for K11 (Day dropdown)
+  const dayValidation = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'])
+    .setAllowInvalid(false)
+    .setHelpText('Select the day of the week for weekly notifications')
+    .build();
+  sheet.getRange('K11').setDataValidation(dayValidation);
   
   if (!sheet.getRange('K12').getValue()) {
     sheet.getRange('K12').setValue('Weekly Notification Time (0-23):');
     sheet.getRange('K12').setFontWeight('bold').setBackground('#d4edda');
   }
   
+  // K13: Time selector with dropdown validation
   if (!sheet.getRange('K13').getValue()) {
     sheet.getRange('K13').setValue(18); // Default to 6 PM
     sheet.getRange('K13').setBackground('#f8f9fa');
   }
+  
+  // Set up data validation for K13 (Hour dropdown)
+  const timeOptions = [];
+  for (let hour = 0; hour <= 23; hour++) {
+    timeOptions.push(hour);
+  }
+  
+  const timeValidation = SpreadsheetApp.newDataValidation()
+    .requireValueInList(timeOptions)
+    .setAllowInvalid(false)
+    .setHelpText('Select hour in 24-hour format (0 = midnight, 12 = noon, 18 = 6 PM)')
+    .build();
+  sheet.getRange('K13').setDataValidation(timeValidation);
   
   // MOVED: Test mode indicators (K15-K16) - moved down from previous K11-K12
   if (!sheet.getRange('K15').getValue()) {
