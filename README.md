@@ -1,357 +1,216 @@
-# Deacon Visitation Rotation System
+# Deacon Visitation Rotation System v25.0
 
-A comprehensive Google Apps Script solution for automatically scheduling and managing church deacon household visitations with intelligent rotation algorithms, **Breeze Church Management System integration**, **Google Docs visit notes connectivity**, and **smart calendar update capabilities**. Features a **native modular architecture** for enhanced maintainability and real-world pastoral care coordination.
+> **Comprehensive church deacon household visitation scheduling with automated Google Chat notifications**
 
-## 🎯 Key Features
+[![Version](https://img.shields.io/badge/version-25.0-blue.svg)](CHANGELOG.md)
+[![Google Apps Script](https://img.shields.io/badge/platform-Google%20Apps%20Script-green.svg)](https://script.google.com)
+[![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
-- **Intelligent Rotation Algorithm**: Eliminates harmonic locks that cause uneven distribution
-- **Smart Calendar Updates**: Preserve custom scheduling while updating contact information
-- **Intelligent Test Mode Detection**: Automatic switching between test and production environments
-- **Breeze CMS Integration**: Direct links to household profiles with automatic URL shortening
-- **Google Docs Integration**: Seamless access to visit notes and documentation
-- **Enhanced Calendar Events**: Rich descriptions with clickable Breeze profiles and notes pages
-- **Native Modular Architecture**: Four maintainable Google Apps Script files
-- **Flexible Visit Frequency**: Support for weekly, bi-weekly, monthly, or custom intervals  
-- **Contact Information Management**: Built-in phone numbers and addresses for each household
-- **Individual Deacon Reports**: Personalized schedules positioned adjacent to main schedule
-- **Robust Error Handling**: Comprehensive validation and Google API rate limiting protection
+## 🎯 Overview
 
-## 📊 Perfect for Churches That Need
+This system solves complex mathematical scheduling problems to create optimal deacon visitation rotations while integrating with church management systems and providing automated Google Chat notifications. Designed for churches using Google Workspace for communication and Breeze CMS for member management.
 
-- **Smart contact updates** without losing deacon scheduling customizations
-- **Fair workload distribution** among deacons with mathematical precision
-- **Variety in household assignments** (no one stuck visiting the same family forever)
-- **Flexible scheduling** with preservation of custom times and dates
-- **Professional coordination** with integrated church management system access
-- **Quick access to Breeze profiles** during pastoral visits
-- **Centralized visit documentation** with Google Docs integration
-- **Real-world pastoral care** that adapts to scheduling changes mid-week
+## ⭐ What's New in v25.0
 
-## 🔄 Smart Calendar Update System (NEW v24.2)
+### 🔔 **Google Chat Notifications** ⭐ **MAJOR FEATURE**
+- **Automated weekly summaries** sent via Google Chat webhooks
+- **2-week lookahead format** supporting bi-weekly visitation rhythm
+- **Configurable scheduling** using spreadsheet cells (day and time)
+- **Test/production separation** with automatic mode detection
+- **Rich message content** including contact info and direct links
 
-### **The Problem Solved:**
-When contact information changes, traditional systems require complete calendar regeneration, **losing all custom deacon scheduling details** (modified times, dates, guests, locations).
+### 🏗️ **Enhanced Architecture**
+- **5-module system** with dedicated notifications module
+- **Modular webhook integration** that doesn't affect core scheduling
+- **Configurable notification timing** stored in spreadsheet
+- **Robust error handling** with Google Apps Script API limitations
 
-### **Smart Update Options:**
+### 🎛️ **Advanced Menu System**
+- **Notifications submenu** with full automation control
+- **Trigger management** (enable/disable/schedule weekly notifications)
+- **Diagnostic tools** for troubleshooting chat integration
+- **Configuration management** for webhook setup
 
-#### **📞 Update Contact Info Only** ⭐ **SAFEST**
-- **Preserves**: All custom scheduling (times, dates, guests, locations)
-- **Updates**: Phone numbers, addresses, Breeze links, Notes links, instructions
-- **Use case**: Mid-week contact changes without affecting current scheduling
+## 📋 System Requirements
 
-#### **🔄 Update Future Events Only** 
-- **Preserves**: This week's scheduling details and customizations
-- **Updates**: Events starting next week with current contact info
-- **Use case**: Contact updates without losing current week's deacon scheduling
-
-#### **🚨 Full Calendar Regeneration**
-- **Preserves**: Nothing - complete rebuild
-- **Updates**: Everything with enhanced warnings
-- **Use case**: Major structural changes requiring complete rebuild
-
-## 🧪 Intelligent Test Mode Detection (NEW v24.2)
-
-### **Automatic Environment Switching**
-The system automatically detects whether you're working with test data or production data:
-
-#### **Test Mode Triggers:**
-- **Test household names** (Alan Adams, Barbara Baker, Chloe Cooper patterns)
-- **Test phone numbers** (555 prefix)
-- **Test Breeze numbers** (12345 prefix)
-- **Spreadsheet title** contains "test" or "sample"
-
-#### **Visual Indicators:**
-- **Spreadsheet cells K11-K12** show current mode with color coding
-- **Menu icon** displays 🧪 for test mode, ✅ for production
-- **Calendar names** automatically include "TEST -" prefix when in test mode
-- **Confirmation dialogs** clearly indicate current mode
-
-#### **Benefits:**
-- **No manual configuration** - works automatically based on your data
-- **Safe testing** - prevents accidental production calendar modifications
-- **Clear communication** - always know which mode you're in
-- **Seamless transition** - automatically switches as you move from test to live data
-
-## 🔗 Church Management Integration
-
-### **Breeze Church Management System**
-- **8-digit profile integration**: Direct links to household profiles in Breeze CMS
-- **Automatic URL construction**: `https://yourchurch.breezechms.com/people/view/[number]`
-- **URL shortening**: Clean, clickable links in calendar events
-- **Fallback support**: Uses full URLs if shortening fails
-
-### **Google Docs Visit Notes**
-- **Dedicated documentation**: Individual Google Docs for each household
-- **Structured format**: Contact info header with three-column visit log (Date, Deacon, Notes)
-- **Direct access**: Shortened links in calendar events for field use
-- **Centralized storage**: All visit history in one accessible location
-
-### **Enhanced Calendar Events**
-```
-Household: Alan & Alexa Adams
-Breeze Profile: http://tinyurl.com/abc123
-
-Contact Information:
-Phone: (555) 123-1748
-Address: 123 E. Kentucky St., Louisville, KY 40202
-
-Visit Notes: http://tinyurl.com/def456
-
-Instructions:
-Please call to confirm visit time...
-```
-
-## 🏗️ Native Modular Architecture (v24.2)
-
-### **Google Apps Script File Structure:**
-```
-📁 Your Apps Script Project
-├── Module1_Core_Config.gs          (~500 lines)
-├── Module2_Algorithm.gs             (~470 lines)
-├── Module3_Smart_Calendar.gs        (~200 lines)
-└── Module4_Export_Menu.gs           (~400 lines)
-```
-
-### **Module Responsibilities:**
-
-#### **Module 1: Core Functions & Configuration**
-- Main entry point and schedule generation
-- Configuration loading and validation (including Breeze/Notes data)
-- Header setup and UI initialization
-- Enhanced validation with link reporting
-
-#### **Module 2: Algorithm & Schedule Generation**
-- Core optimal rotation pattern generator
-- Harmonic resonance detection and mitigation
-- Schedule writing and formatting
-- Individual deacon report generation
-- Quality analysis and logging
-
-#### **Module 3: Smart Calendar Updates** ⭐ **NEW**
-- Contact info only updates with scheduling preservation
-- Future events only updates with current week protection
-- Smart event parsing and household matching
-- Rate limiting protection for reliable operation
-
-#### **Module 4: Export, Menu & Utility Functions**
-- Full calendar regeneration with enhanced warnings
-- Individual schedule exports
-- URL shortening with TinyURL integration
-- Archive and year generation functions
-- Enhanced menu system and testing utilities
-
-## 📋 Enhanced Column Layout
-
-### **A-E**: Main Schedule
-- Cycle, Week, Week of, Household, Deacon
-
-### **F**: Buffer Column
-- Visual separation for better readability
-
-### **G-I**: Individual Deacon Reports
-- Positioned adjacent to main schedule for efficient workflow
-- Deacon, Week of, Household
-
-### **J**: Buffer Column
-- Visual separation between reports and configuration
-
-### **K**: Configuration Settings
-- Start Date (K2), Visit Frequency (K4), Schedule Length (K6), Calendar Instructions (K8)
-
-### **L-M**: Core Data Lists
-- L: Deacon names, M: Household names
-
-### **N-O**: Basic Contact Information
-- N: Phone numbers, O: Addresses
-
-### **P-S**: Church Management Integration
-- **P**: Breeze Link (8-digit numbers from Breeze CMS)
-- **Q**: Notes Pg Link (Google Doc URLs)
-- **R**: Breeze Link (short) - Auto-generated shortened URLs
-- **S**: Notes Pg Link (short) - Auto-generated shortened URLs
+- **Google Workspace** account (Gmail accounts work for basic features)
+- **Google Sheets, Apps Script, Calendar** access
+- **Google Chat space** with webhook capability for notifications
+- **Internet access** for URL shortening service
+- **Breeze Church Management System** for profile integration
+- **Processing time**: ~30-45 seconds per 100 calendar events
+- **Notification delivery**: Real-time via Google Chat webhooks
 
 ## 🚀 Quick Start
 
-### **Installation Process**
-1. **Create Google Apps Script project**
-2. **Set up 4 separate .gs files** with modular architecture
-3. **Configure spreadsheet** with enhanced column structure (P-S for integration)
-4. **Add church data** including Breeze numbers and Google Doc links
-5. **Generate shortened URLs** and test smart calendar functions
+1. **[Set up the spreadsheet](SETUP.md#spreadsheet-setup)** with your deacons and households
+2. **[Deploy the Apps Script modules](SETUP.md#apps-script-deployment)** (5 separate files)
+3. **[Configure Google Chat webhook](SETUP.md#notifications-setup)** for automated notifications
+4. **Generate your first schedule** and export to calendar
+5. **Test notifications** and configure weekly automation
 
-### **Development Workflow**
-```bash
-# GitHub Repository Structure
-📁 Your GitHub Repo
-├── src/
-│   ├── module1-core-config.js
-│   ├── module2-algorithm.js
-│   ├── module3-smart-calendar.js
-│   └── module4-export-menu.js
-├── docs/
-│   ├── README.md
-│   ├── SETUP.md
-│   └── CHANGELOG.md
-└── examples/
-```
-
-### **Deployment Process**
-1. **Edit modules** in GitHub web interface
-2. **Copy each file** directly to corresponding .gs file in Apps Script
-3. **Test functionality** with new smart calendar features
-4. **Commit changes** to GitHub when verified
-
-## 🎛️ Enhanced Menu System (v24.2)
+## 🎛️ Enhanced Menu System (v25.0)
 
 ```
 🔄 Deacon Rotation
 ├── 📅 Generate Schedule
 ├── 🔗 Generate Shortened URLs
-├── 📆 Calendar Functions                    ⭐ NEW SUBMENU
-│   ├── 📞 Update Contact Info Only         ⭐ NEW
-│   ├── 🔄 Update Future Events Only        ⭐ NEW
+├── 📆 Calendar Functions
+│   ├── 📞 Update Contact Info Only
+│   ├── 🔄 Update Future Events Only
 │   └── 🚨 Full Calendar Regeneration
+├── 📢 Notifications                         ⭐ NEW SUBMENU
+│   ├── 💬 Send Weekly Chat Summary
+│   ├── ⏰ Send Tomorrow's Reminders
+│   ├── 🔧 Configure Chat Webhook
+│   ├── 📋 Test Notification System
+│   ├── 🔄 Enable Weekly Auto-Send
+│   ├── 📅 Show Auto-Send Schedule
+│   └── 🛑 Disable Weekly Auto-Send
 ├── 📊 Export Individual Schedules
 ├── 📁 Archive Current Schedule
 ├── 🗓️ Generate Next Year
 ├── 🔧 Validate Setup
 ├── 🧪 Run Tests
-├── [🧪/✅] Show Current Mode               ⭐ NEW
+├── [🧪/✅] Show Current Mode
 └── ❓ Setup Instructions
 ```
 
-## 🔐 Data Security Best Practices
+## 📊 Enhanced Spreadsheet Layout (v25.0)
 
-### **Development & Testing**
-- **Always test with sample data** before adding real member information
-- **Use obviously fake examples** (alphabetical patterns work well: Alan Adams, Barbara Baker, etc.)
-- **Keep development spreadsheets separate** from production data
+### **Core Schedule (A-E)**
+- **A**: Cycle, **B**: Week, **C**: Week of, **D**: Household, **E**: Deacon
 
-### **Production Deployment**
-- **Restrict spreadsheet access** to authorized deacons only
-- **Use Google Workspace permissions** to control data visibility
-- **Regular security review** of who has access to church member data
+### **Reports & Configuration (F-K)**
+- **F**: Buffer, **G-I**: Individual deacon reports, **J**: Buffer
+- **K1-K8**: Basic configuration (start date, frequency, instructions)
+- **K10-K13**: Notification settings (day, time) ⭐ **NEW**
+- **K15-K16**: Test mode indicators
 
-### **Contributing with Sample Data**
-When reporting issues or requesting features:
-- **Replace real member data** with sample information
-- **Use the established pattern**: Andy A, Barbara Baker, Chloe Cooper
-- **Test with fake data** before sharing spreadsheets for troubleshooting
+### **Contact Data (L-S)**
+- **L**: Deacons, **M**: Households, **N**: Phones, **O**: Addresses
+- **P**: Breeze numbers, **Q**: Notes links, **R-S**: Shortened URLs
 
-For detailed setup instructions, see [SETUP.md](SETUP.md).
+## 🔔 Notification System Features
 
-## 🔧 New Functionality in v24.2
+### **Automated Weekly Summaries**
+- **Configurable timing** - Set day of week and hour in spreadsheet
+- **2-week lookahead** - Current week assignments + next week preview
+- **Rich content** - Contact info, Breeze links, Notes access
+- **Test/production modes** - Separate chat spaces for development
 
-### **Smart Calendar Updates** ⭐ **MAJOR FEATURE**
-- **Contact info only updates** that preserve ALL scheduling customizations
-- **Future events only updates** that protect current week planning
-- **Smart event parsing** with household matching and graceful error handling
-- **Enhanced user guidance** with clear preservation vs. update messaging
+### **Manual Notification Tools**
+- **Instant summaries** - Send notifications on-demand
+- **Tomorrow's reminders** - Day-before visit notifications
+- **Test functions** - Verify webhook configuration
+- **Diagnostic tools** - Troubleshoot delivery issues
 
-### **Improved Architecture**
-- **Native modular design** using separate Google Apps Script files
-- **Streamlined development** - no more file combination required
-- **Better organization** - easier debugging and maintenance
-- **Cleaner git history** - changes show exactly which module was modified
-
-### **Enhanced Menu Structure**
-- **Calendar Functions submenu** with organized smart update options
-- **Safety-first ordering** - safer options listed first in submenus
-- **Enhanced warnings** for destructive operations with suggested alternatives
-
-### **Real-World Use Cases Addressed**
-- **Mid-week contact updates** without losing deacon scheduling details
-- **Breeze profile changes** with preserved custom event timing
-- **Notes document updates** while maintaining all scheduling customizations
-- **Monthly planning cycles** with targeted updates
-
-## 📋 System Requirements
-
-- Google Workspace account (free Gmail accounts work)
-- Google Sheets access
-- Google Apps Script permissions
-- Google Calendar (optional, for calendar export feature)
-- **Internet access** for URL shortening service
-- **Breeze Church Management System** (for profile integration)
-- **Processing time**: Approximately 30-45 seconds per 100 calendar events
-- **Large schedules**: Plan for 2-3 minutes for 300+ events
+### **Smart Integration**
+- **No data validation required** - Uses existing spreadsheet structure
+- **Automatic mode detection** - Switches between test/production
+- **Error resilience** - Graceful handling of API limitations
+- **Scalable design** - Handles growing deacon/household lists
 
 ## 📖 Documentation
 
-- **[Setup Guide](SETUP.md)** - Complete installation including Breeze and Notes integration
-- **[Technical Features Reference](FEATURES.md)** - Deep technical explanations and implementation details
-- **[Changelog](CHANGELOG.md)** - Version history including v24.2 enhancements
-- **[Test Data](test/test_data_table.md)** - Safe sample data for testing
+- **[Setup Guide](SETUP.md)** - Complete installation with notifications
+- **[Features Overview](FEATURES.md)** - Detailed feature explanations
+- **[Changelog](CHANGELOG.md)** - Version history including v25.0
+- **[Notification Setup](SETUP.md#notifications-setup)** - Google Chat webhook configuration
 
 ## 🎯 The Math Behind It
 
 This system solves a complex mathematical problem in rotation scheduling called "harmonic resonance." When the ratio of deacons to households creates mathematical harmonics (like 12:6 or 14:7), simple rotation algorithms cause deacons to visit only the same household(s) repeatedly.
 
-Our **optimal pattern generator** uses intelligent scoring to:
-- Prioritize deacons with fewer total visits
-- Favor new deacon-household pairings  
-- Prevent same-cycle double assignments
-- Maximize variety while maintaining fairness
+Our algorithm uses **modular arithmetic with prime factorization** to ensure:
+- Every deacon visits every household over time
+- Visits are distributed evenly across the schedule
+- No mathematical "locks" that prevent fair rotation
+- Optimal spacing between repeat visits
 
-## 🔄 Development Workflow Benefits
+## 🔧 New Functionality in v25.0
 
-### **Native Modular Architecture Advantages:**
-- ✅ **Direct editing** in Google Apps Script without file combination
-- ✅ **Individual module testing** for faster debugging
-- ✅ **Cleaner version control** with module-specific changes
-- ✅ **Better collaboration** - different developers can work on different modules
-- ✅ **Easier maintenance** - edit just the functionality you need
+### **Google Chat Integration** ⭐ **MAJOR FEATURE**
+- **Webhook-based notifications** with rich formatting and direct links
+- **Configurable automation** with spreadsheet-based scheduling
+- **Test mode separation** for safe development and production use
+- **Comprehensive diagnostics** for troubleshooting delivery issues
 
-### **Smart Calendar Updates Benefits:**
-- ✅ **Real-world compatibility** - preserves deacon scheduling customizations
-- ✅ **Mid-week flexibility** - update contact info without disrupting current week
-- ✅ **Risk reduction** - multiple update options from safest to complete rebuild
-- ✅ **User guidance** - clear warnings and suggestions for appropriate update method
+### **Enhanced Architecture**
+- **5-module system** - Dedicated Module 5 for notification functionality
+- **Clean separation** - Notifications don't affect core scheduling logic
+- **Independent deployment** - Add notifications to existing v24.2 systems
+- **Future expansion** - Ready for email, SMS, or other notification types
 
-## 📞 Support
+### **Advanced Configuration**
+- **Data validation** - Dropdown menus prevent configuration errors
+- **Flexible timing** - Any day of week, any hour (24-hour format)
+- **Multiple environments** - Test webhooks separate from production
+- **Visual feedback** - Clear status indicators and confirmation dialogs
 
-This project was developed for Immanuel Baptist Church but is shared freely for other churches to benefit from. 
+### **Improved User Experience**
+- **Streamlined setup** - Step-by-step webhook configuration
+- **Clear feedback** - Success/failure notifications with detailed logging
+- **Self-diagnostic** - Built-in tools for identifying and fixing issues
+- **Scalable design** - Performance tested with 12 deacons, 5+ households
 
-For technical issues:
-- Check the [Setup Guide](SETUP.md) for common solutions including smart calendar setup
-- Open an issue on GitHub for bugs or enhancement requests
+## 📋 Development Workflow
 
-## 🤝 Contributing
+### **GitHub Repository Structure**
+```
+📁 deacon-visitation-rotation
+├── src/
+│   ├── module1-core-config.js
+│   ├── module2-algorithm.js
+│   ├── module3-smart-calendar.js
+│   ├── module4-export-menu.js
+│   └── module5-notifications.js          ⭐ NEW
+├── docs/
+│   ├── README.md
+│   ├── SETUP.md
+│   ├── FEATURES.md
+│   └── CHANGELOG.md
+└── examples/
+    └── webhook-setup-guide.md             ⭐ NEW
+```
 
-Contributions welcome! Whether you're fixing bugs, improving documentation, adding church management integrations, or enhancing features:
+### **Deployment Process**
+1. **Edit modules** individually in GitHub
+2. **Copy each file** to corresponding .gs file in Apps Script
+3. **Test functionality** including notification features
+4. **Configure webhooks** for your Google Chat space
+5. **Commit changes** to GitHub when verified working
 
-1. Fork the repository
-2. Create a feature branch
-3. Work on individual modules for easier review
-4. **Test smart calendar features with sample data**
-5. **Use fake member information** when creating examples or reporting issues
-6. Submit a pull request
+## 🛡️ Security & Best Practices
 
-### **Contributing to Specific Modules**
-- **Module 1**: Configuration and validation for new church management systems
-- **Module 2**: Algorithm improvements and optimization
-- **Module 3**: Smart calendar update enhancements and new update methods
-- **Module 4**: Export features, API integrations, menu improvements
+### **Data Protection**
+- **Webhook URLs** stored securely in Apps Script properties
+- **Test/production separation** prevents accidental notifications
+- **Member data privacy** maintained in all notification content
+- **No external dependencies** beyond Google services and TinyURL
 
-## 📜 License
+### **Development Safety**
+- **Sample data patterns** for safe testing (Alan Adams, Barbara Baker, etc.)
+- **Test mode detection** prevents production notifications during development
+- **Graceful error handling** with informative user feedback
+- **Rate limiting protection** for all Google APIs
 
-MIT License - See [LICENSE](LICENSE) for details.
+## 🆘 Support & Troubleshooting
 
-This project is free for any church or organization to use, modify, and distribute.
+### **Common Issues**
+- **Notifications not sending**: Check webhook configuration and test mode
+- **Google Apps Script triggers**: May have 15-20 minute delays
+- **Calendar access**: Verify permissions for shared calendars
+- **Link errors**: Ensure Breeze numbers and Notes URLs are correct
 
-## 🏛️ About
-
-Developed for church pastoral care coordination. Solving real scheduling problems with mathematical precision while providing seamless integration with church management systems and smart calendar updates that preserve the human touch of deacon ministry scheduling.
-
-### **Version 24.2 Highlights**
-- 🔄 **Smart calendar updates** that preserve custom scheduling details
-- 🏗️ **Native modular architecture** using separate Google Apps Script files
-- 📞 **Contact info only updates** - the safest way to refresh information
-- 🔄 **Future events only updates** - protect current week planning
-- 🧪 **Intelligent test mode detection** - automatic environment switching
-- 🎛️ **Enhanced menu system** with organized calendar functions
-- 🛡️ **Real-world compatibility** for active pastoral care coordination
+### **Getting Help**
+- Review the **[Setup Guide](SETUP.md)** for configuration details
+- Check **[Features documentation](FEATURES.md)** for functionality explanations
+- Use built-in **diagnostic tools** in the Notifications menu
+- Consult **[Changelog](CHANGELOG.md)** for version-specific information
 
 ---
 
-**Built with ❤️ for church ministry, now with smart calendar updates that preserve the real-world scheduling customizations deacons need for effective pastoral care.**
+**Ready to revolutionize your church's visitation ministry with automated coordination?** 🚀
+
+*For churches seeking to maintain meaningful pastoral care while leveraging technology for better coordination and communication.*
