@@ -737,16 +737,45 @@ function buildBreezeUrl(breezeNumber) {
 
 function createWeeklyNotificationTrigger() {
   /**
-   * Create automated weekly trigger using configuration from spreadsheet cells
+   * Create automated weekly trigger - DEBUGGED VERSION
+   * Added proper error handling and variable scoping
    */
+  let trigger = null; // Declare trigger variable at function scope
+  
   try {
     const ui = SpreadsheetApp.getUi();
     const sheet = SpreadsheetApp.getActiveSheet();
     
-    // Get configuration from spreadsheet cells
+    console.log('Starting trigger creation process...');
+    
+    // Check if trigger already exists
+    const existingTrigger = getExistingWeeklyTrigger();
+    if (existingTrigger) {
+      console.log('Found existing trigger, asking user for confirmation');
+      const response = ui.alert(
+        'Trigger Already Exists',
+        'A weekly notification trigger is already active.\n\n' +
+        'Would you like to remove the existing trigger and create a new one with current settings?',
+        ui.ButtonSet.YES_NO_CANCEL
+      );
+      
+      if (response === ui.Button.YES) {
+        console.log('User confirmed, deleting existing trigger');
+        ScriptApp.deleteTrigger(existingTrigger);
+        console.log('Existing trigger deleted successfully');
+      } else {
+        console.log('User cancelled or declined, exiting');
+        return; // User cancelled or chose not to replace
+      }
+    }
+    
+    // Get configuration from spreadsheet cells K11 and K13
+    console.log('Reading trigger configuration from spreadsheet...');
     const triggerConfig = getWeeklyTriggerConfig(sheet);
+    console.log('Trigger config loaded:', triggerConfig);
     
     if (!triggerConfig.isValid) {
+      console.log('Invalid trigger configuration detected');
       ui.alert(
         'Invalid Trigger Configuration',
         `❌ Please check your trigger settings in column K:\n\n` +
@@ -760,39 +789,80 @@ function createWeeklyNotificationTrigger() {
     }
     
     // Show what will be configured and confirm
+    console.log('Showing confirmation dialog to user');
     const response = ui.alert(
       'Configure Weekly Auto-Send',
       `Ready to set up automatic notifications:\n\n` +
       `📅 Day: ${triggerConfig.dayName} (from K11)\n` +
       `🕐 Time: ${triggerConfig.timeFormatted} (from K13)\n` +
-      `💬 Chat: ${getCurrentTestMode() ? 'Test space' : 'Production space'}\n\n` +
-      `Create this weekly trigger?`,
+      `💬 Chat: ${getCurrentTestMode() ? 'Test Chat Space' : 'Main Deacon Chat Space'}\n\n` +
+      `This will send weekly visitation summaries automatically.\n\n` +
+      `Continue?`,
       ui.ButtonSet.YES_NO
     );
     
     if (response !== ui.Button.YES) {
+      console.log('User cancelled trigger creation');
+      return; // User cancelled
+    }
+    
+    // Validate that notifications are configured
+    console.log('Validating notification configuration...');
+    if (!isNotificationConfigured()) {
+      console.log('Notification webhook not configured');
+      ui.alert(
+        'Chat Webhook Required',
+        'Please configure the Google Chat webhook first:\n\n' +
+        '📢 Notifications → 🔧 Configure Chat Webhook\n\n' +
+        'Then try enabling auto-send again.',
+        ui.ButtonSet.OK
+      );
       return;
     }
     
-    // Delete existing weekly triggers to avoid duplicates
-    removeWeeklyNotificationTrigger();
+    // Create the weekly trigger
+    console.log(`Creating trigger: ${triggerConfig.dayName} at hour ${triggerConfig.hour}`);
     
-    // Create new trigger with spreadsheet configuration
-    ScriptApp.newTrigger('sendWeeklyVisitationChat')
-      .timeBased()
-      .everyWeeks(1)
-      .onWeekDay(triggerConfig.weekDay)
-      .atHour(triggerConfig.hour)
-      .create();
-
+    try {
+      trigger = ScriptApp.newTrigger('sendWeeklyVisitationChat')
+        .timeBased()
+        .everyWeeks(1)
+        .onWeekDay(triggerConfig.weekDay)
+        .atHour(triggerConfig.hour)
+        .create();
+      
+      console.log('Trigger created successfully:', trigger.getUniqueId());
+    } catch (triggerError) {
+      console.error('Failed to create trigger:', triggerError);
+      throw new Error(`Trigger creation failed: ${triggerError.message}`);
+    }
+    
+    // Verify trigger was created
+    if (!trigger) {
+      throw new Error('Trigger creation returned null/undefined');
+    }
+    
     // Store trigger configuration for reference
-    const properties = PropertiesService.getScriptProperties();
-    properties.setProperties({
-      'WEEKLY_TRIGGER_ID': trigger.getUniqueId(),
-      'WEEKLY_TRIGGER_DAY': triggerConfig.dayName,
-      'WEEKLY_TRIGGER_HOUR': triggerConfig.hour.toString(),
-      'WEEKLY_TRIGGER_TIME_FORMATTED': triggerConfig.timeFormatted
-    });
+    console.log('Storing trigger configuration properties...');
+    try {
+      const properties = PropertiesService.getScriptProperties();
+      const triggerData = {
+        'WEEKLY_TRIGGER_ID': trigger.getUniqueId(),
+        'WEEKLY_TRIGGER_DAY': triggerConfig.dayName,
+        'WEEKLY_TRIGGER_HOUR': triggerConfig.hour.toString(),
+        'WEEKLY_TRIGGER_TIME_FORMATTED': triggerConfig.timeFormatted,
+        'WEEKLY_TRIGGER_TIMEZONE': Session.getScriptTimeZone(),
+        'WEEKLY_TRIGGER_CREATED': new Date().toISOString()
+      };
+      
+      properties.setProperties(triggerData);
+      console.log('Properties stored successfully:', triggerData);
+    } catch (propertiesError) {
+      console.error('Failed to store properties (non-critical):', propertiesError);
+      // Don't fail the whole operation for this
+    }
+    
+    console.log('Trigger creation completed successfully');
     
     ui.alert(
       '✅ Weekly Auto-Send Enabled',
@@ -807,14 +877,123 @@ function createWeeklyNotificationTrigger() {
     console.log(`Created weekly trigger: ${triggerConfig.dayName} at ${triggerConfig.hour}:00`);
     
   } catch (error) {
-    console.error('Failed to create weekly trigger:', error);
+    console.error('Trigger creation failed with error:', error);
+    console.error('Error stack:', error.stack);
+    
+    // Clean up partial trigger if it exists
+    if (trigger) {
+      try {
+        console.log('Cleaning up partially created trigger');
+        ScriptApp.deleteTrigger(trigger);
+      } catch (cleanupError) {
+        console.error('Failed to clean up trigger:', cleanupError);
+      }
+    }
+    
     SpreadsheetApp.getUi().alert(
       'Trigger Creation Failed',
-      `❌ Could not create weekly trigger: ${error.message}`,
+      `❌ Could not create weekly trigger: ${error.message}\n\n` +
+      `Check the Apps Script logs for more details.`,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   }
 }
+
+
+/**
+* Trigger Debug function
+*/
+
+function debugTriggerCreation() {
+  /**
+   * Step-by-step debugging function to isolate the issue
+   */
+  try {
+    const ui = SpreadsheetApp.getUi();
+    
+    console.log('=== DEBUGGING TRIGGER CREATION ===');
+    
+    // Step 1: Check configuration
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const triggerConfig = getWeeklyTriggerConfig(sheet);
+    console.log('Step 1 - Configuration:', triggerConfig);
+    
+    if (!triggerConfig.isValid) {
+      ui.alert('Debug Result', `❌ Configuration invalid:\n${triggerConfig.errors.join('\n')}`, ui.ButtonSet.OK);
+      return;
+    }
+    
+    // Step 2: Test basic trigger creation
+    console.log('Step 2 - Testing basic trigger creation...');
+    let testTrigger = null;
+    
+    try {
+      testTrigger = ScriptApp.newTrigger('sendWeeklyVisitationChat')
+        .timeBased()
+        .everyWeeks(1)
+        .onWeekDay(triggerConfig.weekDay)
+        .atHour(triggerConfig.hour)
+        .create();
+      
+      console.log('Step 2 - SUCCESS: Trigger created with ID:', testTrigger.getUniqueId());
+      
+      // Step 3: Test trigger properties access
+      console.log('Step 3 - Testing trigger property access...');
+      const triggerId = testTrigger.getUniqueId();
+      const handlerFunction = testTrigger.getHandlerFunction();
+      console.log('Step 3 - SUCCESS: ID:', triggerId, 'Function:', handlerFunction);
+      
+      // Step 4: Test properties storage
+      console.log('Step 4 - Testing properties storage...');
+      const properties = PropertiesService.getScriptProperties();
+      properties.setProperty('DEBUG_TRIGGER_TEST', triggerId);
+      const stored = properties.getProperty('DEBUG_TRIGGER_TEST');
+      console.log('Step 4 - SUCCESS: Stored and retrieved:', stored);
+      
+      // Clean up test trigger
+      ScriptApp.deleteTrigger(testTrigger);
+      properties.deleteProperty('DEBUG_TRIGGER_TEST');
+      console.log('Step 5 - SUCCESS: Cleaned up test trigger');
+      
+      ui.alert(
+        'Debug Complete',
+        '✅ All trigger creation steps passed!\n\n' +
+        'The error might be elsewhere. Check the console logs for details.',
+        ui.ButtonSet.OK
+      );
+      
+    } catch (triggerError) {
+      console.error('Step 2 FAILED - Trigger creation error:', triggerError);
+      ui.alert(
+        'Debug Failed',
+        `❌ Trigger creation failed at step 2:\n\n${triggerError.message}`,
+        ui.ButtonSet.OK
+      );
+      
+      // Clean up if needed
+      if (testTrigger) {
+        try {
+          ScriptApp.deleteTrigger(testTrigger);
+        } catch (cleanupError) {
+          console.error('Cleanup failed:', cleanupError);
+        }
+      }
+    }
+    
+    console.log('=== DEBUG COMPLETE ===');
+    
+  } catch (error) {
+    console.error('Debug function failed:', error);
+    SpreadsheetApp.getUi().alert(
+      'Debug Error',
+      `❌ Debug failed: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+/**
+* End Trigger Debug function
+*/
 
 function removeWeeklyNotificationTrigger() {
   /**
