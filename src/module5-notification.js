@@ -752,8 +752,8 @@ function createWeeklyNotificationTrigger() {
         `❌ Please check your trigger settings in column K:\n\n` +
         `${triggerConfig.errors.join('\n')}\n\n` +
         `Valid examples:\n` +
-        `• Day: Sunday, Monday, Friday, etc.\n` +
-        `• Time: 6, 18, 20 (hour in 24-format)`,
+        `• K11 (Day): Sunday, Monday, Friday, etc.\n` +
+        `• K13 (Time): 6, 18, 20 (hour in 24-format)`,
         ui.ButtonSet.OK
       );
       return;
@@ -763,8 +763,8 @@ function createWeeklyNotificationTrigger() {
     const response = ui.alert(
       'Configure Weekly Auto-Send',
       `Ready to set up automatic notifications:\n\n` +
-      `📅 Day: ${triggerConfig.dayName}\n` +
-      `🕐 Time: ${triggerConfig.timeFormatted}\n` +
+      `📅 Day: ${triggerConfig.dayName} (from K11)\n` +
+      `🕐 Time: ${triggerConfig.timeFormatted} (from K13)\n` +
       `💬 Chat: ${getCurrentTestMode() ? 'Test space' : 'Production space'}\n\n` +
       `Create this weekly trigger?`,
       ui.ButtonSet.YES_NO
@@ -784,18 +784,27 @@ function createWeeklyNotificationTrigger() {
       .onWeekDay(triggerConfig.weekDay)
       .atHour(triggerConfig.hour)
       .create();
+
+    // Store trigger configuration for reference
+    const properties = PropertiesService.getScriptProperties();
+    properties.setProperties({
+      'WEEKLY_TRIGGER_ID': trigger.getUniqueId(),
+      'WEEKLY_TRIGGER_DAY': triggerConfig.dayName,
+      'WEEKLY_TRIGGER_HOUR': triggerConfig.hour.toString(),
+      'WEEKLY_TRIGGER_TIME_FORMATTED': triggerConfig.timeFormatted
+    });
     
     ui.alert(
-      'Weekly Auto-Send Enabled',
-      `✅ Automatic weekly notifications are now active!\n\n` +
-      `📅 Schedule: Every ${triggerConfig.dayName} at ${triggerConfig.timeFormatted}\n` +
-      `📝 Function: 2-week visitation lookahead\n\n` +
-      `To modify: Update cells K14 and K16, then run this again\n` +
-      `To disable: Use "🛑 Disable Weekly Auto-Send"`,
+      '✅ Weekly Auto-Send Enabled',
+      `Weekly notifications are now scheduled!\n\n` +
+      `📅 Every ${triggerConfig.dayName} at ${triggerConfig.timeFormatted}\n` +
+      `💬 Will send to: ${getCurrentTestMode() ? 'Test Chat Space' : 'Main Deacon Chat Space'}\n\n` +
+      `Use "📅 Show Auto-Send Schedule" to check status anytime.\n` +
+      `Use "🛑 Disable Weekly Auto-Send" to stop automatic notifications.`,
       ui.ButtonSet.OK
     );
     
-    console.log(`Weekly notification trigger created: ${triggerConfig.dayName} at ${triggerConfig.timeFormatted}`);
+    console.log(`Created weekly trigger: ${triggerConfig.dayName} at ${triggerConfig.hour}:00`);
     
   } catch (error) {
     console.error('Failed to create weekly trigger:', error);
@@ -856,9 +865,9 @@ function getWeeklyTriggerConfig(sheet) {
    * Returns validation status and parsed values
    */
   try {
-    // Read configuration values from K14 and K16 (K11-K12 are used for test mode indicators)
-    const dayValue = sheet.getRange('K14').getValue();
-    const timeValue = sheet.getRange('K16').getValue();
+    // Read configuration values from K11 and K13
+    const dayValue = sheet.getRange('K11').getValue();
+    const timeValue = sheet.getRange('K13').getValue();
     
     const errors = [];
     let weekDay, hour, dayName, timeFormatted;
