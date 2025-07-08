@@ -1225,4 +1225,182 @@ function createWeeklyNotificationTriggerWithTimezone() {
     );
   }
 }
+
+function inspectAllTriggers() {
+  /**
+   * Detailed inspection of all project triggers
+   */
+  try {
+    const ui = SpreadsheetApp.getUi();
+    const triggers = ScriptApp.getProjectTriggers();
+    
+    if (triggers.length === 0) {
+      ui.alert(
+        'No Triggers Found',
+        '❌ No triggers exist in this project.\n\n' +
+        'This explains why notifications aren\'t being sent automatically.\n\n' +
+        'Use "🔄 Enable Weekly Auto-Send" to create a trigger.',
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    let message = `🔍 TRIGGER INSPECTION (${triggers.length} total):\n\n`;
+    
+    triggers.forEach((trigger, index) => {
+      const handlerFunction = trigger.getHandlerFunction();
+      const triggerSource = trigger.getTriggerSource();
+      const eventType = trigger.getEventType();
+      const triggerId = trigger.getUniqueId();
+      
+      message += `${index + 1}. Function: ${handlerFunction}\n`;
+      message += `   Source: ${triggerSource}\n`;
+      message += `   Type: ${eventType}\n`;
+      message += `   ID: ${triggerId.substring(0, 8)}...\n`;
+      
+      // Special handling for time-based triggers
+      if (eventType === ScriptApp.EventType.CLOCK) {
+        try {
+          // We can't directly access trigger schedule details, but we can check our stored properties
+          const properties = PropertiesService.getScriptProperties();
+          if (handlerFunction === 'sendWeeklyVisitationChat') {
+            const storedDay = properties.getProperty('WEEKLY_TRIGGER_DAY');
+            const storedHour = properties.getProperty('WEEKLY_TRIGGER_HOUR');
+            const storedTimezone = properties.getProperty('WEEKLY_TRIGGER_TIMEZONE');
+            const storedCreated = properties.getProperty('WEEKLY_TRIGGER_CREATED');
+            
+            if (storedDay) {
+              message += `   ⏰ Schedule: ${storedDay} at ${storedHour}:00\n`;
+              message += `   🕐 Timezone: ${storedTimezone || 'Unknown'}\n`;
+              message += `   📅 Created: ${storedCreated ? new Date(storedCreated).toLocaleString() : 'Unknown'}\n`;
+            }
+          }
+        } catch (detailError) {
+          message += `   ⚠️ Could not read schedule details\n`;
+        }
+      }
+      
+      message += '\n';
+    });
+    
+    // Check for weekly notification triggers specifically
+    const weeklyTriggers = triggers.filter(t => t.getHandlerFunction() === 'sendWeeklyVisitationChat');
+    
+    if (weeklyTriggers.length === 0) {
+      message += '❌ NO WEEKLY NOTIFICATION TRIGGERS FOUND!\n';
+      message += 'This is why notifications aren\'t being sent.\n\n';
+      message += 'Solution: Use "🔄 Enable Weekly Auto-Send"';
+    } else if (weeklyTriggers.length > 1) {
+      message += `⚠️ WARNING: ${weeklyTriggers.length} weekly triggers found!\n`;
+      message += 'Multiple triggers may cause duplicate notifications.\n\n';
+      message += 'Solution: Use "🛑 Disable Weekly Auto-Send" then re-enable.';
+    } else {
+      message += '✅ Found 1 weekly notification trigger (correct)';
+    }
+    
+    ui.alert('Trigger Inspection Results', message, ui.ButtonSet.OK);
+    
+    console.log('Trigger inspection completed');
+    console.log('Total triggers:', triggers.length);
+    console.log('Weekly triggers:', weeklyTriggers.length);
+    
+  } catch (error) {
+    console.error('Trigger inspection failed:', error);
+    SpreadsheetApp.getUi().alert(
+      'Inspection Error',
+      `❌ Could not inspect triggers: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+function forceRecreateWeeklyTrigger() {
+  /**
+   * Force delete and recreate the weekly trigger
+   */
+  try {
+    const ui = SpreadsheetApp.getUi();
+    
+    const response = ui.alert(
+      'Force Recreate Trigger',
+      '🔄 This will:\n' +
+      '1. Delete ALL weekly notification triggers\n' +
+      '2. Create a fresh trigger with current settings\n' +
+      '3. Store new configuration data\n\n' +
+      'Continue?',
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (response !== ui.Button.YES) {
+      return;
+    }
+    
+    // Delete ALL weekly triggers (in case there are duplicates)
+    const triggers = ScriptApp.getProjectTriggers();
+    let deletedCount = 0;
+    
+    triggers.forEach(trigger => {
+      if (trigger.getHandlerFunction() === 'sendWeeklyVisitationChat') {
+        ScriptApp.deleteTrigger(trigger);
+        deletedCount++;
+      }
+    });
+    
+    console.log(`Deleted ${deletedCount} existing weekly triggers`);
+    
+    // Get current configuration
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const triggerConfig = getWeeklyTriggerConfig(sheet);
+    
+    if (!triggerConfig.isValid) {
+      ui.alert(
+        'Invalid Configuration',
+        `❌ Cannot create trigger with invalid settings:\n\n${triggerConfig.errors.join('\n')}`,
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    // Create fresh trigger
+    const trigger = ScriptApp.newTrigger('sendWeeklyVisitationChat')
+      .timeBased()
+      .everyWeeks(1)
+      .onWeekDay(triggerConfig.weekDay)
+      .atHour(triggerConfig.hour)
+      .create();
+    
+    // Store fresh configuration
+    const scriptTimezone = Session.getScriptTimeZone();
+    const properties = PropertiesService.getScriptProperties();
+    properties.setProperties({
+      'WEEKLY_TRIGGER_ID': trigger.getUniqueId(),
+      'WEEKLY_TRIGGER_DAY': triggerConfig.dayName,
+      'WEEKLY_TRIGGER_HOUR': triggerConfig.hour.toString(),
+      'WEEKLY_TRIGGER_TIMEZONE': scriptTimezone,
+      'WEEKLY_TRIGGER_CREATED': new Date().toISOString(),
+      'WEEKLY_TRIGGER_RECREATED': 'true'
+    });
+    
+    ui.alert(
+      '✅ Trigger Recreated Successfully',
+      `Fresh weekly trigger created!\n\n` +
+      `📅 Schedule: ${triggerConfig.dayName} at ${triggerConfig.timeFormatted}\n` +
+      `🕐 Timezone: ${scriptTimezone}\n` +
+      `🗑️ Deleted: ${deletedCount} old trigger(s)\n` +
+      `🆕 Created: 1 fresh trigger\n\n` +
+      `Next firing: Next ${triggerConfig.dayName} at ${triggerConfig.timeFormatted}`,
+      ui.ButtonSet.OK
+    );
+    
+    console.log(`Force recreated trigger: ${triggerConfig.dayName} at ${triggerConfig.hour}:00`);
+    
+  } catch (error) {
+    console.error('Force recreate failed:', error);
+    ui.alert(
+      'Recreate Failed',
+      `❌ Could not recreate trigger: ${error.message}`,
+      ui.ButtonSet.OK
+    );
+  }
+}
 // ===== END of TIMEZONE DIAGNOSTIC FUNCTIONS =====
