@@ -737,91 +737,76 @@ function buildBreezeUrl(breezeNumber) {
 
 function createWeeklyNotificationTrigger() {
   /**
-   * Create automated weekly trigger - DEBUGGED VERSION
-   * Added proper error handling and variable scoping
+   * Create automated weekly trigger - ROBUST VERSION
+   * Handles Google Apps Script API inconsistencies gracefully
    */
-  let trigger = null; // Declare trigger variable at function scope
-  
   try {
     const ui = SpreadsheetApp.getUi();
     const sheet = SpreadsheetApp.getActiveSheet();
     
-    console.log('Starting trigger creation process...');
+    console.log('Starting robust trigger creation...');
     
-    // Check if trigger already exists
+    // Check if trigger already exists - but don't try to delete it here
     const existingTrigger = getExistingWeeklyTrigger();
     if (existingTrigger) {
-      console.log('Found existing trigger, asking user for confirmation');
+      console.log('Found existing trigger');
       const response = ui.alert(
         'Trigger Already Exists',
         'A weekly notification trigger is already active.\n\n' +
-        'Would you like to remove the existing trigger and create a new one with current settings?',
-        ui.ButtonSet.YES_NO_CANCEL
+        'Would you like to create a new one? (This may result in duplicate triggers until you disable auto-send first)',
+        ui.ButtonSet.YES_NO
       );
       
-      if (response === ui.Button.YES) {
-        console.log('User confirmed, deleting existing trigger');
-        ScriptApp.deleteTrigger(existingTrigger);
-        console.log('Existing trigger deleted successfully');
-      } else {
-        console.log('User cancelled or declined, exiting');
-        return; // User cancelled or chose not to replace
+      if (response !== ui.Button.YES) {
+        console.log('User declined to create additional trigger');
+        return;
       }
     }
     
-    // Get configuration from spreadsheet cells K11 and K13
-    console.log('Reading trigger configuration from spreadsheet...');
+    // Get configuration
     const triggerConfig = getWeeklyTriggerConfig(sheet);
-    console.log('Trigger config loaded:', triggerConfig);
+    console.log('Configuration loaded:', triggerConfig);
     
     if (!triggerConfig.isValid) {
-      console.log('Invalid trigger configuration detected');
+      console.log('Invalid configuration');
       ui.alert(
         'Invalid Trigger Configuration',
-        `❌ Please check your trigger settings in column K:\n\n` +
-        `${triggerConfig.errors.join('\n')}\n\n` +
-        `Valid examples:\n` +
-        `• K11 (Day): Sunday, Monday, Friday, etc.\n` +
-        `• K13 (Time): 6, 18, 20 (hour in 24-format)`,
+        `❌ Please check your trigger settings:\n\n${triggerConfig.errors.join('\n')}`,
         ui.ButtonSet.OK
       );
       return;
     }
     
-    // Show what will be configured and confirm
-    console.log('Showing confirmation dialog to user');
+    // Confirm with user
     const response = ui.alert(
       'Configure Weekly Auto-Send',
       `Ready to set up automatic notifications:\n\n` +
       `📅 Day: ${triggerConfig.dayName} (from K11)\n` +
       `🕐 Time: ${triggerConfig.timeFormatted} (from K13)\n` +
       `💬 Chat: ${getCurrentTestMode() ? 'Test Chat Space' : 'Main Deacon Chat Space'}\n\n` +
-      `This will send weekly visitation summaries automatically.\n\n` +
       `Continue?`,
       ui.ButtonSet.YES_NO
     );
     
     if (response !== ui.Button.YES) {
-      console.log('User cancelled trigger creation');
-      return; // User cancelled
+      console.log('User cancelled');
+      return;
     }
     
-    // Validate that notifications are configured
-    console.log('Validating notification configuration...');
+    // Validate notifications are configured
     if (!isNotificationConfigured()) {
-      console.log('Notification webhook not configured');
+      console.log('Notifications not configured');
       ui.alert(
         'Chat Webhook Required',
-        'Please configure the Google Chat webhook first:\n\n' +
-        '📢 Notifications → 🔧 Configure Chat Webhook\n\n' +
-        'Then try enabling auto-send again.',
+        'Please configure the Google Chat webhook first:\n\n📢 Notifications → 🔧 Configure Chat Webhook',
         ui.ButtonSet.OK
       );
       return;
     }
     
-    // Create the weekly trigger
-    console.log(`Creating trigger: ${triggerConfig.dayName} at hour ${triggerConfig.hour}`);
+    // Create the trigger - this is the core operation
+    console.log('Creating trigger...');
+    let trigger = null;
     
     try {
       trigger = ScriptApp.newTrigger('sendWeeklyVisitationChat')
@@ -832,73 +817,53 @@ function createWeeklyNotificationTrigger() {
         .create();
       
       console.log('Trigger created successfully:', trigger.getUniqueId());
+      
     } catch (triggerError) {
       console.error('Failed to create trigger:', triggerError);
       throw new Error(`Trigger creation failed: ${triggerError.message}`);
     }
     
-    // Verify trigger was created
-    if (!trigger) {
-      throw new Error('Trigger creation returned null/undefined');
-    }
-    
-    // Store trigger configuration for reference
-    console.log('Storing trigger configuration properties...');
+    // Store configuration - with error handling
+    console.log('Storing configuration...');
     try {
       const properties = PropertiesService.getScriptProperties();
-      const triggerData = {
+      properties.setProperties({
         'WEEKLY_TRIGGER_ID': trigger.getUniqueId(),
         'WEEKLY_TRIGGER_DAY': triggerConfig.dayName,
         'WEEKLY_TRIGGER_HOUR': triggerConfig.hour.toString(),
         'WEEKLY_TRIGGER_TIME_FORMATTED': triggerConfig.timeFormatted,
         'WEEKLY_TRIGGER_TIMEZONE': Session.getScriptTimeZone(),
         'WEEKLY_TRIGGER_CREATED': new Date().toISOString()
-      };
-      
-      properties.setProperties(triggerData);
-      console.log('Properties stored successfully:', triggerData);
+      });
+      console.log('Configuration stored successfully');
     } catch (propertiesError) {
-      console.error('Failed to store properties (non-critical):', propertiesError);
-      // Don't fail the whole operation for this
+      console.warn('Failed to store configuration (non-critical):', propertiesError);
+      // Don't fail the whole operation
     }
-    
-    console.log('Trigger creation completed successfully');
     
     ui.alert(
       '✅ Weekly Auto-Send Enabled',
       `Weekly notifications are now scheduled!\n\n` +
       `📅 Every ${triggerConfig.dayName} at ${triggerConfig.timeFormatted}\n` +
       `💬 Will send to: ${getCurrentTestMode() ? 'Test Chat Space' : 'Main Deacon Chat Space'}\n\n` +
-      `Use "📅 Show Auto-Send Schedule" to check status anytime.\n` +
-      `Use "🛑 Disable Weekly Auto-Send" to stop automatic notifications.`,
+      `Trigger ID: ${trigger.getUniqueId().substring(0, 8)}...\n\n` +
+      `Use "📅 Show Auto-Send Schedule" to verify status.`,
       ui.ButtonSet.OK
     );
     
-    console.log(`Created weekly trigger: ${triggerConfig.dayName} at ${triggerConfig.hour}:00`);
+    console.log('Trigger creation completed successfully');
     
   } catch (error) {
-    console.error('Trigger creation failed with error:', error);
-    console.error('Error stack:', error.stack);
-    
-    // Clean up partial trigger if it exists
-    if (trigger) {
-      try {
-        console.log('Cleaning up partially created trigger');
-        ScriptApp.deleteTrigger(trigger);
-      } catch (cleanupError) {
-        console.error('Failed to clean up trigger:', cleanupError);
-      }
-    }
-    
+    console.error('Trigger creation failed:', error);
     SpreadsheetApp.getUi().alert(
       'Trigger Creation Failed',
       `❌ Could not create weekly trigger: ${error.message}\n\n` +
-      `Check the Apps Script logs for more details.`,
+      `This may be due to Google Apps Script API limitations.\n` +
+      `The trigger might still have been created - check "📅 Show Auto-Send Schedule".`,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   }
 }
-
 
 /**
 * Trigger Debug function
@@ -997,44 +962,90 @@ function debugTriggerCreation() {
 
 function removeWeeklyNotificationTrigger() {
   /**
-   * Remove automated weekly trigger
+   * Remove weekly triggers - with robust error handling
    */
   try {
+    const ui = SpreadsheetApp.getUi();
     const triggers = ScriptApp.getProjectTriggers();
-    let deletedCount = 0;
+    let weeklyTriggers = [];
     
+    // Find weekly triggers
     triggers.forEach(trigger => {
       if (trigger.getHandlerFunction() === 'sendWeeklyVisitationChat') {
-        ScriptApp.deleteTrigger(trigger);
-        deletedCount++;
+        weeklyTriggers.push(trigger);
       }
     });
     
-    if (deletedCount > 0) {
-      SpreadsheetApp.getUi().alert(
-        'Weekly Trigger Removed',
-        `✅ Removed ${deletedCount} weekly notification trigger(s).\n\n` +
-        'Automatic weekly summaries are now disabled.',
-        SpreadsheetApp.getUi().ButtonSet.OK
-      );
-      console.log(`Removed ${deletedCount} weekly notification triggers`);
-    } else {
-      SpreadsheetApp.getUi().alert(
+    if (weeklyTriggers.length === 0) {
+      ui.alert(
         'No Triggers Found',
         'No weekly notification triggers were found to remove.',
-        SpreadsheetApp.getUi().ButtonSet.OK
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    console.log(`Found ${weeklyTriggers.length} weekly triggers to remove`);
+    
+    let deletedCount = 0;
+    let failedCount = 0;
+    
+    // Try to delete each trigger individually
+    weeklyTriggers.forEach(trigger => {
+      try {
+        console.log(`Attempting to delete trigger: ${trigger.getUniqueId()}`);
+        ScriptApp.deleteTrigger(trigger);
+        deletedCount++;
+        console.log('Successfully deleted trigger');
+      } catch (deleteError) {
+        console.error('Failed to delete trigger:', deleteError);
+        failedCount++;
+      }
+    });
+    
+    // Clear stored properties
+    try {
+      const properties = PropertiesService.getScriptProperties();
+      properties.deleteProperty('WEEKLY_TRIGGER_ID');
+      properties.deleteProperty('WEEKLY_TRIGGER_DAY');
+      properties.deleteProperty('WEEKLY_TRIGGER_HOUR');
+      properties.deleteProperty('WEEKLY_TRIGGER_TIME_FORMATTED');
+      properties.deleteProperty('WEEKLY_TRIGGER_TIMEZONE');
+      properties.deleteProperty('WEEKLY_TRIGGER_CREATED');
+      console.log('Cleared stored trigger properties');
+    } catch (propertiesError) {
+      console.warn('Failed to clear properties:', propertiesError);
+    }
+    
+    if (deletedCount > 0) {
+      ui.alert(
+        'Triggers Removed',
+        `✅ Successfully removed ${deletedCount} weekly trigger(s).\n` +
+        `${failedCount > 0 ? `⚠️ Failed to remove ${failedCount} trigger(s).` : ''}\n\n` +
+        'Automatic weekly summaries are now disabled.',
+        ui.ButtonSet.OK
+      );
+    } else {
+      ui.alert(
+        'Removal Failed',
+        `❌ Could not remove triggers due to Google Apps Script API issues.\n\n` +
+        `Triggers may still be active. Check "🔍 Inspect All Triggers" to verify.`,
+        ui.ButtonSet.OK
       );
     }
     
+    console.log(`Trigger removal completed: ${deletedCount} deleted, ${failedCount} failed`);
+    
   } catch (error) {
-    console.error('Failed to remove triggers:', error);
+    console.error('Trigger removal failed:', error);
     SpreadsheetApp.getUi().alert(
-      'Trigger Removal Failed',
+      'Removal Error',
       `❌ Could not remove triggers: ${error.message}`,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   }
 }
+
 
 // ===== TRIGGER CONFIGURATION FUNCTIONS =====
 
