@@ -699,6 +699,7 @@ function createMenuItems() {
       .addItem('📋 Test Notification System', 'testNotificationSystem')
       .addSeparator()
       .addItem('🔄 Enable Weekly Auto-Send', 'createWeeklyNotificationTrigger')
+      .addItem('📅 Show Auto-Send Schedule', 'showCurrentTriggerSchedule')
       .addItem('🛑 Disable Weekly Auto-Send', 'removeWeeklyNotificationTrigger'))
     .addSeparator()
     .addItem('📊 Export Individual Schedules', 'exportIndividualSchedules')
