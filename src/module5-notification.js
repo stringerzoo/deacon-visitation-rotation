@@ -980,42 +980,42 @@ function showCurrentTriggerSchedule() {
     if (existingTrigger) {
       message += '✅ Status: ACTIVE\n';
       message += `📅 Running: Weekly notifications enabled\n`;
-      message += `💬 Destination: ${getCurrentTestMode() ? 'Test chat space' : 'Production chat space'}\n\n`;
+      message += `💬 Destination: ${getCurrentTestMode() ? 'Test Chat Space' : 'Main Deacon Chat Space'}\n\n`;
     } else {
-      message += '❌ Status: INACTIVE\n';
-      message += '📅 Running: No automatic notifications\n\n';
+      message += '⏸️ Status: INACTIVE\n';
+      message += `📅 Running: No weekly notifications scheduled\n\n`;
     }
     
     // Show spreadsheet configuration
-    message += '⚙️ Spreadsheet Configuration:\n';
+    message += '📊 Spreadsheet Configuration:\n';
     if (triggerConfig.isValid) {
-      message += `📅 Day (K14): ${triggerConfig.dayName}\n`;
-      message += `🕐 Time (K16): ${triggerConfig.timeFormatted}\n\n`;
+      message += `📅 Day: ${triggerConfig.dayName} (cell K11)\n`;
+      message += `🕐 Time: ${triggerConfig.timeFormatted} (cell K13)\n\n`;
       
       if (!existingTrigger) {
-        message += '💡 Ready to enable: Use "🔄 Enable Weekly Auto-Send"';
+        message += 'ℹ️ Use "🔄 Enable Weekly Auto-Send" to activate these settings.';
       } else {
-        message += '💡 To modify: Update K14/K16, then use "🔄 Enable Weekly Auto-Send"';
+        message += 'ℹ️ To change schedule: edit K11/K13, then disable and re-enable auto-send.';
       }
     } else {
-      message += '❌ Configuration Issues:\n';
+      message += '❌ Invalid Configuration:\n';
       triggerConfig.errors.forEach(error => {
         message += `   • ${error}\n`;
       });
-      message += '\n💡 Fix the issues above, then use "🔄 Enable Weekly Auto-Send"';
+      message += '\n📝 Please fix the configuration in column K, then try again.';
     }
     
     ui.alert(
-      'Weekly Auto-Send Status',
+      'Weekly Auto-Send Schedule',
       message,
       ui.ButtonSet.OK
     );
     
   } catch (error) {
-    console.error('Error checking trigger schedule:', error);
+    console.error('Failed to show trigger schedule:', error);
     SpreadsheetApp.getUi().alert(
-      'Error',
-      `❌ Could not check trigger schedule: ${error.message}`,
+      'Schedule Check Failed',
+      `❌ Could not check schedule: ${error.message}`,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   }
