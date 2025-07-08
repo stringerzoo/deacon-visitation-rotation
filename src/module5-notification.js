@@ -737,36 +737,108 @@ function buildBreezeUrl(breezeNumber) {
 
 function createWeeklyNotificationTrigger() {
   /**
-   * Create automated weekly trigger for notifications
-   * Run this once to set up automatic weekly summaries
+   * Create automated weekly trigger for notifications with user-customizable timing
    */
   try {
-    // Delete existing weekly triggers to avoid duplicates
-    const triggers = ScriptApp.getProjectTriggers();
-    triggers.forEach(trigger => {
-      if (trigger.getHandlerFunction() === 'sendWeeklyVisitationChat') {
-        ScriptApp.deleteTrigger(trigger);
-      }
-    });
+    const ui = SpreadsheetApp.getUi();
     
-    // Create new weekly trigger (Sundays at 6 PM)
+    // Get current trigger info if it exists
+    const existingTrigger = getExistingWeeklyTrigger();
+    let currentSchedule = 'None configured';
+    
+    if (existingTrigger) {
+      const dayName = getDayName(existingTrigger.getEventType());
+      const hour = getHourFromTrigger(existingTrigger);
+      currentSchedule = `${dayName} at ${formatHour(hour)}`;
+    }
+    
+    // Ask user for preferred day and time
+    const response = ui.alert(
+      'Configure Weekly Auto-Send',
+      `Current schedule: ${currentSchedule}\n\n` +
+      `Choose your preferred day for weekly visitation reminders:\n\n` +
+      `• SUNDAY: End of weekend, plan for upcoming week\n` +
+      `• FRIDAY: End of work week, weekend planning\n` +
+      `• MONDAY: Start of week planning\n\n` +
+      `Which day works best for your deacons?`,
+      ui.ButtonSet.YES_NO_CANCEL
+    );
+    
+    let selectedDay;
+    if (response === ui.Button.YES) {
+      selectedDay = ScriptApp.WeekDay.SUNDAY;
+    } else if (response === ui.Button.NO) {
+      // Ask for Friday vs Monday
+      const dayResponse = ui.alert(
+        'Choose Day',
+        'Which day would you prefer?\n\n' +
+        '• YES: Friday (end of work week)\n' +
+        '• NO: Monday (start of week)',
+        ui.ButtonSet.YES_NO
+      );
+      
+      selectedDay = dayResponse === ui.Button.YES ? 
+        ScriptApp.WeekDay.FRIDAY : ScriptApp.WeekDay.MONDAY;
+    } else {
+      return; // User cancelled
+    }
+    
+    // Ask for time
+    const timeResponse = ui.prompt(
+      'Set Time',
+      `Enter preferred time (24-hour format, 0-23):\n\n` +
+      `Examples:\n` +
+      `• 6 = 6:00 AM\n` +
+      `• 12 = 12:00 PM (noon)\n` +
+      `• 18 = 6:00 PM\n` +
+      `• 20 = 8:00 PM\n\n` +
+      `Enter hour (0-23):`,
+      ui.ButtonSet.OK_CANCEL
+    );
+    
+    if (timeResponse.getSelectedButton() === ui.Button.CANCEL) {
+      return;
+    }
+    
+    const hourInput = parseInt(timeResponse.getResponseText().trim());
+    
+    if (isNaN(hourInput) || hourInput < 0 || hourInput > 23) {
+      ui.alert(
+        'Invalid Time',
+        'Please enter a number between 0 and 23 for the hour.',
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    // Delete existing weekly triggers to avoid duplicates
+    removeWeeklyNotificationTrigger();
+    
+    // Create new trigger with custom timing
     ScriptApp.newTrigger('sendWeeklyVisitationChat')
       .timeBased()
       .everyWeeks(1)
-      .onWeekDay(ScriptApp.WeekDay.SUNDAY)
-      .atHour(18) // 6 PM
+      .onWeekDay(selectedDay)
+      .atHour(hourInput)
       .create();
     
-    SpreadsheetApp.getUi().alert(
-      'Weekly Trigger Created',
-      '✅ Automatic weekly notifications are now enabled!\n\n' +
-      '📅 Schedule: Every Sunday at 6:00 PM\n' +
-      '📝 Function: Weekly visitation summary\n\n' +
-      'You can disable this later by deleting the trigger.',
-      SpreadsheetApp.getUi().ButtonSet.OK
+    // Store hour in properties for future reference
+    const properties = PropertiesService.getScriptProperties();
+    properties.setProperty('WEEKLY_TRIGGER_HOUR', hourInput.toString());
+    
+    const dayName = getDayName(selectedDay);
+    const timeFormatted = formatHour(hourInput);
+    
+    ui.alert(
+      'Weekly Auto-Send Configured',
+      `✅ Automatic weekly notifications are now enabled!\n\n` +
+      `📅 Schedule: Every ${dayName} at ${timeFormatted}\n` +
+      `📝 Function: 2-week visitation lookahead\n\n` +
+      `You can modify this schedule or disable it anytime through the menu.`,
+      ui.ButtonSet.OK
     );
     
-    console.log('Weekly notification trigger created successfully');
+    console.log(`Weekly notification trigger created: ${dayName} at ${timeFormatted}`);
     
   } catch (error) {
     console.error('Failed to create weekly trigger:', error);
@@ -819,4 +891,93 @@ function removeWeeklyNotificationTrigger() {
   }
 }
 
-// END OF MODULE 5
+// ===== TRIGGER MANAGEMENT HELPER FUNCTIONS =====
+
+function getExistingWeeklyTrigger() {
+  /**
+   * Find existing weekly notification trigger
+   */
+  const triggers = ScriptApp.getProjectTriggers();
+  return triggers.find(trigger => 
+    trigger.getHandlerFunction() === 'sendWeeklyVisitationChat'
+  );
+}
+
+function getDayName(weekDay) {
+  /**
+   * Convert ScriptApp.WeekDay to readable name
+   */
+  const dayMap = {
+    [ScriptApp.WeekDay.SUNDAY]: 'Sunday',
+    [ScriptApp.WeekDay.MONDAY]: 'Monday',
+    [ScriptApp.WeekDay.TUESDAY]: 'Tuesday', 
+    [ScriptApp.WeekDay.WEDNESDAY]: 'Wednesday',
+    [ScriptApp.WeekDay.THURSDAY]: 'Thursday',
+    [ScriptApp.WeekDay.FRIDAY]: 'Friday',
+    [ScriptApp.WeekDay.SATURDAY]: 'Saturday'
+  };
+  return dayMap[weekDay] || 'Unknown';
+}
+
+function getHourFromTrigger(trigger) {
+  /**
+   * Extract hour from trigger (Google Apps Script doesn't provide direct access)
+   * This is a workaround - we'll store hour in properties when creating
+   */
+  const properties = PropertiesService.getScriptProperties();
+  return parseInt(properties.getProperty('WEEKLY_TRIGGER_HOUR') || '18');
+}
+
+function formatHour(hour) {
+  /**
+   * Format hour as readable time
+   */
+  if (hour === 0) return '12:00 AM (midnight)';
+  if (hour < 12) return `${hour}:00 AM`;
+  if (hour === 12) return '12:00 PM (noon)';
+  return `${hour - 12}:00 PM`;
+}
+
+function showCurrentTriggerSchedule() {
+  /**
+   * Display current weekly trigger schedule
+   */
+  try {
+    const existingTrigger = getExistingWeeklyTrigger();
+    const ui = SpreadsheetApp.getUi();
+    
+    if (!existingTrigger) {
+      ui.alert(
+        'No Weekly Auto-Send Configured',
+        'Weekly automatic notifications are currently disabled.\n\n' +
+        'Use "🔄 Enable Weekly Auto-Send" to set up automatic reminders.',
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    const properties = PropertiesService.getScriptProperties();
+    const hour = parseInt(properties.getProperty('WEEKLY_TRIGGER_HOUR') || '18');
+    const dayName = getDayName(existingTrigger.getEventType());
+    const timeFormatted = formatHour(hour);
+    
+    ui.alert(
+      'Current Weekly Auto-Send Schedule',
+      `📅 Current schedule: Every ${dayName} at ${timeFormatted}\n\n` +
+      `✅ Status: Active\n` +
+      `📝 Function: 2-week visitation lookahead\n` +
+      `💬 Destination: ${getCurrentTestMode() ? 'Test chat space' : 'Production chat space'}\n\n` +
+      `To modify: Use "🔄 Enable Weekly Auto-Send" to reconfigure\n` +
+      `To disable: Use "🛑 Disable Weekly Auto-Send"`,
+      ui.ButtonSet.OK
+    );
+    
+  } catch (error) {
+    console.error('Error checking trigger schedule:', error);
+    SpreadsheetApp.getUi().alert(
+      'Error',
+      `❌ Could not check trigger schedule: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
