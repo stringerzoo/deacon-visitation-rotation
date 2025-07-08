@@ -207,28 +207,35 @@ function setupHeaders(sheet) {
   if (!sheet.getRange('K8').getValue()) {
     sheet.getRange('K8').setValue('Please call to confirm visit time. Contact family 1-2 days before scheduled date to arrange convenient time.');
     sheet.getRange('K8').setWrap(true);
-    sheet.setColumnWidth(11, 200);
+    sheet.setColumnWidth(11, 250);
   }
 
-  // NEW: Weekly notification trigger configuration (K13-K16, avoiding K11-K12 used for test mode)
+  // NEW: Weekly notification configuration (K10-K13)
+  if (!sheet.getRange('K10').getValue()) {
+    sheet.getRange('K10').setValue('Weekly Notification Day:');
+    sheet.getRange('K10').setFontWeight('bold').setBackground('#d4edda');
+  }
+  
+  if (!sheet.getRange('K11').getValue()) {
+    sheet.getRange('K11').setValue('Sunday');
+    sheet.getRange('K11').setBackground('#f8f9fa');
+  }
+  
+  if (!sheet.getRange('K12').getValue()) {
+    sheet.getRange('K12').setValue('Weekly Notification Time (0-23):');
+    sheet.getRange('K12').setFontWeight('bold').setBackground('#d4edda');
+  }
+  
   if (!sheet.getRange('K13').getValue()) {
-    sheet.getRange('K13').setValue('Weekly Notification Day:');
-    sheet.getRange('K13').setFontWeight('bold').setBackground('#d4edda');
+    sheet.getRange('K13').setValue(18); // Default to 6 PM
+    sheet.getRange('K13').setBackground('#f8f9fa');
   }
   
-  if (!sheet.getRange('K14').getValue()) {
-    sheet.getRange('K14').setValue('Sunday');
-    sheet.getRange('K14').setBackground('#f8f9fa');
-  }
-  
+  // MOVED: Test mode indicators (K15-K16) - moved down from previous K11-K12
   if (!sheet.getRange('K15').getValue()) {
-    sheet.getRange('K15').setValue('Weekly Notification Time (0-23):');
-    sheet.getRange('K15').setFontWeight('bold').setBackground('#d4edda');
+    sheet.getRange('K15').setValue('Current Mode:');
+    sheet.getRange('K15').setFontWeight('bold').setBackground('#fff2cc');
   }
-  
-  if (!sheet.getRange('K16').getValue()) {
-    sheet.getRange('K16').setValue(18);
-    sheet.getRange('K16').setBackground('#f8f9fa');
   }
   
   // Column headers for basic contact info (L-O)
