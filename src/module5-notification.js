@@ -737,108 +737,65 @@ function buildBreezeUrl(breezeNumber) {
 
 function createWeeklyNotificationTrigger() {
   /**
-   * Create automated weekly trigger for notifications with user-customizable timing
+   * Create automated weekly trigger using configuration from spreadsheet cells
    */
   try {
     const ui = SpreadsheetApp.getUi();
+    const sheet = SpreadsheetApp.getActiveSheet();
     
-    // Get current trigger info if it exists
-    const existingTrigger = getExistingWeeklyTrigger();
-    let currentSchedule = 'None configured';
+    // Get configuration from spreadsheet cells
+    const triggerConfig = getWeeklyTriggerConfig(sheet);
     
-    if (existingTrigger) {
-      // For existing triggers, we'll show a simplified current status
-      currentSchedule = 'Currently enabled (exact timing unknown)';
-    }
-    
-    // Ask user for preferred day and time
-    const response = ui.alert(
-      'Configure Weekly Auto-Send',
-      `Current schedule: ${currentSchedule}\n\n` +
-      `Choose your preferred day for weekly visitation reminders:\n\n` +
-      `• YES: SUNDAY (end of weekend, plan for upcoming week)\n` +
-      `• NO: OTHER DAY (Friday or Monday)\n` +
-      `• CANCEL: Keep current settings\n\n` +
-      `Which option would you like?`,
-      ui.ButtonSet.YES_NO_CANCEL
-    );
-    
-    let selectedDay;
-    if (response === ui.Button.YES) {
-      selectedDay = ScriptApp.WeekDay.SUNDAY;
-    } else if (response === ui.Button.NO) {
-      // Ask for Friday vs Monday
-      const dayResponse = ui.alert(
-        'Choose Day',
-        'Which day would you prefer?\n\n' +
-        '• YES: Friday (end of work week)\n' +
-        '• NO: Monday (start of week)',
-        ui.ButtonSet.YES_NO
+    if (!triggerConfig.isValid) {
+      ui.alert(
+        'Invalid Trigger Configuration',
+        `❌ Please check your trigger settings in column K:\n\n` +
+        `${triggerConfig.errors.join('\n')}\n\n` +
+        `Valid examples:\n` +
+        `• Day: Sunday, Monday, Friday, etc.\n` +
+        `• Time: 6, 18, 20 (hour in 24-format)`,
+        ui.ButtonSet.OK
       );
-      
-      selectedDay = dayResponse === ui.Button.YES ? 
-        ScriptApp.WeekDay.FRIDAY : ScriptApp.WeekDay.MONDAY;
-    } else {
-      return; // User cancelled
-    }
-    
-    // Ask for time
-    const timeResponse = ui.prompt(
-      'Set Time',
-      `Enter preferred time (24-hour format, 0-23):\n\n` +
-      `Examples:\n` +
-      `• 6 = 6:00 AM\n` +
-      `• 12 = 12:00 PM (noon)\n` +
-      `• 18 = 6:00 PM\n` +
-      `• 20 = 8:00 PM\n\n` +
-      `Enter hour (0-23):`,
-      ui.ButtonSet.OK_CANCEL
-    );
-    
-    if (timeResponse.getSelectedButton() === ui.Button.CANCEL) {
       return;
     }
     
-    const hourInput = parseInt(timeResponse.getResponseText().trim());
+    // Show what will be configured and confirm
+    const response = ui.alert(
+      'Configure Weekly Auto-Send',
+      `Ready to set up automatic notifications:\n\n` +
+      `📅 Day: ${triggerConfig.dayName}\n` +
+      `🕐 Time: ${triggerConfig.timeFormatted}\n` +
+      `💬 Chat: ${getCurrentTestMode() ? 'Test space' : 'Production space'}\n\n` +
+      `Create this weekly trigger?`,
+      ui.ButtonSet.YES_NO
+    );
     
-    if (isNaN(hourInput) || hourInput < 0 || hourInput > 23) {
-      ui.alert(
-        'Invalid Time',
-        'Please enter a number between 0 and 23 for the hour.',
-        ui.ButtonSet.OK
-      );
+    if (response !== ui.Button.YES) {
       return;
     }
     
     // Delete existing weekly triggers to avoid duplicates
     removeWeeklyNotificationTrigger();
     
-    // Create new trigger with custom timing
+    // Create new trigger with spreadsheet configuration
     ScriptApp.newTrigger('sendWeeklyVisitationChat')
       .timeBased()
       .everyWeeks(1)
-      .onWeekDay(selectedDay)
-      .atHour(hourInput)
+      .onWeekDay(triggerConfig.weekDay)
+      .atHour(triggerConfig.hour)
       .create();
     
-    // Store schedule details in properties for future reference
-    const properties = PropertiesService.getScriptProperties();
-    properties.setProperty('WEEKLY_TRIGGER_HOUR', hourInput.toString());
-    properties.setProperty('WEEKLY_TRIGGER_DAY', selectedDay.toString());
-    
-    const dayName = getDayName(selectedDay);
-    const timeFormatted = formatHour(hourInput);
-    
     ui.alert(
-      'Weekly Auto-Send Configured',
-      `✅ Automatic weekly notifications are now enabled!\n\n` +
-      `📅 Schedule: Every ${dayName} at ${timeFormatted}\n` +
+      'Weekly Auto-Send Enabled',
+      `✅ Automatic weekly notifications are now active!\n\n` +
+      `📅 Schedule: Every ${triggerConfig.dayName} at ${triggerConfig.timeFormatted}\n` +
       `📝 Function: 2-week visitation lookahead\n\n` +
-      `You can modify this schedule or disable it anytime through the menu.`,
+      `To modify: Update cells K14 and K16, then run this again\n` +
+      `To disable: Use "🛑 Disable Weekly Auto-Send"`,
       ui.ButtonSet.OK
     );
     
-    console.log(`Weekly notification trigger created: ${dayName} at ${timeFormatted}`);
+    console.log(`Weekly notification trigger created: ${triggerConfig.dayName} at ${triggerConfig.timeFormatted}`);
     
   } catch (error) {
     console.error('Failed to create weekly trigger:', error);
@@ -891,7 +848,76 @@ function removeWeeklyNotificationTrigger() {
   }
 }
 
-// ===== TRIGGER MANAGEMENT HELPER FUNCTIONS =====
+// ===== TRIGGER CONFIGURATION FUNCTIONS =====
+
+function getWeeklyTriggerConfig(sheet) {
+  /**
+   * Read weekly trigger configuration from spreadsheet cells
+   * Returns validation status and parsed values
+   */
+  try {
+    // Read configuration values from K14 and K16 (K11-K12 are used for test mode indicators)
+    const dayValue = sheet.getRange('K14').getValue();
+    const timeValue = sheet.getRange('K16').getValue();
+    
+    const errors = [];
+    let weekDay, hour, dayName, timeFormatted;
+    
+    // Validate day
+    if (!dayValue || typeof dayValue !== 'string') {
+      errors.push('K14 (Day): Please enter a day name (e.g., Sunday, Monday, Friday)');
+    } else {
+      const dayStr = dayValue.toString().trim().toLowerCase();
+      const dayMap = {
+        'sunday': ScriptApp.WeekDay.SUNDAY,
+        'monday': ScriptApp.WeekDay.MONDAY,
+        'tuesday': ScriptApp.WeekDay.TUESDAY,
+        'wednesday': ScriptApp.WeekDay.WEDNESDAY,
+        'thursday': ScriptApp.WeekDay.THURSDAY,
+        'friday': ScriptApp.WeekDay.FRIDAY,
+        'saturday': ScriptApp.WeekDay.SATURDAY
+      };
+      
+      weekDay = dayMap[dayStr];
+      if (weekDay === undefined) {
+        errors.push(`K14 (Day): "${dayValue}" is not a valid day. Use: Sunday, Monday, Tuesday, etc.`);
+      } else {
+        dayName = dayStr.charAt(0).toUpperCase() + dayStr.slice(1);
+      }
+    }
+    
+    // Validate time
+    if (timeValue === '' || timeValue === null || timeValue === undefined) {
+      errors.push('K16 (Time): Please enter an hour (0-23)');
+    } else {
+      hour = parseInt(timeValue);
+      if (isNaN(hour) || hour < 0 || hour > 23) {
+        errors.push(`K16 (Time): "${timeValue}" is not valid. Enter a number 0-23 (e.g., 6 for 6 AM, 18 for 6 PM)`);
+      } else {
+        timeFormatted = formatHour(hour);
+      }
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors: errors,
+      weekDay: weekDay,
+      hour: hour,
+      dayName: dayName,
+      timeFormatted: timeFormatted
+    };
+    
+  } catch (error) {
+    return {
+      isValid: false,
+      errors: [`Error reading configuration: ${error.message}`],
+      weekDay: null,
+      hour: null,
+      dayName: null,
+      timeFormatted: null
+    };
+  }
+}
 
 function getExistingWeeklyTrigger() {
   /**
@@ -940,35 +966,48 @@ function formatHour(hour) {
 
 function showCurrentTriggerSchedule() {
   /**
-   * Display current weekly trigger schedule
+   * Display current weekly trigger schedule and spreadsheet configuration
    */
   try {
+    const sheet = SpreadsheetApp.getActiveSheet();
     const existingTrigger = getExistingWeeklyTrigger();
+    const triggerConfig = getWeeklyTriggerConfig(sheet);
     const ui = SpreadsheetApp.getUi();
     
-    if (!existingTrigger) {
-      ui.alert(
-        'No Weekly Auto-Send Configured',
-        'Weekly automatic notifications are currently disabled.\n\n' +
-        'Use "🔄 Enable Weekly Auto-Send" to set up automatic reminders.',
-        ui.ButtonSet.OK
-      );
-      return;
+    let message = '📋 Weekly Auto-Send Configuration:\n\n';
+    
+    // Show current trigger status
+    if (existingTrigger) {
+      message += '✅ Status: ACTIVE\n';
+      message += `📅 Running: Weekly notifications enabled\n`;
+      message += `💬 Destination: ${getCurrentTestMode() ? 'Test chat space' : 'Production chat space'}\n\n`;
+    } else {
+      message += '❌ Status: INACTIVE\n';
+      message += '📅 Running: No automatic notifications\n\n';
     }
     
-    const properties = PropertiesService.getScriptProperties();
-    const hour = parseInt(properties.getProperty('WEEKLY_TRIGGER_HOUR') || '18');
-    const dayName = getDayName(existingTrigger.getEventType());
-    const timeFormatted = formatHour(hour);
+    // Show spreadsheet configuration
+    message += '⚙️ Spreadsheet Configuration:\n';
+    if (triggerConfig.isValid) {
+      message += `📅 Day (K14): ${triggerConfig.dayName}\n`;
+      message += `🕐 Time (K16): ${triggerConfig.timeFormatted}\n\n`;
+      
+      if (!existingTrigger) {
+        message += '💡 Ready to enable: Use "🔄 Enable Weekly Auto-Send"';
+      } else {
+        message += '💡 To modify: Update K14/K16, then use "🔄 Enable Weekly Auto-Send"';
+      }
+    } else {
+      message += '❌ Configuration Issues:\n';
+      triggerConfig.errors.forEach(error => {
+        message += `   • ${error}\n`;
+      });
+      message += '\n💡 Fix the issues above, then use "🔄 Enable Weekly Auto-Send"';
+    }
     
     ui.alert(
-      'Current Weekly Auto-Send Schedule',
-      `📅 Current schedule: Every ${dayName} at ${timeFormatted}\n\n` +
-      `✅ Status: Active\n` +
-      `📝 Function: 2-week visitation lookahead\n` +
-      `💬 Destination: ${getCurrentTestMode() ? 'Test chat space' : 'Production chat space'}\n\n` +
-      `To modify: Use "🔄 Enable Weekly Auto-Send" to reconfigure\n` +
-      `To disable: Use "🛑 Disable Weekly Auto-Send"`,
+      'Weekly Auto-Send Status',
+      message,
       ui.ButtonSet.OK
     );
     
