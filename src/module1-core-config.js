@@ -209,6 +209,27 @@ function setupHeaders(sheet) {
     sheet.getRange('K8').setWrap(true);
     sheet.setColumnWidth(11, 200);
   }
+
+  // NEW: Weekly notification trigger configuration (K13-K16, avoiding K11-K12 used for test mode)
+  if (!sheet.getRange('K13').getValue()) {
+    sheet.getRange('K13').setValue('Weekly Notification Day:');
+    sheet.getRange('K13').setFontWeight('bold').setBackground('#d4edda');
+  }
+  
+  if (!sheet.getRange('K14').getValue()) {
+    sheet.getRange('K14').setValue('Sunday');
+    sheet.getRange('K14').setBackground('#f8f9fa');
+  }
+  
+  if (!sheet.getRange('K15').getValue()) {
+    sheet.getRange('K15').setValue('Weekly Notification Time (0-23):');
+    sheet.getRange('K15').setFontWeight('bold').setBackground('#d4edda');
+  }
+  
+  if (!sheet.getRange('K16').getValue()) {
+    sheet.getRange('K16').setValue(18);
+    sheet.getRange('K16').setBackground('#f8f9fa');
+  }
   
   // Column headers for basic contact info (L-O)
   if (!sheet.getRange('L1').getValue()) {
