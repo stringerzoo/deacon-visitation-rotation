@@ -177,10 +177,10 @@ function getConfiguration(sheet) {
       startDate: new Date(startDate.getTime()),
       visitFrequency: Number(visitFrequency),
       numWeeks: Number(numWeeks),
-      calendarInstructions: String(calendarInstructions)
-      notificationDay: String(sheet.getRange('K11').getValue() || 'Sunday'),
-      notificationHour: Number(sheet.getRange('K13').getValue() || 18),
-      calendarUrl: String(sheet.getRange('K19').getValue() || '')
+      calendarInstructions: String(calendarInstructions),
+      notificationDay: String(notifcationDay),
+      notificationHour: Number(notificationHour),
+      calendarUrl: String(calendarUrl)
     };
     
   } catch (error) {
