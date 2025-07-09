@@ -146,6 +146,25 @@ function getConfiguration(sheet) {
       sheet.getRange('K8').setValue(calendarInstructions);
     }
     
+    // Get notification configuration
+    let notificationDay = sheet.getRange('K11').getValue();
+    if (!notificationDay) {
+      notificationDay = 'Sunday';
+      sheet.getRange('K11').setValue(notificationDay);
+    }
+    
+    let notificationHour = sheet.getRange('K13').getValue();
+    if (!Number.isFinite(notificationHour)) {
+      notificationHour = 18; // 6 PM
+      sheet.getRange('K13').setValue(notificationHour);
+    }
+    
+    // Get calendar URL
+    let calendarUrl = sheet.getRange('K19').getValue();
+    if (!calendarUrl) {
+      calendarUrl = ''; // Default empty
+    }
+    
     return {
       deacons,
       households,
@@ -159,6 +178,9 @@ function getConfiguration(sheet) {
       visitFrequency: Number(visitFrequency),
       numWeeks: Number(numWeeks),
       calendarInstructions: String(calendarInstructions)
+      notificationDay: String(sheet.getRange('K11').getValue() || 'Sunday'),
+      notificationHour: Number(sheet.getRange('K13').getValue() || 18),
+      calendarUrl: String(sheet.getRange('K19').getValue() || '')
     };
     
   } catch (error) {
@@ -254,12 +276,25 @@ function setupHeaders(sheet) {
     .build();
   sheet.getRange('K13').setDataValidation(timeValidation);
   
-  // MOVED: Test mode indicators (K15-K16) - moved down from previous K11-K12
+  // Test mode indicators (K15-K16)
   if (!sheet.getRange('K15').getValue()) {
     sheet.getRange('K15').setValue('Current Mode:');
     sheet.getRange('K15').setFontWeight('bold').setBackground('#fff2cc');
   }
+  
+   // Calendar configuration (K18-K19)
+  if (!sheet.getRange('K18').getValue()) {
+    sheet.getRange('K18').setValue('Google Calendar URL:');
+    sheet.getRange('K18').setFontWeight('bold').setBackground('#fff2cc');
   }
+  
+  // K19: Calendar URL input field
+  if (!sheet.getRange('K19').getValue()) {
+    sheet.getRange('K19').setValue(''); // Default empty, user will paste URL
+    sheet.getRange('K19').setBackground('#f8f9fa');
+    sheet.getRange('K19').setNote('Paste your Google Calendar embed URL here.\n\nFor testing: Use test calendar URL\nFor production: Use deacon calendar URL\n\nSwitch between test and production by changing this URL.');
+  }
+}
   
   // Column headers for basic contact info (L-O)
   if (!sheet.getRange('L1').getValue()) {
