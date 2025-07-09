@@ -294,7 +294,6 @@ function setupHeaders(sheet) {
     sheet.getRange('K19').setBackground('#f8f9fa');
     sheet.getRange('K19').setNote('Paste your Google Calendar embed URL here.\n\nFor testing: Use test calendar URL\nFor production: Use deacon calendar URL\n\nSwitch between test and production by changing this URL.');
   }
-}
   
   // Column headers for basic contact info (L-O)
   if (!sheet.getRange('L1').getValue()) {
