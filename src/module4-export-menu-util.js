@@ -794,5 +794,3 @@ function onEdit(e) {
   }
   */
 }
-
-// END OF MODULE 4 (v24.2)
