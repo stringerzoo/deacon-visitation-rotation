@@ -221,7 +221,7 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
   }
   
   // Footer with instructions and configurable calendar link
-  message += `💡 *Instructions*: Call ahead to confirm visit times. Contact families 1-2 days before your scheduled visit.\n\n`;
+  message += `💡 *Instructions*: Call ahead to set up visit times then update the event in the Visitation Calendar.\n\n`;
   
   // NEW: Add calendar link from spreadsheet configuration
   const calendarLink = getCalendarLinkFromSpreadsheet();
