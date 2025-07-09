@@ -555,62 +555,99 @@ function preventEditLoops() {
 function showSetupInstructions() {
   const ui = SpreadsheetApp.getUi();
   const instructions = `
-📋 SETUP INSTRUCTIONS (Enhanced with Breeze & Notes Integration):
+📋 SETUP INSTRUCTIONS (v25.0 - Complete Google Chat Integration):
 
-1️⃣ CONFIGURATION (Column K):
+1️⃣ BASIC CONFIGURATION (Column K):
    • K1: "Start Date:" (label)
    • K2: Your start date (preferably a Monday)
-   • K3: "Visit Frequency (weeks):" (label)
+   • K3: "Visits every x weeks (1,2,3,4):" (label)
    • K4: Visit frequency (1, 2, 3, or 4 weeks)
-   • K5: "Number of Weeks:" (label)
+   • K5: "Length of schedule in weeks:" (label)
    • K6: Number of weeks to schedule (e.g., 52)
    • K7: "Calendar Event Instructions:" (label)
    • K8: Custom instructions for calendar events
 
-2️⃣ DEACONS LIST (Column L):
+2️⃣ NOTIFICATION SETTINGS (Column K):
+   • K10: "Weekly Notification Day:" (label)
+   • K11: Day selection (Sunday-Saturday dropdown)
+   • K12: "Weekly Notification Time (0-23):" (label)
+   • K13: Hour selection (0-23 dropdown, e.g., 16 = 4 PM)
+
+3️⃣ CALENDAR INTEGRATION (Column K):
+   • K18: "Google Calendar URL:" (label)
+   • K19: Paste your Google Calendar embed URL here
+   • Use different URLs for test vs production switching
+
+4️⃣ DEACONS LIST (Column L):
    • L1: "Deacons" (header - auto-created)
    • L2, L3, L4...: List each deacon's name or initials
    
-3️⃣ HOUSEHOLDS LIST (Column M):  
+5️⃣ HOUSEHOLDS LIST (Column M):  
    • M1: "Households" (header - auto-created)
    • M2, M3, M4...: List each household name
 
-4️⃣ CONTACT INFO (Columns N-O):
+6️⃣ CONTACT INFO (Columns N-O):
    • N1: "Phone Number" (header - auto-created)
    • N2, N3, N4...: Phone numbers for households
    • O1: "Address" (header - auto-created)
    • O2, O3, O4...: Addresses for households
 
-5️⃣ BREEZE INTEGRATION (Columns P-R):
+7️⃣ BREEZE INTEGRATION (Columns P-R):
    • P1: "Breeze Link" (header - auto-created)
    • P2, P3, P4...: 8-digit Breeze numbers (e.g., 29760588)
    • R1: "Breeze Link (short)" (header - auto-created)
    • R2, R3, R4...: Auto-generated shortened URLs
 
-6️⃣ NOTES INTEGRATION (Columns Q-S):
+8️⃣ NOTES INTEGRATION (Columns Q-S):
    • Q1: "Notes Pg Link" (header - auto-created)
    • Q2, Q3, Q4...: Full Google Doc URLs for visit notes
    • S1: "Notes Pg Link (short)" (header - auto-created)
    • S2, S3, S4...: Auto-generated shortened URLs
 
-7️⃣ GENERATE SCHEDULE:
-   • Menu: 🔄 Deacon Rotation > 📅 Generate Schedule
-   • Or run generateRotationSchedule() from Script Editor
+9️⃣ GOOGLE CHAT SETUP:
+   • Create Google Chat webhook in your deacon space
+   • Menu: 📢 Notifications → 🔧 Configure Chat Webhook
+   • Test with: 📢 Notifications → 📋 Test Notification System
+   • Enable automation: 📢 Notifications → 🔄 Enable Weekly Auto-Send
 
-8️⃣ OUTPUT LOCATIONS:
+🔟 GENERATE SCHEDULE:
+   • Menu: 🔄 Deacon Rotation → 📅 Generate Schedule
+   • Create short URLs: 🔄 Deacon Rotation → 🔗 Generate Shortened URLs
+   • Export to calendar: 📆 Calendar Functions → 🚨 Full Calendar Regeneration
+
+1️⃣1️⃣ ADVANCED FEATURES:
+   • Smart calendar updates: 📆 Calendar Functions → 📞 Update Contact Info Only
+   • Weekly notifications: 📢 Notifications → 💬 Send Weekly Chat Summary
+   • Tomorrow's reminders: 📢 Notifications → ⏰ Send Tomorrow's Reminders
+   • Test current mode: 🧪/✅ Show Current Mode
+
+📍 OUTPUT LOCATIONS:
    • Columns A-E: Master schedule
    • Columns G-I: Individual deacon reports
+   • K15-K16: Test mode indicators
+   • Google Chat: Automated weekly summaries
 
-🔗 URL SHORTENING: The system will automatically generate shortened URLs for Breeze profiles and Notes pages when you export to calendar.
+🔔 NOTIFICATIONS: The system sends rich Google Chat messages with:
+   • 2-week lookahead schedule
+   • Contact information and addresses
+   • Direct links to Breeze profiles and Notes
+   • Clickable calendar access (from K19)
 
-📊 VALIDATION: Use "🔧 Validate Setup" to check your configuration before generating.
+📊 VALIDATION: Use "🔧 Validate Setup" to check configuration.
 
-❓ Need help? Use "🧪 Run Tests" to diagnose issues.
+🧪 TESTING: Use "🧪 Run Tests" to diagnose all system components.
 
-💡 TIP: All headers and labels are automatically created when you first run the script!
+⚠️ IMPORTANT: 
+   • All headers and labels are auto-created on first run!
+   • Google Apps Script triggers may have 15-20 minute delays
+   • Start with sample data for testing, replace with real data when ready
+   • Test mode automatically detected from data patterns
+
+🆘 NEED HELP? 
+   • Check the complete setup guide: SETUP.md in project documentation
+   • Use diagnostic tools in 📢 Notifications menu for troubleshooting
+   • Test/production modes switch automatically based on your data
   `;
   
-  ui.alert('Setup Instructions', instructions, ui.ButtonSet.OK);
+  ui.alert('Setup Instructions (v25.0)', instructions, ui.ButtonSet.OK);
 }
-
-// END OF MODULE 1
