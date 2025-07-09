@@ -18,9 +18,10 @@ This system solves complex mathematical scheduling problems to create optimal de
 - **Configurable scheduling** using spreadsheet cells (day and time)
 - **Test/production separation** with automatic mode detection
 - **Rich message content** including contact info and direct links
+- **Configurable calendar links** in chat messages (K19 URL switching)
 
 ### 🏗️ **Enhanced Architecture**
-- **5-module system** with dedicated notifications module
+- **5-module system** with dedicated notifications module (~1288 lines)
 - **Modular webhook integration** that doesn't affect core scheduling
 - **Configurable notification timing** stored in spreadsheet
 - **Robust error handling** with Google Apps Script API limitations
@@ -46,8 +47,9 @@ This system solves complex mathematical scheduling problems to create optimal de
 1. **[Set up the spreadsheet](SETUP.md#spreadsheet-setup)** with your deacons and households
 2. **[Deploy the Apps Script modules](SETUP.md#apps-script-deployment)** (5 separate files)
 3. **[Configure Google Chat webhook](SETUP.md#notifications-setup)** for automated notifications
-4. **Generate your first schedule** and export to calendar
-5. **Test notifications** and configure weekly automation
+4. **[Configure calendar links](SETUP.md#calendar-links-setup)** in K19 for chat integration
+5. **Generate your first schedule** and export to calendar
+6. **Test notifications** and configure weekly automation
 
 ## 🎛️ Enhanced Menu System (v25.0)
 
@@ -86,6 +88,7 @@ This system solves complex mathematical scheduling problems to create optimal de
 - **K1-K8**: Basic configuration (start date, frequency, instructions)
 - **K10-K13**: Notification settings (day, time) ⭐ **NEW**
 - **K15-K16**: Test mode indicators
+- **K18-K19**: Calendar URL configuration ⭐ **NEW**
 
 ### **Contact Data (L-S)**
 - **L**: Deacons, **M**: Households, **N**: Phones, **O**: Addresses
@@ -94,10 +97,11 @@ This system solves complex mathematical scheduling problems to create optimal de
 ## 🔔 Notification System Features
 
 ### **Automated Weekly Summaries**
-- **Configurable timing** - Set day of week and hour in spreadsheet
+- **Configurable timing** - Set day of week and hour in spreadsheet (K11, K13)
 - **2-week lookahead** - Current week assignments + next week preview
 - **Rich content** - Contact info, Breeze links, Notes access
 - **Test/production modes** - Separate chat spaces for development
+- **Calendar integration** - Clickable "View Visitation Calendar" links (K19)
 
 ### **Manual Notification Tools**
 - **Instant summaries** - Send notifications on-demand
@@ -111,9 +115,15 @@ This system solves complex mathematical scheduling problems to create optimal de
 - **Error resilience** - Graceful handling of API limitations
 - **Scalable design** - Handles growing deacon/household lists
 
+### **Configurable Calendar Links**
+- **K19 URL field** - Paste Google Calendar embed URL for chat notifications
+- **Test/production switching** - Change URL in K19 to switch environments
+- **Graceful handling** - Links only appear when K19 is configured
+- **One-click access** - "📅 View Visitation Calendar" in every chat message
+
 ## 📖 Documentation
 
-- **[Setup Guide](SETUP.md)** - Complete installation with notifications
+- **[Setup Guide](SETUP.md)** - Complete installation with notifications and calendar links
 - **[Features Overview](FEATURES.md)** - Detailed feature explanations
 - **[Changelog](CHANGELOG.md)** - Version history including v25.0
 - **[Notification Setup](SETUP.md#notifications-setup)** - Google Chat webhook configuration
@@ -143,10 +153,11 @@ Our algorithm uses **modular arithmetic with prime factorization** to ensure:
 - **Future expansion** - Ready for email, SMS, or other notification types
 
 ### **Advanced Configuration**
-- **Data validation** - Dropdown menus prevent configuration errors
+- **Data validation** - Dropdown menus prevent configuration errors (K11, K13)
 - **Flexible timing** - Any day of week, any hour (24-hour format)
 - **Multiple environments** - Test webhooks separate from production
 - **Visual feedback** - Clear status indicators and confirmation dialogs
+- **Calendar links** - Configurable URLs in K19 for direct calendar access
 
 ### **Improved User Experience**
 - **Streamlined setup** - Step-by-step webhook configuration
