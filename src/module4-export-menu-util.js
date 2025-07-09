@@ -705,6 +705,7 @@ function createMenuItems() {
       .addItem('🧪 Test Notification Now', 'testNotificationNow')
       .addItem('🔍 Inspect All Triggers', 'inspectAllTriggers')
       .addItem('🔄 Force Recreate Trigger', 'forceRecreateWeeklyTrigger')
+      .addItem('🧪 Test Calendar Link Config', 'testCalendarLinkConfiguration')
       .addSeparator()
       .addItem('🐛 Debug Trigger Creation', 'debugTriggerCreation')
       .addItem('🐛 Debug Weekly Summary', 'debugWeeklyCalendarSummary')
