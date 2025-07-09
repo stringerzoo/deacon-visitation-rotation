@@ -20,8 +20,7 @@
 
 function sendWeeklyVisitationChat() {
   /**
-   * Main function to send weekly visitation summary to Google Chat
-   * Respects test mode and uses appropriate chat space
+   * Main weekly summary function - sends 2-week lookahead using calendar week logic
    */
   try {
     // Check if notifications are configured
@@ -37,42 +36,44 @@ function sendWeeklyVisitationChat() {
     
     // Validate that schedule matches current data
     if (!validateScheduleDataSync()) {
-      return; // validateScheduleDataSync() shows its own error dialog
+      return;
     }
     
     // Get current test mode from Module 3
     const currentTestMode = getCurrentTestMode();
     const chatPrefix = currentTestMode ? '🧪 TEST: ' : '';
     
-    // Get upcoming visits (next 2-3 weeks for bi-weekly rhythm)
-    const upcomingVisits = getUpcomingVisits(7, 21);
+    // NEW: Get visits for remainder of current week + next complete week
+    const upcomingVisits = getVisitsForCalendarWeeks(2, true);
     
     if (upcomingVisits.length === 0) {
-      const message = `${chatPrefix}📅 **No scheduled visits for next week**\n\nAll caught up on visitations! 🎉`;
+      const message = `${chatPrefix}📅 **Weekly Visitation Update**\n\nNo visits scheduled for the next 2 weeks. All caught up! 🎉`;
       
       sendToChatSpace(message, currentTestMode);
       console.log('No upcoming visits found for weekly summary');
       return;
     }
     
-    // Build and send the weekly message
-    const chatMessage = buildWeeklyMessage(upcomingVisits, currentTestMode);
+    // Build and send the weekly message with calendar week formatting
+    const chatMessage = buildWeeklyCalendarSummary(upcomingVisits, currentTestMode);
     sendToChatSpace(chatMessage, currentTestMode);
     
     // Show success notification
     const ui = SpreadsheetApp.getUi();
+    const weekRange = getWeekRangeDescription(upcomingVisits);
+    
     ui.alert(
-      currentTestMode ? '🧪 Test Chat Summary Sent' : '📅 Weekly Chat Summary Sent',
-      `${chatPrefix}Sent summary for ${upcomingVisits.length} upcoming visits to Google Chat.\n\n` +
+      currentTestMode ? '🧪 Test Weekly Summary Sent' : '📅 Weekly Summary Sent',
+      `${chatPrefix}Sent 2-week summary for ${upcomingVisits.length} upcoming visits.\n\n` +
       `Chat space: ${currentTestMode ? 'TEST space' : 'Production space'}\n` +
-      `Week of: ${upcomingVisits[0]?.date?.toLocaleDateString() || 'Unknown'}`,
+      `Coverage: ${weekRange}`,
       ui.ButtonSet.OK
     );
     
-    console.log(`Weekly chat summary sent: ${upcomingVisits.length} visits`);
+    console.log(`Weekly calendar summary sent: ${upcomingVisits.length} visits across ${weekRange}`);
     
   } catch (error) {
-    console.error('Failed to send weekly chat summary:', error);
+    console.error('Failed to send weekly calendar summary:', error);
     SpreadsheetApp.getUi().alert(
       'Chat Notification Failed',
       `❌ Error sending to Google Chat: ${error.message}`,
@@ -81,159 +82,107 @@ function sendWeeklyVisitationChat() {
   }
 }
 
-function sendTomorrowReminders() {
-  /**
-   * Send reminders for visits happening tomorrow
-   * Asks user confirmation if no visits are scheduled
-   */
-  try {
-    if (!isNotificationConfigured()) {
-      SpreadsheetApp.getUi().alert(
-        'Notifications Not Configured',
-        'Please configure the Google Chat webhook first.',
-        SpreadsheetApp.getUi().ButtonSet.OK
-      );
-      return;
-    }
-    
-    // Validate that schedule matches current data
-    if (!validateScheduleDataSync()) {
-      return; // validateScheduleDataSync() shows its own error dialog
-    }
-    
-    const currentTestMode = getCurrentTestMode();
-    const chatPrefix = currentTestMode ? '🧪 TEST: ' : '';
-    const ui = SpreadsheetApp.getUi();
-    
-    // Get visits for tomorrow (1-2 days out)
-    const tomorrowVisits = getUpcomingVisits(1, 2);
-    
-    if (tomorrowVisits.length === 0) {
-      // Ask user if they want to send "no visits" message
-      const response = ui.alert(
-        'No Visits Tomorrow',
-        'There are no visits scheduled for tomorrow.\n\n' +
-        'Do you still want to send a notification to the group to communicate this?',
-        ui.ButtonSet.YES_NO
-      );
-      
-      if (response === ui.Button.YES) {
-        const message = `${chatPrefix}⏰ No visits scheduled for tomorrow\n\nEnjoy your day! 😊`;
-        sendToChatSpace(message, currentTestMode);
-        
-        ui.alert(
-          'No-Visits Notification Sent',
-          `${chatPrefix}Sent "no visits tomorrow" message to chat.`,
-          ui.ButtonSet.OK
-        );
-      } else {
-        console.log('User chose not to send no-visits notification');
-      }
-      return;
-    }
-    
-    // Build tomorrow's reminder message
-    const reminderMessage = buildTomorrowMessage(tomorrowVisits, currentTestMode);
-    sendToChatSpace(reminderMessage, currentTestMode);
-    
-    ui.alert(
-      currentTestMode ? '🧪 Test Tomorrow Reminders Sent' : '⏰ Tomorrow Reminders Sent',
-      `${chatPrefix}Sent reminders for ${tomorrowVisits.length} visits happening tomorrow.`,
-      ui.ButtonSet.OK
-    );
-    
-    console.log(`Tomorrow reminders sent: ${tomorrowVisits.length} visits`);
-    
-  } catch (error) {
-    console.error('Failed to send tomorrow reminders:', error);
-    SpreadsheetApp.getUi().alert(
-      'Reminder Failed',
-      `❌ Error sending reminders: ${error.message}`,
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
-  }
-}
-
 // ===== MESSAGE BUILDING FUNCTIONS =====
 
-function buildWeeklyMessage(visits, isTestMode = false) {
+function buildWeeklyCalendarSummary(visits, isTestMode = false) {
   /**
-   * Build rich weekly summary message for Google Chat
-   * Uses 2-week lookahead to match bi-weekly visitation rhythm
+   * Build weekly summary message optimized for group chat
+   * Focuses on clear, scannable format for 2-week lookahead
    */
   const chatPrefix = isTestMode ? '🧪 TEST: ' : '';
+  const today = new Date();
+  const todayFormatted = today.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    month: 'long', 
+    day: 'numeric' 
+  });
   
-  // Group visits by week for better organization
+  // Group visits by calendar week
   const visitsByWeek = {};
   visits.forEach(visit => {
-    const weekKey = visit.date.toLocaleDateString();
+    const weekInfo = visit.calendarWeek;
+    const weekKey = weekInfo.weekLabel;
+    
     if (!visitsByWeek[weekKey]) {
-      visitsByWeek[weekKey] = [];
+      visitsByWeek[weekKey] = {
+        visits: [],
+        weekStart: weekInfo.weekStart,
+        weekEnd: weekInfo.weekEnd
+      };
     }
-    visitsByWeek[weekKey].push(visit);
+    visitsByWeek[weekKey].visits.push(visit);
   });
   
-  const weekKeys = Object.keys(visitsByWeek).sort((a, b) => new Date(a) - new Date(b));
+  // Sort week keys logically for 2-week lookahead
+  const weekOrder = ['This Week', 'Next Week', 'Week After Next'];
+  const sortedWeekKeys = Object.keys(visitsByWeek).sort((a, b) => {
+    const aIndex = weekOrder.indexOf(a);
+    const bIndex = weekOrder.indexOf(b);
+    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+    if (aIndex !== -1) return -1;
+    if (bIndex !== -1) return 1;
+    return a.localeCompare(b);
+  });
   
-  let message = `${chatPrefix}📅 Deacon Visitation Schedule - Next 2 Weeks\n\n`;
+  // Build the message
+  let message = `${chatPrefix}📅 **Weekly Visitation Update**\n`;
+  message += `Generated: ${todayFormatted}\n\n`;
   
-  weekKeys.forEach((weekKey, index) => {
-    const weekVisits = visitsByWeek[weekKey];
-    const weekLabel = index === 0 ? 'This Week' : index === 1 ? 'Next Week' : `Week of ${weekKey}`;
+  sortedWeekKeys.forEach((weekKey, index) => {
+    const weekData = visitsByWeek[weekKey];
+    const weekVisits = weekData.visits;
     
-    message += `📆 ${weekLabel} (${weekKey}):\n`;
+    // Week header with date range
+    message += `**${weekKey}** (${weekData.weekStart.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    })} - ${weekData.weekEnd.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    })})\n`;
     
-    // Group by deacon for this week
-    const deaconGroups = groupVisitsByDeacon(weekVisits);
-    Object.keys(deaconGroups).sort().forEach(deaconName => {
-      const deaconVisits = deaconGroups[deaconName];
-      
-      deaconVisits.forEach(visit => {
-        message += `   👤 ${visit.deacon} → ${visit.household}\n`;
-        message += `      📞 ${visit.phone || 'Phone not available'}\n`;
-        
-        if (visit.breezeLink) {
-          message += `      🔗 <${visit.breezeLink}|Breeze Profile>\n`;
-        }
-        
-        if (visit.notesLink) {
-          message += `      📝 <${visit.notesLink}|Visit Notes>\n`;
-        }
+    // Sort visits by date within the week
+    weekVisits.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    weekVisits.forEach(visit => {
+      const visitDate = visit.date.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric' 
       });
+      
+      message += `📅 ${visitDate} - **${visit.deacon}** visits **${visit.household}**\n`;
+      
+      // Add contact info on same line for compactness
+      const contactInfo = [];
+      if (visit.phone) contactInfo.push(`📞 ${visit.phone}`);
+      if (visit.address) contactInfo.push(`🏠 ${visit.address}`);
+      
+      if (contactInfo.length > 0) {
+        message += `   ${contactInfo.join(' • ')}\n`;
+      }
+      
+      // Add links if available (on separate line for clickability)
+      const links = [];
+      if (visit.breezeShortLink) links.push(`[Breeze](${visit.breezeShortLink})`);
+      if (visit.notesShortLink) links.push(`[Notes](${visit.notesShortLink})`);
+      
+      if (links.length > 0) {
+        message += `   🔗 ${links.join(' • ')}\n`;
+      }
+      
+      message += '\n';
     });
     
-    message += `\n`;
-  });
-  
-  message += `📋 Contact families 1-2 days before your week to schedule\n`;
-  message += `📅 Update the shared calendar with your confirmed time\n`;
-  message += `📝 Document visit in notes page after completing`;
-  
-  return message;
-}
-
-function buildTomorrowMessage(visits, isTestMode = false) {
-  /**
-   * Build reminder message for tomorrow's visits
-   */
-  const chatPrefix = isTestMode ? '🧪 TEST: ' : '';
-  const tomorrowDate = new Date();
-  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-  
-  let message = `${chatPrefix}⏰ **Reminder: Visits Tomorrow (${tomorrowDate.toLocaleDateString()})**\n\n`;
-  
-  visits.forEach(visit => {
-    message += `👤 **${visit.deacon}** → ${visit.household}\n`;
-    message += `📞 ${visit.phone || 'Phone not available'}\n`;
-    
-    if (visit.breezeLink) {
-      message += `🔗 <${visit.breezeLink}|Breeze Profile>\n`;
+    // Add spacing between weeks
+    if (index < sortedWeekKeys.length - 1) {
+      message += '---\n\n';
     }
-    
-    message += `\n`;
   });
   
-  message += `🕐 *Don't forget to confirm your visit time!*`;
+  // Footer with instructions
+  message += `💡 **Instructions**: Call ahead to confirm visit times. Contact families 1-2 days before your scheduled visit.\n\n`;
+  message += `🔄 This update is sent weekly. Reply here with questions or scheduling conflicts.`;
   
   return message;
 }
@@ -286,74 +235,6 @@ function getWebhookUrl(isTestMode = false) {
 }
 
 // ===== VISIT DATA FUNCTIONS =====
-
-function getUpcomingVisits(startDays, endDays) {
-  /**
-   * Get visits within specified day range
-   * startDays: how many days from now to start looking
-   * endDays: how many days from now to stop looking
-   */
-  try {
-    const sheet = SpreadsheetApp.getActiveSheet();
-    const config = getConfiguration(sheet);
-    const scheduleData = getScheduleFromSheet(sheet);
-    
-    if (scheduleData.length === 0) {
-      console.log('No schedule data found');
-      return [];
-    }
-    
-    // Debug logging
-    console.log(`Households in config: [${config.households.join(', ')}]`);
-    console.log(`Phone numbers count: ${config.phones.length}`);
-    console.log(`Phones array: [${config.phones.join(', ')}]`);
-    
-    // Calculate date range
-    const today = new Date();
-    const startDate = new Date();
-    startDate.setDate(today.getDate() + startDays);
-    startDate.setHours(0, 0, 0, 0);
-    
-    const endDate = new Date();
-    endDate.setDate(today.getDate() + endDays);
-    endDate.setHours(23, 59, 59, 999);
-    
-    // Filter visits within date range
-    const upcomingVisits = scheduleData.filter(visit => {
-      const visitDate = new Date(visit.date);
-      return visitDate >= startDate && visitDate <= endDate;
-    });
-    
-    // Enhance with contact information and debug each household
-    const enhancedVisits = upcomingVisits.map(visit => {
-      const householdIndex = config.households.indexOf(visit.household);
-      
-      // Debug logging for each visit
-      console.log(`Processing visit: ${visit.household}, Index: ${householdIndex}`);
-      if (householdIndex >= 0) {
-        console.log(`  Phone: "${config.phones[householdIndex]}"`);
-        console.log(`  Address: "${config.addresses[householdIndex]}"`);
-      } else {
-        console.log(`  ERROR: Household "${visit.household}" not found in config.households`);
-      }
-      
-      return {
-        ...visit,
-        phone: householdIndex >= 0 ? config.phones[householdIndex] : '',
-        address: householdIndex >= 0 ? config.addresses[householdIndex] : '',
-        breezeLink: getBreezeLink(config, householdIndex),
-        notesLink: getNotesLink(config, householdIndex)
-      };
-    });
-    
-    console.log(`Found ${enhancedVisits.length} visits between ${startDate.toLocaleDateString()} and ${endDate.toLocaleDateString()}`);
-    return enhancedVisits.sort((a, b) => new Date(a.date) - new Date(b.date));
-    
-  } catch (error) {
-    console.error('Error getting upcoming visits:', error);
-    return [];
-  }
-}
 
 function groupVisitsByDeacon(visits) {
   /**
@@ -864,6 +745,239 @@ function createWeeklyNotificationTrigger() {
     );
   }
 }
+
+/**
+* Calendar Week Calculations Functions
+*/
+
+function getVisitsForCalendarWeeks(weeksAhead = 2, includeCurrentWeek = true) {
+  /**
+   * Get visits for proper calendar weeks (Sunday-Saturday)
+   * Optimized for the 2-week lookahead use case
+   */
+  try {
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const config = getConfiguration(sheet);
+    const scheduleData = getScheduleFromSheet(sheet);
+    
+    if (scheduleData.length === 0) {
+      console.log('No schedule data found');
+      return [];
+    }
+    
+    const today = new Date();
+    const currentDayOfWeek = today.getDay(); // 0=Sunday, 6=Saturday
+    
+    let startDate;
+    if (includeCurrentWeek) {
+      // Include remainder of current week (today through Saturday)
+      startDate = new Date(today);
+      startDate.setHours(0, 0, 0, 0);
+    } else {
+      // Start from next Sunday
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() + (7 - currentDayOfWeek));
+      startDate.setHours(0, 0, 0, 0);
+    }
+    
+    // Calculate end date for 2-week lookahead
+    const endDate = new Date(startDate);
+    if (includeCurrentWeek) {
+      // Include remainder of current week + (weeksAhead - 1) more complete weeks
+      const daysToEndOfCurrentWeek = 6 - currentDayOfWeek; // Days until Saturday
+      endDate.setDate(startDate.getDate() + daysToEndOfCurrentWeek + (7 * (weeksAhead - 1)));
+    } else {
+      // Start from next Sunday and add complete weeks
+      endDate.setDate(startDate.getDate() + (7 * weeksAhead) - 1);
+    }
+    endDate.setHours(23, 59, 59, 999);
+    
+    // Debug logging
+    console.log(`📅 Weekly Summary Range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`);
+    console.log(`Current day: ${today.toLocaleDateString('en-US', { weekday: 'long' })} (${currentDayOfWeek})`);
+    
+    // Filter visits within date range
+    const upcomingVisits = scheduleData.filter(visit => {
+      if (!visit.date || !(visit.date instanceof Date)) {
+        console.warn(`Invalid date for visit: ${visit.household} - ${visit.date}`);
+        return false;
+      }
+      
+      const visitDate = new Date(visit.date);
+      visitDate.setHours(0, 0, 0, 0);
+      
+      const inRange = visitDate >= startDate && visitDate <= endDate;
+      
+      // Debug logging for troubleshooting
+      if (inRange) {
+        console.log(`✅ INCLUDED: ${visitDate.toLocaleDateString()} - ${visit.deacon} → ${visit.household}`);
+      }
+      
+      return inRange;
+    });
+    
+    // Sort by date
+    upcomingVisits.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    // Enhance with contact information and calendar week context
+    const enhancedVisits = upcomingVisits.map(visit => {
+      const householdIndex = config.households.indexOf(visit.household);
+      
+      return {
+        ...visit,
+        phone: householdIndex >= 0 ? config.phones[householdIndex] : '',
+        address: householdIndex >= 0 ? config.addresses[householdIndex] : '',
+        breezeNumber: householdIndex >= 0 ? config.breezeNumbers[householdIndex] : '',
+        notesLink: householdIndex >= 0 ? config.notesLinks[householdIndex] : '',
+        breezeShortLink: householdIndex >= 0 ? config.breezeShortLinks[householdIndex] : '',
+        notesShortLink: householdIndex >= 0 ? config.notesShortLinks[householdIndex] : '',
+        calendarWeek: getCalendarWeekInfo(visit.date)
+      };
+    });
+    
+    console.log(`Found ${enhancedVisits.length} visits in 2-week calendar range`);
+    return enhancedVisits;
+    
+  } catch (error) {
+    console.error('Error getting calendar week visits:', error);
+    return [];
+  }
+}
+
+function getCalendarWeekInfo(date) {
+  /**
+   * Get human-readable calendar week information
+   */
+  const visitDate = new Date(date);
+  const today = new Date();
+  
+  // Get start of this week (Sunday)
+  const thisWeekStart = new Date(today);
+  thisWeekStart.setDate(today.getDate() - today.getDay());
+  thisWeekStart.setHours(0, 0, 0, 0);
+  
+  // Get start of visit week (Sunday)
+  const visitWeekStart = new Date(visitDate);
+  visitWeekStart.setDate(visitDate.getDate() - visitDate.getDay());
+  visitWeekStart.setHours(0, 0, 0, 0);
+  
+  // Calculate week difference
+  const weekDiff = Math.round((visitWeekStart - thisWeekStart) / (7 * 24 * 60 * 60 * 1000));
+  
+  let weekLabel;
+  if (weekDiff === 0) {
+    weekLabel = 'This Week';
+  } else if (weekDiff === 1) {
+    weekLabel = 'Next Week';
+  } else if (weekDiff === 2) {
+    weekLabel = 'Week After Next';
+  } else if (weekDiff > 2) {
+    weekLabel = `${weekDiff} Weeks Away`;
+  } else {
+    weekLabel = 'Past Week';
+  }
+  
+  return {
+    weekLabel,
+    weekStart: visitWeekStart,
+    weekEnd: new Date(visitWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000),
+    weeksFromNow: weekDiff
+  };
+}
+
+function getWeekRangeDescription(visits) {
+  /**
+   * Get a human-readable description of the week range covered
+   */
+  if (visits.length === 0) return 'No visits';
+  
+  const weeks = [...new Set(visits.map(v => v.calendarWeek.weekLabel))];
+  
+  if (weeks.length === 1) {
+    return weeks[0];
+  } else if (weeks.length === 2) {
+    if (weeks.includes('This Week') && weeks.includes('Next Week')) {
+      return 'This Week & Next Week';
+    } else {
+      return weeks.join(' & ');
+    }
+  } else {
+    return `${weeks.length} weeks`;
+  }
+}
+
+function debugWeeklyCalendarSummary() {
+  /**
+   * Debug the 2-week lookahead logic specifically
+   */
+  try {
+    const today = new Date();
+    const ui = SpreadsheetApp.getUi();
+    
+    console.log('=== WEEKLY CALENDAR SUMMARY DEBUG ===');
+    console.log(`Today: ${today.toLocaleDateString()} (${today.toLocaleDateString('en-US', { weekday: 'long' })})`);
+    console.log(`Day of week: ${today.getDay()} (0=Sunday, 6=Saturday)`);
+    
+    // Test the exact logic used in weekly summary
+    const weeklyVisits = getVisitsForCalendarWeeks(2, true);
+    
+    console.log(`\nFound ${weeklyVisits.length} visits for 2-week lookahead:`);
+    weeklyVisits.forEach(visit => {
+      console.log(`  ${visit.calendarWeek.weekLabel} - ${visit.date.toLocaleDateString()} - ${visit.deacon} → ${visit.household}`);
+    });
+    
+    // Group by week to show the structure
+    const visitsByWeek = {};
+    weeklyVisits.forEach(visit => {
+      const weekKey = visit.calendarWeek.weekLabel;
+      if (!visitsByWeek[weekKey]) visitsByWeek[weekKey] = [];
+      visitsByWeek[weekKey].push(visit);
+    });
+    
+    let message = `📅 WEEKLY SUMMARY DEBUG\n\n`;
+    message += `Today: ${today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}\n\n`;
+    message += `🔍 2-Week Lookahead Results:\n`;
+    message += `Total visits found: ${weeklyVisits.length}\n\n`;
+    
+    Object.keys(visitsByWeek).forEach(weekKey => {
+      const weekVisits = visitsByWeek[weekKey];
+      message += `**${weekKey}**: ${weekVisits.length} visits\n`;
+      
+      weekVisits.slice(0, 3).forEach(visit => {
+        message += `  • ${visit.date.toLocaleDateString()} - ${visit.deacon} → ${visit.household}\n`;
+      });
+      
+      if (weekVisits.length > 3) {
+        message += `  ... and ${weekVisits.length - 3} more\n`;
+      }
+      message += '\n';
+    });
+    
+    if (weeklyVisits.length === 0) {
+      message += `❌ NO VISITS FOUND!\n\n`;
+      message += `This suggests:\n`;
+      message += `• Schedule may need to be regenerated\n`;
+      message += `• Current date range may be outside schedule\n`;
+      message += `• Date filtering logic may have issues\n\n`;
+      message += `Check the console for detailed logging.`;
+    } else {
+      message += `✅ System is working correctly!\n`;
+      message += `This is what would be sent to the chat space.`;
+    }
+    
+    ui.alert('Weekly Summary Debug Results', message, ui.ButtonSet.OK);
+    
+  } catch (error) {
+    console.error('Weekly calendar debug failed:', error);
+    SpreadsheetApp.getUi().alert(
+      'Debug Error',
+      `❌ Debug failed: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+// End of Calendar Week Calculation Functions
 
 /**
 * Trigger Debug function
