@@ -146,6 +146,25 @@ function getConfiguration(sheet) {
       sheet.getRange('K8').setValue(calendarInstructions);
     }
     
+    // Get notification configuration
+    let notificationDay = sheet.getRange('K11').getValue();
+    if (!notificationDay) {
+      notificationDay = 'Sunday';
+      sheet.getRange('K11').setValue(notificationDay);
+    }
+    
+    let notificationHour = sheet.getRange('K13').getValue();
+    if (!Number.isFinite(notificationHour)) {
+      notificationHour = 18; // 6 PM
+      sheet.getRange('K13').setValue(notificationHour);
+    }
+    
+    // Get calendar URL
+    let calendarUrl = sheet.getRange('K19').getValue();
+    if (!calendarUrl) {
+      calendarUrl = ''; // Default empty
+    }
+    
     return {
       deacons,
       households,
@@ -158,7 +177,10 @@ function getConfiguration(sheet) {
       startDate: new Date(startDate.getTime()),
       visitFrequency: Number(visitFrequency),
       numWeeks: Number(numWeeks),
-      calendarInstructions: String(calendarInstructions)
+      calendarInstructions: String(calendarInstructions),
+      notificationDay: String(notificationDay),
+      notificationHour: Number(notificationHour),
+      calendarUrl: String(calendarUrl)
     };
     
   } catch (error) {
@@ -207,7 +229,70 @@ function setupHeaders(sheet) {
   if (!sheet.getRange('K8').getValue()) {
     sheet.getRange('K8').setValue('Please call to confirm visit time. Contact family 1-2 days before scheduled date to arrange convenient time.');
     sheet.getRange('K8').setWrap(true);
-    sheet.setColumnWidth(11, 200);
+    sheet.setColumnWidth(11, 250);
+  }
+
+  // NEW: Weekly notification configuration (K10-K13), with data validation
+  if (!sheet.getRange('K10').getValue()) {
+    sheet.getRange('K10').setValue('Weekly Notification Day:');
+    sheet.getRange('K10').setFontWeight('bold').setBackground('#d4edda');
+  }
+  
+  // K11: Day selector with dropdown validation
+  if (!sheet.getRange('K11').getValue()) {
+    sheet.getRange('K11').setValue('Sunday');
+    sheet.getRange('K11').setBackground('#f8f9fa');
+  }
+  
+  // Set up data validation for K11 (Day dropdown)
+  const dayValidation = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'])
+    .setAllowInvalid(false)
+    .setHelpText('Select the day of the week for weekly notifications')
+    .build();
+  sheet.getRange('K11').setDataValidation(dayValidation);
+  
+  if (!sheet.getRange('K12').getValue()) {
+    sheet.getRange('K12').setValue('Weekly Notification Time (0-23):');
+    sheet.getRange('K12').setFontWeight('bold').setBackground('#d4edda');
+  }
+  
+  // K13: Time selector with dropdown validation
+  if (!sheet.getRange('K13').getValue()) {
+    sheet.getRange('K13').setValue(18); // Default to 6 PM
+    sheet.getRange('K13').setBackground('#f8f9fa');
+  }
+  
+  // Set up data validation for K13 (Hour dropdown)
+  const timeOptions = [];
+  for (let hour = 0; hour <= 23; hour++) {
+    timeOptions.push(hour);
+  }
+  
+  const timeValidation = SpreadsheetApp.newDataValidation()
+    .requireValueInList(timeOptions)
+    .setAllowInvalid(false)
+    .setHelpText('Select hour in 24-hour format (0 = midnight, 12 = noon, 18 = 6 PM)')
+    .build();
+  sheet.getRange('K13').setDataValidation(timeValidation);
+  
+  // Test mode indicators (K15-K16)
+  if (!sheet.getRange('K15').getValue()) {
+    sheet.getRange('K15').setValue('Current Mode:');
+    sheet.getRange('K15').setFontWeight('bold').setBackground('#fff2cc');
+  }
+  
+   // Calendar configuration (K18-K19)
+  if (!sheet.getRange('K18').getValue()) {
+    sheet.getRange('K18').setValue('Google Calendar URL:');
+    sheet.getRange('K18').setFontWeight('bold').setBackground('#fff2cc');
+  }
+  
+  // K19: Calendar URL input field
+  if (!sheet.getRange('K19').getValue()) {
+    sheet.getRange('K19').setValue(''); // Default empty, user will paste URL
+    sheet.getRange('K19').setBackground('#f8f9fa');
+    sheet.getRange('K19').setNote('Paste your Google Calendar embed URL here.\n\nFor testing: Use test calendar URL\nFor production: Use deacon calendar URL\n\nSwitch between test and production by changing this URL.');
   }
   
   // Column headers for basic contact info (L-O)
@@ -470,62 +555,99 @@ function preventEditLoops() {
 function showSetupInstructions() {
   const ui = SpreadsheetApp.getUi();
   const instructions = `
-📋 SETUP INSTRUCTIONS (Enhanced with Breeze & Notes Integration):
+📋 SETUP INSTRUCTIONS (v25.0 - Complete Google Chat Integration):
 
-1️⃣ CONFIGURATION (Column K):
+1️⃣ BASIC CONFIGURATION (Column K):
    • K1: "Start Date:" (label)
    • K2: Your start date (preferably a Monday)
-   • K3: "Visit Frequency (weeks):" (label)
+   • K3: "Visits every x weeks (1,2,3,4):" (label)
    • K4: Visit frequency (1, 2, 3, or 4 weeks)
-   • K5: "Number of Weeks:" (label)
+   • K5: "Length of schedule in weeks:" (label)
    • K6: Number of weeks to schedule (e.g., 52)
    • K7: "Calendar Event Instructions:" (label)
    • K8: Custom instructions for calendar events
 
-2️⃣ DEACONS LIST (Column L):
+2️⃣ NOTIFICATION SETTINGS (Column K):
+   • K10: "Weekly Notification Day:" (label)
+   • K11: Day selection (Sunday-Saturday dropdown)
+   • K12: "Weekly Notification Time (0-23):" (label)
+   • K13: Hour selection (0-23 dropdown, e.g., 16 = 4 PM)
+
+3️⃣ CALENDAR INTEGRATION (Column K):
+   • K18: "Google Calendar URL:" (label)
+   • K19: Paste your Google Calendar embed URL here
+   • Use different URLs for test vs production switching
+
+4️⃣ DEACONS LIST (Column L):
    • L1: "Deacons" (header - auto-created)
    • L2, L3, L4...: List each deacon's name or initials
    
-3️⃣ HOUSEHOLDS LIST (Column M):  
+5️⃣ HOUSEHOLDS LIST (Column M):  
    • M1: "Households" (header - auto-created)
    • M2, M3, M4...: List each household name
 
-4️⃣ CONTACT INFO (Columns N-O):
+6️⃣ CONTACT INFO (Columns N-O):
    • N1: "Phone Number" (header - auto-created)
    • N2, N3, N4...: Phone numbers for households
    • O1: "Address" (header - auto-created)
    • O2, O3, O4...: Addresses for households
 
-5️⃣ BREEZE INTEGRATION (Columns P-R):
+7️⃣ BREEZE INTEGRATION (Columns P-R):
    • P1: "Breeze Link" (header - auto-created)
    • P2, P3, P4...: 8-digit Breeze numbers (e.g., 29760588)
    • R1: "Breeze Link (short)" (header - auto-created)
    • R2, R3, R4...: Auto-generated shortened URLs
 
-6️⃣ NOTES INTEGRATION (Columns Q-S):
+8️⃣ NOTES INTEGRATION (Columns Q-S):
    • Q1: "Notes Pg Link" (header - auto-created)
    • Q2, Q3, Q4...: Full Google Doc URLs for visit notes
    • S1: "Notes Pg Link (short)" (header - auto-created)
    • S2, S3, S4...: Auto-generated shortened URLs
 
-7️⃣ GENERATE SCHEDULE:
-   • Menu: 🔄 Deacon Rotation > 📅 Generate Schedule
-   • Or run generateRotationSchedule() from Script Editor
+9️⃣ GOOGLE CHAT SETUP:
+   • Create Google Chat webhook in your deacon space
+   • Menu: 📢 Notifications → 🔧 Configure Chat Webhook
+   • Test with: 📢 Notifications → 📋 Test Notification System
+   • Enable automation: 📢 Notifications → 🔄 Enable Weekly Auto-Send
 
-8️⃣ OUTPUT LOCATIONS:
+🔟 GENERATE SCHEDULE:
+   • Menu: 🔄 Deacon Rotation → 📅 Generate Schedule
+   • Create short URLs: 🔄 Deacon Rotation → 🔗 Generate Shortened URLs
+   • Export to calendar: 📆 Calendar Functions → 🚨 Full Calendar Regeneration
+
+1️⃣1️⃣ ADVANCED FEATURES:
+   • Smart calendar updates: 📆 Calendar Functions → 📞 Update Contact Info Only
+   • Weekly notifications: 📢 Notifications → 💬 Send Weekly Chat Summary
+   • Tomorrow's reminders: 📢 Notifications → ⏰ Send Tomorrow's Reminders
+   • Test current mode: 🧪/✅ Show Current Mode
+
+📍 OUTPUT LOCATIONS:
    • Columns A-E: Master schedule
    • Columns G-I: Individual deacon reports
+   • K15-K16: Test mode indicators
+   • Google Chat: Automated weekly summaries
 
-🔗 URL SHORTENING: The system will automatically generate shortened URLs for Breeze profiles and Notes pages when you export to calendar.
+🔔 NOTIFICATIONS: The system sends rich Google Chat messages with:
+   • 2-week lookahead schedule
+   • Contact information and addresses
+   • Direct links to Breeze profiles and Notes
+   • Clickable calendar access (from K19)
 
-📊 VALIDATION: Use "🔧 Validate Setup" to check your configuration before generating.
+📊 VALIDATION: Use "🔧 Validate Setup" to check configuration.
 
-❓ Need help? Use "🧪 Run Tests" to diagnose issues.
+🧪 TESTING: Use "🧪 Run Tests" to diagnose all system components.
 
-💡 TIP: All headers and labels are automatically created when you first run the script!
+⚠️ IMPORTANT: 
+   • All headers and labels are auto-created on first run!
+   • Google Apps Script triggers may have 15-20 minute delays
+   • Start with sample data for testing, replace with real data when ready
+   • Test mode automatically detected from data patterns
+
+🆘 NEED HELP? 
+   • Check the complete setup guide: SETUP.md in project documentation
+   • Use diagnostic tools in 📢 Notifications menu for troubleshooting
+   • Test/production modes switch automatically based on your data
   `;
   
-  ui.alert('Setup Instructions', instructions, ui.ButtonSet.OK);
+  ui.alert('Setup Instructions (v25.0)', instructions, ui.ButtonSet.OK);
 }
-
-// END OF MODULE 1

@@ -1,12 +1,12 @@
 /**
- * MODULE 4: EXPORT, MENU & UTILITY FUNCTIONS (v24.2)
+ * MODULE 4: EXPORT, MENU & UTILITY FUNCTIONS (v25.0)
  * Deacon Visitation Rotation System - Export and Menu System
  * 
  * This module contains:
  * - Calendar export functions (full regeneration)
  * - Individual schedule exports
  * - URL shortening functionality
- * - Menu system and user interface
+ * - Menu system and user interface, including notification settings
  * - Archive and year generation functions
  * - Testing and diagnostic utilities
  */
@@ -670,8 +670,8 @@ function runSystemTests() {
   }
 }
 
-// ===== ENHANCED MENU SYSTEM (v24.2) =====
-// Automatically detects and communicates "test mode"
+// ===== ENHANCED MENU SYSTEM (v25.0) WITH NOTIFICATIONS =====
+
 function createMenuItems() {
   const ui = SpreadsheetApp.getUi();
   
@@ -690,6 +690,20 @@ function createMenuItems() {
       .addItem('🔄 Update Future Events Only', 'updateFutureEventsOnly')
       .addSeparator()
       .addItem('🚨 Full Calendar Regeneration', 'exportToGoogleCalendar'))
+    .addSeparator()
+    .addSubMenu(ui.createMenu('📢 Notifications')                    // ⭐ NEW SUBMENU
+      .addItem('💬 Send Weekly Chat Summary', 'sendWeeklyVisitationChat')
+      .addSeparator()
+      .addItem('🔄 Enable Weekly Auto-Send', 'createWeeklyNotificationTrigger')
+      .addItem('📅 Show Auto-Send Schedule', 'showCurrentTriggerSchedule')
+      .addItem('🛑 Disable Weekly Auto-Send', 'removeWeeklyNotificationTrigger')
+      .addSeparator()
+      .addItem('🔧 Configure Chat Webhook', 'configureNotifications')
+      .addItem('📋 Test Notification System', 'testNotificationSystem')
+      .addItem('🧪 Test Notification Now', 'testNotificationNow')
+      .addItem('🔍 Inspect All Triggers', 'inspectAllTriggers')
+      .addItem('🔄 Force Recreate Trigger', 'forceRecreateWeeklyTrigger')
+      .addItem('🧪 Test Calendar Link Config', 'testCalendarLinkConfiguration'))
     .addSeparator()
     .addItem('📊 Export Individual Schedules', 'exportIndividualSchedules')
     .addSeparator()
@@ -780,5 +794,3 @@ function onEdit(e) {
   }
   */
 }
-
-// END OF MODULE 4 (v24.2)
