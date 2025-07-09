@@ -86,7 +86,7 @@ function sendWeeklyVisitationChat() {
 
 function buildWeeklyCalendarSummary(visits, isTestMode = false) {
   /**
-   * UPDATED: Build summary showing 2 complete calendar weeks from next Sunday
+   * UPDATED: Build summary with configurable calendar link from spreadsheet
    */
   const chatPrefix = isTestMode ? '🧪 TEST: ' : '';
   const today = new Date();
@@ -220,12 +220,20 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
     });
   }
   
-  // Footer with instructions
+  // Footer with instructions and configurable calendar link
   message += `💡 *Instructions*: Call ahead to confirm visit times. Contact families 1-2 days before your scheduled visit.\n\n`;
+  
+  // NEW: Add calendar link from spreadsheet configuration
+  const calendarLink = getCalendarLinkFromSpreadsheet();
+  if (calendarLink) {
+    message += `📅 <${calendarLink}|View Visitation Calendar>\n\n`;
+  }
+  
   message += `🔄 This update is sent weekly. Reply here with questions or scheduling conflicts.`;
   
   return message;
 }
+
 // ===== CHAT WEBHOOK FUNCTIONS =====
 
 function sendToChatSpace(message, isTestMode = false) {
@@ -525,6 +533,39 @@ function testNotificationSystem() {
     SpreadsheetApp.getUi().alert(
       'Test Failed',
       `❌ Test notification failed: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+function testCalendarLinkConfiguration() {
+  /**
+   * Test function to verify calendar link configuration
+   */
+  try {
+    const calendarUrl = getCalendarLinkFromSpreadsheet();
+    const ui = SpreadsheetApp.getUi();
+    
+    let message = '📅 CALENDAR LINK CONFIGURATION TEST\n\n';
+    
+    if (calendarUrl) {
+      message += `✅ Calendar URL found in K19:\n${calendarUrl}\n\n`;
+      message += `This link will appear in weekly chat messages as:\n📅 View Visitation Calendar`;
+    } else {
+      message += `❌ No calendar URL found in K19\n\n`;
+      message += `To configure:\n`;
+      message += `1. Paste your Google Calendar embed URL in cell K19\n`;
+      message += `2. For testing: Use test calendar URL\n`;
+      message += `3. For production: Use production calendar URL`;
+    }
+    
+    ui.alert('Calendar Link Test Results', message, ui.ButtonSet.OK);
+    
+  } catch (error) {
+    console.error('Calendar link test failed:', error);
+    SpreadsheetApp.getUi().alert(
+      'Test Error',
+      `❌ Test failed: ${error.message}`,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   }
