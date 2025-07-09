@@ -335,6 +335,33 @@ function getNotesLink(config, householdIndex) {
 
 // ===== CONFIGURATION FUNCTIONS =====
 
+function getCalendarLinkFromSpreadsheet() {
+  /**
+   * Get calendar URL from configuration (now handled by Module 1)
+   */
+  try {
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const config = getConfiguration(sheet);
+    
+    if (config.calendarUrl && config.calendarUrl.trim().length > 0) {
+      const trimmedUrl = config.calendarUrl.trim();
+      
+      if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+        return trimmedUrl;
+      } else {
+        console.warn('Calendar URL does not appear to be valid:', trimmedUrl);
+        return '';
+      }
+    }
+    
+    return '';
+    
+  } catch (error) {
+    console.error('Error reading calendar URL:', error);
+    return '';
+  }
+}
+
 function configureNotifications() {
   /**
    * UI for configuring notification settings
