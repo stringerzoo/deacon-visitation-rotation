@@ -178,7 +178,7 @@ function getConfiguration(sheet) {
       visitFrequency: Number(visitFrequency),
       numWeeks: Number(numWeeks),
       calendarInstructions: String(calendarInstructions),
-      notificationDay: String(notifcationDay),
+      notificationDay: String(notificationDay),
       notificationHour: Number(notificationHour),
       calendarUrl: String(calendarUrl)
     };
