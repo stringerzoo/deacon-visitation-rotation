@@ -1,554 +1,355 @@
-# Setup Guide - Deacon Visitation Rotation System v24.2
+# Setup Guide - Deacon Visitation Rotation System v25.0
 
-This comprehensive guide covers setup, smart calendar features, and detailed calendar export timing information for the enhanced deacon visitation rotation system.
+> **Complete installation guide for the Deacon Visitation Rotation System with Google Chat notifications**
 
 ## 📋 Prerequisites
 
-Before starting, ensure you have:
-- Google Workspace account (free Gmail works)
-- Access to Google Sheets and Google Apps Script
-- List of deacon names/initials
-- List of household names to visit
-- Contact information for households (phone numbers and addresses)
-- **Breeze Church Management System access** (for profile integration)
-- **Google Docs for visit notes** (optional but recommended)
-- **Internet connectivity** (for URL shortening service)
+- **Google Workspace account** (free Gmail accounts work for basic features)
+- **Google Chat space** for deacon communication
+- **Breeze Church Management System** account (optional but recommended)
+- **Administrator access** to Google Sheets, Apps Script, and Calendar
+- **Basic familiarity** with Google Workspace tools
 
-## 🧪 Understanding Intelligent Test Mode Detection (NEW v24.2)
+---
 
-The system now automatically detects whether you're working with test data or live member data:
+## 🏗️ Step 1: Apps Script Project Setup
 
-### **How It Works:**
-- **Analyzes your spreadsheet data** for test patterns
-- **Automatically switches** between test and production calendars
-- **No manual configuration** required
+### **Create New Apps Script Project**
+1. Go to [Google Apps Script](https://script.google.com)
+2. Click **"New Project"**
+3. Delete the default `Code.gs` file
+4. **Rename the project** to "Deacon Visitation Rotation v25.0"
 
-### **Test Mode Triggers:**
-- ✅ Household names like "Alan Adams", "Barbara Baker", "Chloe Cooper"
-- ✅ Phone numbers with "555" prefix  
-- ✅ Breeze numbers starting with "12345"
-- ✅ Spreadsheet name containing "test" or "sample"
+### **Create 5 Module Files**
+Create these files by clicking the `+` next to "Files":
 
-### **Visual Indicators:**
-- **Cell K11**: "Current Mode:" label
-- **Cell K12**: "🧪 TEST MODE" (yellow) or "✅ PRODUCTION" (green)
-- **Menu**: Shows 🧪 or ✅ icon next to "Show Current Mode"
-- **Dialogs**: All confirmations indicate current mode
-
-### **Benefits:**
-- **Safe testing** - prevents accidental live calendar modifications
-- **Automatic transition** - switches to production when you use real data
-- **Clear communication** - always know which environment you're in
-
-> 💡 **Tip**: Start with the sample data provided in this guide. The system will automatically use test mode, then seamlessly switch to production when you replace with real member information.
-
-## 🔒 Data Privacy & Sample Data Setup
-
-### **Start with Sample Data**
-**Important**: Always begin setup and testing with fake sample data to protect member privacy.
-
-#### **Recommended Sample Data Pattern:**
-```
-Deacons: Andy A, Brian B, Chris C, Darell D
-Households: Alan & Alexa Adams, Barbara Baker, Chloe Cooper, Delilah Danvers
-Phone: (555) 123-XXXX format
-Addresses: Use generic examples or your church's public address
-```
-#### **Why Sample Data First?**
-- **Test all features safely** without exposing real member information
-- **Verify smart calendar functions** before adding sensitive data
-- **Share for troubleshooting** without privacy concerns
-- **Train users** on the new update options with non-sensitive examples
-
-> ⚠️ **Privacy Note**: Complete all testing with sample data before adding real member information. This protects your congregation's privacy during setup and troubleshooting.
-
-## 🏗️ Step 1: Set Up Native Modular Architecture (v24.2)
-
-### **Google Apps Script Project Setup**
-
-1. **Go to Google Apps Script**: [script.google.com](https://script.google.com)
-2. **Click "New Project"**
-3. **Delete the default `Code.gs` file**
-4. **Create 4 separate files** by clicking the `+` next to "Files":
-
-#### **File Structure:**
 ```
 📁 Your Apps Script Project
-├── Module1_Core_Config.gs          (~500 lines)
+├── Module1_Core_Config.gs           (~500 lines)
 ├── Module2_Algorithm.gs             (~470 lines)
 ├── Module3_Smart_Calendar.gs        (~200 lines)
-└── Module4_Export_Menu.gs           (~400 lines)
+├── Module4_Export_Menu.gs           (~400 lines)
+└── Module5_Notifications.gs         (~300 lines) ⭐ NEW
 ```
 
 ### **Copy Module Content**
-1. **Module1_Core_Config.gs**: Copy content from `src/module1-core-config.js`
-2. **Module2_Algorithm.gs**: Copy content from `src/module2-algorithm.js`
-3. **Module3_Smart_Calendar.gs**: Copy content from `src/module3-smart-calendar.js`
-4. **Module4_Export_Menu.gs**: Copy content from `src/module4-export-menu.js`
+1. **Module1_Core_Config.gs**: Copy from `src/module1-core-config.js`
+2. **Module2_Algorithm.gs**: Copy from `src/module2-algorithm.js`
+3. **Module3_Smart_Calendar.gs**: Copy from `src/module3-smart-calendar.js`
+4. **Module4_Export_Menu.gs**: Copy from `src/module4-export-menu.js`
+5. **Module5_Notifications.gs**: Copy from `src/module5-notifications.js` ⭐
 
-### **Configuration Note**
-The system will automatically detect test mode based on your data - no manual configuration needed!
+### **Save and Authorize**
+1. **Save all modules** (Ctrl/Cmd + S)
+2. **Run any function** to trigger authorization
+3. **Grant required permissions** when prompted
+4. **Verify no syntax errors** in any module
 
-## 📊 Step 2: Create Enhanced Google Spreadsheet Layout
+---
 
-### **Enhanced Column Structure (v24.2):**
+## 📊 Step 2: Enhanced Spreadsheet Setup (v25.0)
 
-#### **A-E: Main Rotation Schedule** (Auto-generated)
+### **Create New Google Spreadsheet**
+1. Go to [Google Sheets](https://sheets.google.com)
+2. Create a **new blank spreadsheet**
+3. **Rename** to "Deacon Visitation Rotation Generator"
+4. **Connect Apps Script** project:
+   - Extensions → Apps Script
+   - Select your project or paste the script ID
+
+### **Enhanced Column Layout**
+The v25.0 system uses this organized layout:
+
+#### **Main Schedule (A-E)** - Auto-generated
 - **A**: Cycle, **B**: Week, **C**: Week of, **D**: Household, **E**: Deacon
 
-#### **F: Buffer Column** (Leave empty)
+#### **Reports & Buffers (F-J)**
+- **F**: Buffer column (leave empty)
+- **G**: Deacon, **H**: Week of, **I**: Household (auto-generated reports)
+- **J**: Buffer column (leave empty)
 
-#### **G-I: Individual Deacon Reports** (Auto-generated)
-- **G**: Deacon, **H**: Week of, **I**: Household
-
-#### **J: Buffer Column** (Leave empty)
-
-#### **K: Configuration Settings** (Your input required)
+#### **Configuration (K)** - ⭐ Enhanced for v25.0
 ```
-K1: Start Date
-K2: 7/7/2025 (or your preferred start date)
-K3: Visits every x weeks (1,2,3,4)
-K4: 2 (for bi-weekly visits)
-K5: Length of schedule in weeks  
-K6: 52 (for one year)
-K7: Calendar Event Instructions:
-K8: Please call to confirm visit time. Contact family 1-2 days before scheduled date to arrange convenient time.
-```
-
-#### **L-M: Core Data Lists** (Start with sample data for testing)
-```
-L1: Deacons                    M1: Households
-L2: Andy A                     M2: Alan & Alexa Adams
-L3: Brian B                    M3: Barbara Baker
-L4: Chris C                    M4: Chloe Cooper
-L5: Darell D                   M5: Delilah Danvers
-... (continue with your data)
-```
-💡 **Setup Tip**: Use this sample data pattern during initial setup and testing. Replace with real member information only when ready for production use.
-
-#### **N-O: Basic Contact Information** (Your input required)
-```
-N1: Phone Number              O1: Address
-N2: (555) 123-1748            O2: 123 E. Kentucky St., Louisville, KY 40202
-N3: (555) 123-8359            O3: 6301 Bass Trail, Louisville, KY 40218
-N4: (555) 123-5723            O4: 1801 Lynn Way, Louisville, KY 40205
-... (continue with contact info)
+K1:  Start Date                        K2:  [Your start date]
+K3:  Visits every x weeks (1,2,3,4)    K4:  2
+K5:  Length of schedule in weeks       K6:  52
+K7:  Calendar Event Instructions:      K8:  [Custom instructions]
+K9:  [Empty - Buffer Space]
+K10: Weekly Notification Day:          K11: Sunday        ⭐ NEW
+K12: Weekly Notification Time (0-23):  K13: 18           ⭐ NEW
+K14: [Empty - Buffer Space]
+K15: Current Mode:                     K16: [Auto-detected] ⭐ MOVED
 ```
 
-#### **P-S: Church Management Integration**
+#### **Contact Data (L-S)**
+- **L**: Deacons, **M**: Households, **N**: Phone Numbers, **O**: Addresses
+- **P**: Breeze Links, **Q**: Notes Page Links
+- **R**: Breeze Links (short), **S**: Notes Page Links (short)
 
-##### **Column P: Breeze Link Numbers** (Your input required)
-```
-P1: Breeze Link
-P2: 29760588
-P3: 41827365
-P4: 15936847
-... (8-digit numbers from Breeze CMS people profiles)
-```
+### **Initial Data Entry**
+**Start with sample data for testing:**
 
-**How to find Breeze numbers:**
-1. **Go to your Breeze CMS** → People
-2. **Click on a household/person** profile
-3. **Look at the URL**: `https://[yourchurch].breezechms.com/people/view/29760588`
-4. **Copy the number** at the end (e.g., 29760588)
-5. **Paste into column P** for that household
-
-##### **Column Q: Notes Page Links** (Your input required)
+#### **Configuration (K2, K4, K6, K8, K11, K13)**
 ```
-Q1: Notes Pg Link
-Q2: https://docs.google.com/document/d/1abc123def456ghi789/edit
-Q3: https://docs.google.com/document/d/1xyz789abc123def456/edit
-Q4: https://docs.google.com/document/d/1def456ghi789xyz123/edit
-... (Full Google Doc URLs for visit notes)
+K2:  Next Monday's date
+K4:  2 (bi-weekly visits)
+K6:  52 (one year)
+K8:  Please call to confirm visit time. Contact family 1-2 days before.
+K11: Sunday (or your preferred notification day)
+K13: 18 (6 PM, or your preferred hour in 24-hour format)
 ```
 
-**How to set up Notes Pages:**
-1. **Create a Google Doc** for each household
-2. **Title**: "[Household Name] - Visit Notes"
-3. **Header section** with:
-   ```
-   Household: Alan & Alexa Adams
-   Phone: (555) 123-1748
-   Address: 123 E. Kentucky St., Louisville, KY 40202
-   Visiting Pastor: [Pastor Name]
-   ```
-4. **Three-column table** with headers: Date | Deacon | Visit Notes
-5. **Copy the sharing URL** and paste into column Q
-
-##### **Columns R-S: Auto-Generated Shortened URLs** (System generated)
+#### **Sample Deacons (L2-L6)**
 ```
-R1: Breeze Link (short)       S1: Notes Pg Link (short)
-R2: http://tinyurl.com/abc123 S2: http://tinyurl.com/def456
-R3: http://tinyurl.com/ghi789 S3: http://tinyurl.com/jkl012
-... (Generated automatically by the system)
+Andy B
+Mike B  
+Kris B
+Cody G
+Jim H
 ```
 
-## 🔧 Step 3: Test the Native Modular System
-
-1. **Refresh your spreadsheet** (F5 or Ctrl+R)
-2. **You should see the enhanced menu**: "🔄 Deacon Rotation"
-3. **If the menu doesn't appear**:
-   - Go back to Apps Script
-   - Click **Run** → **onOpen** from any module
-   - **Authorize permissions** (external URL access for shortening)
-   - Refresh the spreadsheet
-
-## ✅ Step 4: Generate Schedule and Test Smart Calendar Features
-
-### **4.1: Validate Enhanced Setup**
-1. **Click "🔄 Deacon Rotation" → "🔧 Validate Setup"**
-   - Reports Breeze links and Notes links counts
-   - Validates new column structure
-   - Checks all module integration
-
-### **4.2: Generate Schedule**
-1. **Click "🔄 Deacon Rotation" → "📅 Generate Schedule"**
-   - Creates rotation in columns A-E
-   - Generates deacon reports in columns G-I
-
-### **4.3: Generate Shortened URLs**
-1. **Click "🔄 Deacon Rotation" → "🔗 Generate Shortened URLs"**
-   - Builds full Breeze URLs from numbers in column P
-   - Shortens both Breeze and Notes URLs
-   - Stores results in columns R and S
-   - **Process time**: ~0.5 seconds per household (includes API delays)
-
-### **4.4: Test Smart Calendar Functions** ⭐ **NEW**
-
-#### **Initial Calendar Setup**
-1. **Click "🔄 Deacon Rotation" → "📆 Calendar Functions" → "🚨 Full Calendar Regeneration"**
-   - Creates initial calendar with all events
-   - **Important**: This step is required before smart updates work
-
-#### **Test Contact Info Updates**
-1. **Change a phone number** in column N (e.g., Adams from (555) 123-1748 to (555) 999-0001)
-2. **Click "📆 Calendar Functions" → "📞 Update Contact Info Only"**
-3. **Verify**: Calendar event keeps original time but shows new phone number
-
-#### **Test Future Events Updates**
-1. **Manually modify current week's calendar event** (change time from 2 PM to 4 PM)
-2. **Change an address** in column O  
-3. **Click "📆 Calendar Functions" → "🔄 Update Future Events Only"**
-4. **Verify**: Current week event unchanged, future events have new address
-
-## 📅 Calendar Export Process & Timing
-
-### **What Happens During Calendar Export**
-
-The enhanced calendar export process includes several steps to ensure reliable operation:
-
-1. **Configuration Loading**: Reads all household data, contact info, and links
-2. **URL Preparation**: Uses shortened URLs if available, falls back to full URLs
-3. **Calendar Setup**: Creates or accesses calendar (automatically named based on test mode)
-4. **Optional Event Deletion**: If you choose to clear existing events (with delays)
-5. **Event Creation**: Creates enhanced events with rich descriptions (with rate limiting)
-6. **Progress Monitoring**: Logs progress and handles any individual failures
-
-### **Runtime Expectations**
-
-#### **Simple Heuristic:**
-**"Expect approximately 30-45 seconds per 100 events"**
-
-#### **Detailed Timing Formula:**
+#### **Sample Households (M2-M6)**
 ```
-Total Runtime = (Number of Events × 0.35 seconds) + (Number of Events ÷ 25 seconds)
-                    ↑                                ↑
-            Google Calendar API processing    Rate limiting delays
+Alan & Alexa Adams
+Barbara Baker
+Chloe Cooper
+David Danvers
+Emma Evans
 ```
 
-#### **Real-World Examples:**
-| Events | Expected Time | What You'll See |
-|--------|---------------|-----------------|
-| 25 | 10-15 seconds | Very quick |
-| 50 | 20-30 seconds | Quick completion |
-| 100 | 30-45 seconds | Standard processing |
-| 150 | 45-60 seconds | Longer but reliable |
-| 200 | 60-90 seconds | Extended processing |
-| 300+ | 2-3 minutes | Large schedule handling |
+#### **Sample Contact Info (N2-O6)**
+Add sample phone numbers and addresses for testing.
 
-#### **Factors That Affect Runtime:**
-- **Internet connection speed** to Google's servers
-- **Google Calendar API load** (varies throughout the day)
-- **Event deletion** (if clearing existing events)
-- **Time of day** (Google services faster during off-peak hours)
-- **Update method**: Contact Info Only is fastest, Full Regeneration takes longest
+---
 
-### **Rate Limiting Protection**
+## 🔔 Step 3: Google Chat Notifications Setup ⭐ NEW
 
-The system includes intelligent delays to prevent "too many operations" errors:
+### **Create Google Chat Webhook**
 
-#### **During Event Creation:**
-- **Pause every 25 events**: 1-second delay
-- **Progress logging**: "Created X events so far..."
-- **Individual error isolation**: One failed event won't stop the process
+#### **For Google Workspace (Recommended)**
+1. **Open Google Chat** in your browser
+2. **Go to your deacon chat space**
+3. **Click the space name** at the top
+4. **Select "Apps & integrations"**
+5. **Click "Add webhooks"**
+6. **Name the webhook**: "Deacon Visitation Notifications"
+7. **Click "Save"** and **copy the webhook URL**
 
-#### **During Event Deletion (if clearing existing):**
-- **Pause every 10 deletions**: 0.5-second delay
-- **Cooldown period**: 2-second wait before creating new events
-- **Batch processing**: Handles large numbers of existing events safely
+#### **For Personal Gmail Accounts**
+1. **Create a Google Chat space** for deacon communication
+2. **Follow the same webhook creation process**
+3. **Invite all deacons** to the chat space
+4. **Test webhook access** with a simple message
 
-#### **During Smart Updates:**
-- **Contact Info Only**: Fastest option - only updates descriptions
-- **Future Events Only**: Moderate speed - deletes and recreates future events only
-- **Full Regeneration**: Slowest - complete rebuild with all safety delays
+### **Configure Webhook in Apps Script**
+1. **Go to your Apps Script project**
+2. **Run the menu**: 🔄 Deacon Rotation → 📢 Notifications → 🔧 Configure Chat Webhook
+3. **Paste your webhook URL** when prompted
+4. **Set up test webhook** (optional but recommended):
+   - Create a separate test chat space
+   - Generate another webhook URL
+   - Configure as test webhook for development
 
-### **What You'll Experience**
+### **Test Notification System**
+1. **Run**: 📢 Notifications → 📋 Test Notification System
+2. **Verify message appears** in your Google Chat space
+3. **Check formatting and links** work correctly
+4. **Confirm test/production mode** separation if using both
 
-#### **Normal Operation:**
-- **Progress appears steady** with occasional brief pauses
-- **Console logs show** event creation progress
-- **No error messages** during successful operation
-- **Final success dialog** appears with event count
-- **Calendar events** appear with rich descriptions and working links
+---
 
-#### **If You See Long Delays:**
-- **This is normal** for larger schedules (150+ events)
-- **Don't interrupt the process** - let the rate limiting work
-- **Watch for progress messages** in the console
-- **Success dialog** will appear when complete
+## 📅 Step 4: Calendar Integration Setup
 
-### **Troubleshooting Long Runtimes**
+### **Smart Calendar Export**
+1. **Generate your first schedule**: 🔄 Deacon Rotation → 📅 Generate Schedule
+2. **Create shortened URLs**: 🔄 Deacon Rotation → 🔗 Generate Shortened URLs
+3. **Export to calendar**: 📆 Calendar Functions → 🚨 Full Calendar Regeneration
 
-#### **If Export Takes Much Longer Than Expected:**
+### **Test Smart Calendar Features**
+1. **Update Contact Info Only**: Preserves all scheduling details
+2. **Update Future Events Only**: Protects current week planning
+3. **Verify test mode detection**: Check if using test calendar vs. production
 
-**"Script running over 5 minutes for 100 events"**
-- **Check internet connection** - slow connection affects API calls
-- **Try during off-peak hours** (early morning or late evening)
-- **Reduce schedule size** to test with smaller batches first
-- **Use Contact Info Only** instead of Full Regeneration when possible
+---
 
-**"Script seems frozen with no progress"**
-- **Check browser console** for error messages
-- **Don't refresh** - this will interrupt the process
-- **Wait for timeout** - script will eventually show error or success
+## ⚙️ Step 5: Notification Automation Setup
 
-**"Getting 'too many operations' errors despite rate limiting"**
-- **Wait 10-15 minutes** for Google's rate limit to reset
-- **Try smaller batch** of events first
-- **Use Contact Info Only** instead of clearing all events
-- **Check if test mode** is properly detected to avoid conflicts
+### **Configure Weekly Automation**
+1. **Set notification timing** in spreadsheet:
+   - **K11**: Day of week (Sunday, Monday, etc.)
+   - **K13**: Hour in 24-hour format (18 = 6 PM)
 
-### **Best Practices for Large Schedules**
+2. **Enable automation**: 📢 Notifications → 🔄 Enable Weekly Auto-Send
+   - **Review timing confirmation**
+   - **Verify webhook destination**
+   - **Confirm automation setup**
 
-#### **For 200+ Events:**
-1. **Schedule during off-peak hours** (early morning recommended)
-2. **Test with smaller subset first** (4-6 weeks)
-3. **Ensure stable internet connection**
-4. **Don't use computer for other intensive tasks** during export
-5. **Be patient** - the system is designed for reliability over speed
-6. **Use smart updates** when possible instead of full regeneration
+3. **Monitor automation**: 📢 Notifications → 📅 Show Auto-Send Schedule
+   - **Check trigger status**
+   - **Verify next execution time**
+   - **Review configuration details**
 
-#### **For Very Large Schedules (400+ Events):**
-- **Consider breaking into quarters** (export 13 weeks at a time)
-- **Use incremental approach** rather than clearing all events
-- **Plan for 5-10 minute processing time**
-- **Monitor system resources** during processing
-- **Prefer Contact Info Only updates** for contact changes
+### **Test Automation (Optional)**
+1. **Set test time** (e.g., 15 minutes from now)
+2. **Enable automation** with test timing
+3. **Wait for notification** to verify delivery
+4. **Reset to production timing**
 
-### **Performance Optimization Tips**
+---
 
-#### **To Reduce Runtime:**
-- **Generate shortened URLs first** (avoids real-time URL shortening)
-- **Use smart update options** instead of full regeneration:
-  - **Contact Info Only** - fastest, preserves all scheduling
-  - **Future Events Only** - moderate speed, protects current week
-- **Export during Google's off-peak hours**
-- **Ensure good internet connection**
+## 🧪 Step 6: Test Mode vs Production
 
-#### **To Improve Reliability:**
-- **Start with validation** to catch configuration errors early
-- **Test with small schedule first** before full year export
-- **Don't interrupt the process** once it starts
-- **Let rate limiting delays work** - they prevent failures
-- **Use test mode** for initial testing to avoid production calendar conflicts
+### **Understanding Test Mode**
+The system automatically detects test mode based on data patterns:
+- **Test indicators**: Sample names (Alan Adams, Barbara Baker), test phone numbers (555-xxx-xxxx)
+- **Automatic switching**: Changes to production mode with real member data
+- **Visual indicators**: K16 shows current mode (🧪 TEST MODE / ✅ PRODUCTION)
 
-## 🎯 Step 5: Understanding Smart Calendar Update Options
+### **Safe Testing Workflow**
+1. **Start with sample data** for all initial testing
+2. **Test all features** with fake information
+3. **Verify notifications work** in test chat space
+4. **Replace with real data** when ready for production
+5. **Confirm production mode** activation
 
-### **📞 Update Contact Info Only** ⭐ **SAFEST OPTION**
-**When to use**: Contact information changes (phone, address, Breeze numbers, notes links)
+---
 
-**What it preserves**:
-- ✅ Custom event times and dates
-- ✅ Guest lists and invitations  
-- ✅ Location details
-- ✅ All scheduling customizations
+## 🔧 Step 7: Advanced Configuration
 
-**What it updates**:
-- 🔄 Phone numbers
-- 🔄 Addresses  
-- 🔄 Breeze profile links
-- 🔄 Notes page links
-- 🔄 Calendar instructions
+### **Notification Customization**
+- **Timing flexibility**: Any day of week, any hour (0-23)
+- **Content customization**: Modify message templates in Module 5
+- **Multiple environments**: Separate test and production webhooks
+- **Error handling**: Built-in diagnostics and retry mechanisms
 
-**Process**: Updates event descriptions only, preserving all other event details.
-**Speed**: Fastest option - typically 30-60 seconds for 100+ events.
+### **Calendar Enhancement**
+- **Breeze integration**: Add 8-digit Breeze numbers in column P
+- **Notes integration**: Add Google Docs URLs in column Q
+- **Mobile optimization**: Automatic URL shortening for field access
+- **Custom instructions**: Personalized messaging in calendar events
 
-### **🔄 Update Future Events Only**
-**When to use**: Contact changes during the week without affecting current week scheduling
+### **Performance Optimization**
+- **Large schedules**: System handles 300+ events efficiently
+- **Rate limiting**: Built-in protections for Google API limits
+- **Batch processing**: Optimized for churches with many deacons/households
+- **Error recovery**: Graceful handling of temporary service issues
 
-**What it preserves**:
-- ✅ This week's scheduling details and customizations
-- ✅ Any current week modifications deacons have made
+---
 
-**What it updates**:
-- 🔄 Events starting next week with current contact info
-- 🔄 Future deacon assignments if schedule changed
+## 🎛️ Step 8: Master the Enhanced Menu System
 
-**Process**: Deletes and recreates events starting next week only.
-**Speed**: Moderate - depends on number of future events.
-
-### **🚨 Full Calendar Regeneration**
-**When to use**: Major structural changes (new deacons, household changes, schedule rebuild)
-
-**What it preserves**:
-- ❌ Nothing - complete rebuild
-
-**What it updates**:
-- 🔄 Everything with enhanced warnings
-
-**Process**: Deletes ALL events and recreates from current spreadsheet data.
-**Speed**: Slowest - full timing expectations apply.
-
-### **Success Indicators**
-
-#### **Your Export is Working Well When:**
-✅ **Steady progress** with occasional planned pauses  
-✅ **Console shows** "Created X events so far..." or "Updated X events so far..." messages  
-✅ **No error alerts** during processing  
-✅ **Final success dialog** appears with event count  
-✅ **Calendar events** appear with rich descriptions and working links  
-✅ **Test mode detection** shows correct environment
-
-#### **Example Success Messages:**
-
-**Contact Info Only:**
-```
-✅ Updated contact information in 135 calendar events!
-
-📞 Refreshed: Phone numbers, addresses, Breeze links, Notes links
-🔒 Preserved: All custom scheduling details, times, dates, guests
-
-All events now have current contact information.
-```
-
-**Full Regeneration:**
-```
-✅ Created 135 calendar events with enhanced information!
-
-📅 Calendar: "Deacon Visitation Schedule" (or "TEST - Deacon Visitation Schedule")
-🕐 Default time: 2:00 PM - 3:00 PM
-🔗 Includes: Breeze profiles and visit notes links
-📞 Contact info: Phone numbers and addresses
-📝 Instructions: Custom visit coordination text
-
-Each event title: "[Deacon] visits [Household]"
-View and modify these events in Google Calendar.
-```
-
-## 🧪 Step 6: Test with Sample Data Scenarios
-
-### **Scenario 1: Mid-Week Contact Update**
-```
-Situation: It's Wednesday, Adams family got new phone number
-Solution: Use "📞 Update Contact Info Only"
-Result: All events keep custom scheduling, phone number updated
-Speed: ~30 seconds for 100+ events
-```
-
-### **Scenario 2: Future Planning Changes**
-```
-Situation: Next month's assignments need updating, this week is planned
-Solution: Use "🔄 Update Future Events Only"  
-Result: Current week untouched, future events refreshed
-Speed: ~60 seconds for 100+ future events
-```
-
-### **Scenario 3: Major Schedule Overhaul**
-```
-Situation: New deacon added, household list changed significantly
-Solution: Use "🚨 Full Calendar Regeneration" (with warnings)
-Result: Complete rebuild with all current data
-Speed: ~2-3 minutes for 200+ events
-```
-
-## 🚨 Troubleshooting Smart Calendar Features
-
-### **Common Issues:**
-
-**"Menu doesn't show Calendar Functions submenu"**
-- Verify all 4 modules copied correctly to Apps Script
-- Re-authorize script permissions 
-- Run onOpen function manually from Apps Script
-- Refresh spreadsheet after module setup
-
-**"Update Contact Info Only doesn't find events"**
-- Ensure calendar exists (run Full Calendar Regeneration first)
-- Check event titles match "[Deacon] visits [Household]" format
-- Verify household names in spreadsheet match calendar events exactly
-- Check if test mode is properly detected
-
-**"Future Events Only deletes too many events"**
-- Function preserves current week (7 days from today)
-- Check dates to ensure proper week boundary
-- Use Contact Info Only for safer updates
-
-**"Smart updates missing information"**
-- Run "Generate Shortened URLs" before calendar updates
-- Verify contact information in columns N-O
-- Check Breeze numbers and Notes links in columns P-Q
-
-**"Calendar export fails with 'too many operations'"**
-- **Wait 5-10 minutes** for Google's rate limit to reset
-- **Use smaller schedule** for initial testing
-- **Don't clear existing events** unless necessary
-- **Try Contact Info Only** instead of full regeneration
-- System includes automatic rate limiting - let it work
-
-**"Calendar events appear in wrong calendar (test vs production)"**
-- Check mode indicator in cells K11-K12
-- Use "Show Current Mode" menu option to verify detection
-- Ensure test data patterns are properly recognized
-- Mode detection happens automatically based on spreadsheet data
-
-### **Enhanced System Tests:**
-Run **"🔄 Deacon Rotation" → "🧪 Run Tests"** to verify:
-- All module integration working correctly
-- URL shortening functionality
-- Breeze URL construction
-- Calendar access permissions
-- Script permissions for external services
-- Test mode detection accuracy
-
-For detailed technical explanations of these systems, see [Technical Features Reference](FEATURES.md).
-
-## 🎛️ Step 7: Master the Enhanced Menu System
-
-### **Menu Structure (v24.2):**
+### **Menu Structure (v25.0):**
 ```
 🔄 Deacon Rotation
 ├── 📅 Generate Schedule
 ├── 🔗 Generate Shortened URLs
-├── 📆 Calendar Functions                    ⭐ NEW SUBMENU
+├── 📆 Calendar Functions                    
 │   ├── 📞 Update Contact Info Only         (Safest updates)
 │   ├── 🔄 Update Future Events Only        (Current week safe)
 │   └── 🚨 Full Calendar Regeneration       (Complete rebuild)
+├── 📢 Notifications                         ⭐ NEW SUBMENU
+│   ├── 💬 Send Weekly Chat Summary         
+│   ├── ⏰ Send Tomorrow's Reminders        
+│   ├── 🔧 Configure Chat Webhook           
+│   ├── 📋 Test Notification System         
+│   ├── 🔄 Enable Weekly Auto-Send          
+│   ├── 📅 Show Auto-Send Schedule          
+│   ├── 🛑 Disable Weekly Auto-Send         
+│   └── [Additional diagnostic tools...]    
 ├── 📊 Export Individual Schedules
 ├── 📁 Archive Current Schedule
 ├── 🗓️ Generate Next Year
 ├── 🔧 Validate Setup
 ├── 🧪 Run Tests
-├── [🧪/✅] Show Current Mode               ⭐ NEW
+├── [🧪/✅] Show Current Mode               
 └── ❓ Setup Instructions
 ```
 
 ### **Recommended Usage Flow:**
 1. **Initial Setup**: Full Calendar Regeneration
-2. **Regular Updates**: Update Contact Info Only  
-3. **Weekly Planning**: Update Future Events Only (if needed)
-4. **Major Changes**: Full Calendar Regeneration (with caution)
-5. **Mode Checking**: Use "Show Current Mode" anytime
+2. **Weekly Management**: Automated notifications via chat
+3. **Contact Updates**: Update Contact Info Only  
+4. **Planning Ahead**: Update Future Events Only (if needed)
+5. **Major Changes**: Full Calendar Regeneration (with caution)
+6. **Troubleshooting**: Use diagnostic tools in Notifications submenu
 
-## 🔄 Step 8: Development and Maintenance Workflow
+---
+
+## 🆘 Troubleshooting
+
+### **Common Notification Issues**
+
+#### **Notifications Not Sending**
+1. **Check webhook URL**: 📢 Notifications → 🔧 Configure Chat Webhook
+2. **Verify permissions**: Apps Script needs external URL access
+3. **Test manually**: 📢 Notifications → 💬 Send Weekly Chat Summary
+4. **Check Google Chat space**: Ensure webhook is active
+
+#### **Wrong Timing**
+1. **Verify K11 and K13 values**: Check day name and hour format
+2. **Google Apps Script delays**: Triggers can be 15-20 minutes late
+3. **Timezone settings**: Check Apps Script project timezone
+4. **Recreate triggers**: 🛑 Disable then 🔄 Enable weekly auto-send
+
+#### **Test Mode Issues**
+1. **Check data patterns**: Sample data triggers test mode
+2. **Verify mode indicator**: K16 should show current mode
+3. **Manual mode refresh**: Run "Show Current Mode" from menu
+4. **Test webhook separation**: Ensure test/production webhooks configured
+
+### **Google Apps Script Limitations**
+- **Trigger reliability**: New triggers may not fire immediately (24-48 hour "settling")
+- **Execution timing**: Can be 15-20+ minutes late
+- **Service dependencies**: Occasional Google service interruptions
+- **Quota limits**: Daily execution limits for complex operations
+
+### **Calendar Integration Issues**
+1. **Permission errors**: Re-authorize Apps Script permissions
+2. **Calendar access**: Verify shared calendar permissions
+3. **Event formatting**: Check Breeze numbers and Notes URLs
+4. **Test mode separation**: Confirm using correct calendar (test vs. production)
+
+---
+
+## 📱 Mobile Access
+
+### **Google Chat on Mobile**
+- **Install Google Chat app** for real-time notifications
+- **Enable push notifications** for the deacon chat space
+- **Bookmark key links** (Breeze, Notes folders) for quick access
+- **Test mobile access** to ensure links work on phones/tablets
+
+### **Calendar Access**
+- **Google Calendar app** for viewing and updating visit times
+- **Offline sync** for accessing contact info without internet
+- **Personal calendar integration** for private reminders
+- **Quick editing** of visit times from mobile devices
+
+---
+
+## 🎯 Production Deployment Checklist
+
+### **Before Going Live:**
+- [ ] **All sample data replaced** with real member information
+- [ ] **Production webhook configured** and tested
+- [ ] **Calendar permissions verified** for all deacons
+- [ ] **Notification timing confirmed** (K11, K13 values)
+- [ ] **Test mode indicator shows** ✅ PRODUCTION in K16
+- [ ] **Weekly automation enabled** with correct timing
+- [ ] **Deacons informed** about new notification system
+- [ ] **Backup schedule exported** (📁 Archive Current Schedule)
+
+### **First Week Monitoring:**
+- [ ] **Verify notification delivery** on scheduled day/time
+- [ ] **Check message formatting** and link functionality
+- [ ] **Monitor Google Chat space** for deacon questions
+- [ ] **Test calendar event access** from mobile devices
+- [ ] **Confirm automation continues** working week 2
+- [ ] **Document any issues** for future troubleshooting
+
+---
+
+## 🔄 Development and Maintenance Workflow
 
 ### **Module-Based Updates:**
 When you need to make changes:
@@ -563,43 +364,91 @@ When you need to make changes:
 - **Module 2**: Core algorithm, schedule generation, deacon reports  
 - **Module 3**: Smart calendar updates, contact preservation, test mode detection
 - **Module 4**: Full calendar export, individual schedules, menu system
+- **Module 5**: Google Chat notifications, triggers, webhook management ⭐
 
 ### **Regular Maintenance Tasks:**
-- **Weekly**: Test smart calendar updates with sample data
+- **Weekly**: Monitor notification delivery and deacon feedback
 - **Monthly**: Review shortened URLs in columns R-S for any failures
 - **Quarterly**: Run system tests to verify all integrations
 - **Yearly**: Archive previous schedules and generate next year
+- **As needed**: Update webhook URLs if chat spaces change
 
 ---
 
-**Remember: The system prioritizes reliability over speed. The built-in delays and smart update options ensure your calendar operations complete successfully while preserving the scheduling customizations that deacons depend on for effective pastoral care!** 🎯
+## 🔍 Advanced Diagnostic Tools
 
-## 🔐 Pre-Production Security Checklist
+### **Notification System Diagnostics**
+Available in 📢 Notifications submenu:
 
-Before transitioning from sample data to real member information:
+- **🧪 Test Notification Now**: Immediate test message
+- **🔍 Inspect All Triggers**: Shows all active triggers
+- **🔄 Force Recreate Trigger**: Rebuilds weekly automation
+- **🐛 Debug Trigger Creation**: Detailed troubleshooting
+- **🕐 Check Timezone Settings**: Verifies Apps Script timezone
 
-✅ **All smart calendar features tested** with sample data  
-✅ **Google Sheets permissions** properly configured  
-✅ **Only authorized deacons** have edit access  
-✅ **Breeze CMS access** limited to appropriate users  
-✅ **Visit notes documents** have proper sharing settings  
-✅ **No sample data** mixed with real member information  
-✅ **Backup procedures** established for member data  
-✅ **Smart update options** understood by all users
-✅ **Test mode detection** verified with sample data patterns
+### **System Health Monitoring**
+- **Configuration validation**: Automatic checks for common issues
+- **Webhook connectivity**: Real-time testing of chat integration
+- **Calendar permissions**: Verification of access rights
+- **URL shortening**: Service availability and quota monitoring
 
-## 🎉 Success Checklist
+---
 
-✅ **Native modular architecture** deployed with 4 separate .gs files  
-✅ **Spreadsheet configured** with P-S columns for integration  
-✅ **Breeze numbers added** for household profile access  
-✅ **Google Docs created** for visit documentation  
-✅ **Shortened URLs generated** for clean presentation  
-✅ **Smart calendar functions tested** with sample data  
-✅ **Contact info only updates** verified to preserve scheduling  
-✅ **Future events only updates** confirmed to protect current week  
-✅ **Test mode detection** working automatically
-✅ **Deacon training completed** on new update options  
-✅ **Mobile access verified** for field use  
+## 💡 Tips for Success
 
-**Ready for comprehensive pastoral care coordination with smart calendar management!** 🎯
+### **Best Practices:**
+1. **Start small**: Begin with 3-5 deacons and households for initial testing
+2. **Use test mode**: Always test new features with sample data first
+3. **Monitor timing**: Google's trigger delays are normal (15-20+ minutes)
+4. **Keep webhooks secure**: Don't share webhook URLs outside your team
+5. **Regular backups**: Use Archive function before major changes
+
+### **Deacon Training:**
+1. **Show notification format**: Walk through a sample chat message
+2. **Explain timing**: When notifications arrive and what they contain
+3. **Demonstrate links**: How to access Breeze profiles and Notes
+4. **Mobile setup**: Help with Google Chat app installation
+5. **Feedback collection**: Gather input for system improvements
+
+### **Common Gotchas:**
+- **Trigger delays**: New weekly triggers need 24-48 hours to stabilize
+- **Test data**: Using sample names keeps system in test mode
+- **Webhook changes**: Moving chat spaces requires webhook reconfiguration
+- **Timezone confusion**: Apps Script uses project timezone, not local time
+- **Calendar permissions**: Shared calendars need explicit access for all deacons
+
+---
+
+## 🚀 Next Steps After Setup
+
+### **Week 1: Initial Deployment**
+1. **Generate first schedule** with real member data
+2. **Export to calendar** and verify all deacons can access
+3. **Send first notification** manually to verify delivery
+4. **Enable weekly automation** with appropriate timing
+5. **Monitor deacon feedback** and adjust as needed
+
+### **Week 2-4: Optimization**
+1. **Fine-tune notification timing** based on deacon preferences
+2. **Add Breeze numbers** and Notes links for enhanced functionality
+3. **Train deacons** on smart calendar features
+4. **Test smart update functions** with contact information changes
+5. **Document local customizations** for future reference
+
+### **Ongoing: Maintenance Mode**
+1. **Monitor weekly notifications** for consistent delivery
+2. **Update contact information** using smart calendar functions
+3. **Archive completed schedules** quarterly or yearly
+4. **Review and update** deacon and household lists as needed
+5. **Share improvements** with the broader church technology community
+
+---
+
+**🎉 Congratulations! Your Deacon Visitation Rotation System v25.0 is now ready to transform your church's pastoral care coordination with intelligent scheduling and automated notifications!**
+
+> **Remember**: The system prioritizes reliability and member privacy while providing modern automation tools. The built-in delays and smart update options ensure your calendar operations complete successfully while preserving the personal touch that makes deacon ministry meaningful.
+
+For additional support:
+- 📖 **[Features Documentation](FEATURES.md)** - Technical implementation details
+- 📝 **[Changelog](CHANGELOG.md)** - Version history and updates  
+- 🆘 **[GitHub Issues](https://github.com/your-repo/issues)** - Community support and bug reports
