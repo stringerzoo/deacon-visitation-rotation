@@ -1,4 +1,4 @@
-# Technical Features Reference - Deacon Visitation Rotation System
+# Technical Features Reference - Deacon Visitation Rotation System v25.0
 
 This document provides deep technical explanations of the system's core algorithms, implementation details, and advanced features. For setup instructions, see [SETUP.md](SETUP.md). For project overview, see [README.md](README.md).
 
@@ -56,7 +56,7 @@ const isComplexHarmonic = commonFactor > 1 && !isSimpleHarmonic;
 - **Quality metrics** validate final rotation patterns
 - **Fallback mechanisms** ensure schedule generation never fails
 
-## 🔄 Smart Calendar Update System (v24.2)
+## 🔄 Smart Calendar Update System
 
 ### Event Preservation Architecture
 **Core Challenge**: Google Calendar events contain both system data (contact info) and user customizations (times, guests, locations). Traditional approaches lose user customizations.
@@ -96,6 +96,131 @@ const isTestMode = testIndicators.some(check => check());
 - **Mode-aware dialogs** with current state information
 - **Calendar name adaptation** based on detected mode
 
+## 🔔 Google Chat Notification System (v25.0)
+
+### Webhook-Based Architecture
+**Core Implementation:**
+```javascript
+function sendToChatSpace(message) {
+  const webhookUrl = PropertiesService.getScriptProperties().getProperty('CHAT_WEBHOOK_URL');
+  
+  const payload = {
+    text: message,
+    cards: [{
+      sections: [{
+        widgets: [{ textParagraph: { text: message } }]
+      }]
+    }]
+  };
+  
+  UrlFetchApp.fetch(webhookUrl, {
+    method: 'POST',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload)
+  });
+}
+```
+
+**Advanced Features:**
+- **Rich card formatting** with structured layouts
+- **Direct link integration** to Breeze profiles and Notes documents
+- **Test mode separation** with dedicated test webhooks
+- **Error handling** with retry mechanisms and user feedback
+
+### Automated Trigger Management
+**Smart Trigger Creation:**
+```javascript
+function createWeeklyNotificationTrigger() {
+  const sheet = SpreadsheetApp.getActiveSheet();
+  const notificationDay = sheet.getRange('K11').getValue();
+  const notificationHour = parseInt(sheet.getRange('K13').getValue());
+  
+  // Delete existing triggers to avoid duplicates
+  const existingTriggers = ScriptApp.getProjectTriggers()
+    .filter(trigger => trigger.getHandlerFunction() === 'sendWeeklyVisitationChat');
+  
+  existingTriggers.forEach(trigger => ScriptApp.deleteTrigger(trigger));
+  
+  // Create new weekly trigger
+  ScriptApp.newTrigger('sendWeeklyVisitationChat')
+    .timeBased()
+    .everyWeeks(1)
+    .onWeekDay(getScriptAppWeekDay(notificationDay))
+    .atHour(notificationHour)
+    .create();
+}
+```
+
+**Configuration Integration:**
+- **Spreadsheet-based scheduling** with data validation dropdowns
+- **Flexible timing** - any day of week, any hour (24-hour format)
+- **Automatic trigger recreation** when settings change
+- **Visual feedback** showing current trigger status
+
+### Message Intelligence
+**Smart Visit Filtering:**
+```javascript
+function getUpcomingVisits(daysAhead = 7) {
+  const scheduleData = getScheduleFromSheet(sheet);
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() + daysAhead);
+  
+  return scheduleData.filter(visit => {
+    const visitDate = new Date(visit.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return visitDate >= today && visitDate <= cutoffDate;
+  }).sort((a, b) => new Date(a.date) - new Date(b.date));
+}
+```
+
+**Rich Message Formatting:**
+- **Grouped by deacon** with clear visual separation
+- **Contact information** including phones and addresses
+- **Direct action links** to Breeze and Notes documents
+- **Contextual instructions** for visit coordination
+
+## 🏗️ Enhanced Modular Architecture (v25.0)
+
+### Five-Module System
+```javascript
+// Module distribution and responsibilities
+Module1_Core_Config.gs      // Configuration, validation, headers (~500 lines)
+Module2_Algorithm.gs        // Rotation algorithm, pattern generation (~470 lines)
+Module3_Smart_Calendar.gs   // Calendar updates, mode detection (~200 lines)
+Module4_Export_Menu.gs      // Full export, individual schedules, menu system (~400 lines)
+Module5_Notifications.gs    // Google Chat integration, triggers (~300 lines)
+```
+
+**Cross-Module Communication:**
+- **Shared constants** accessible across all modules
+- **Function availability** throughout execution context
+- **Global variables** for configuration state
+- **Error propagation** with module-specific identification
+
+### Configuration Management System
+**Enhanced Column K Layout (v25.0):**
+```javascript
+K1:  Start Date                        K2:  [User input]
+K3:  Visits every x weeks              K4:  [User input]
+K5:  Length of schedule in weeks       K6:  [User input]
+K7:  Calendar Event Instructions       K8:  [User input]
+K9:  [Buffer Space]
+K10: Weekly Notification Day           K11: [Dropdown validation]
+K12: Weekly Notification Time (0-23)   K13: [Dropdown validation]
+K14: [Buffer Space]
+K15: Current Mode                      K16: [Auto-detected]
+```
+
+**Data Validation Integration:**
+- **Dropdown menus** prevent invalid day/time entries
+- **Real-time validation** at spreadsheet level
+- **Error prevention** through UI constraints
+- **User guidance** with clear option lists
+
+## ⚙️ Advanced Configuration & Performance
+
 ### Rate Limiting Implementation
 **Google Calendar API Protection:**
 ```javascript
@@ -109,63 +234,13 @@ if ((index + 1) % 25 === 0) {
   Utilities.sleep(1000); // 1 second pause every 25 creations
   console.log(`Created ${index + 1} events so far...`);
 }
-
-// Phase transition cooldown
-Utilities.sleep(2000); // 2 second wait between deletion and creation
 ```
 
-**Performance Optimization:**
-- **Batch processing** with intelligent delays
-- **Progress tracking** for transparency
-- **Error recovery** with individual event isolation
-- **API quota management** prevents service disruption
-
-## 🔗 Integration Systems
-
-### Church Management API Integration
-**Breeze CMS Architecture:**
-```javascript
-function buildBreezeUrl(breezeNumber) {
-  const cleanNumber = breezeNumber.trim();
-  return `https://immanuelky.breezechms.com/people/view/${cleanNumber}`;
-}
-```
-
-**URL Shortening Service:**
-```javascript
-// TinyURL integration with fallback
-const apiUrl = 'http://tinyurl.com/api-create.php?url=' + encodeURIComponent(longUrl);
-const response = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true });
-
-if (response.getResponseCode() === 200) {
-  return shortUrl; // Success
-} else {
-  return longUrl; // Fallback to original
-}
-```
-
-**Integration Benefits:**
-- **No account requirements** for URL shortening
-- **Automatic fallback** to full URLs if shortening fails
-- **Batch processing** with rate limiting respect
-- **Persistent storage** in dedicated columns for reuse
-
-### Modular File System Design (v24.2)
-**Native Google Apps Script Architecture:**
-```
-Module1_Core_Config.gs     - Configuration, validation, header setup
-Module2_Algorithm.gs       - Core rotation algorithm, pattern generation  
-Module3_Smart_Calendar.gs  - Calendar updates, mode detection
-Module4_Export_Menu.gs     - Full export, individual schedules, menu system
-```
-
-**Cross-Module Communication:**
-- **Shared constants** accessible across all modules
-- **Function availability** throughout execution context
-- **Global variables** for configuration state
-- **Error propagation** with module-specific identification
-
-## ⚙️ Advanced Configuration
+**Google Apps Script Trigger Reliability:**
+- **Trigger recreation** mechanisms for improved reliability
+- **Multiple diagnostic tools** for troubleshooting delivery
+- **Graceful degradation** when triggers experience delays
+- **User feedback** about expected Google API limitations
 
 ### Algorithm Tuning Parameters
 **Scoring System Weights:**
@@ -196,8 +271,10 @@ const maxEvents = 500; // Calendar event limit
 - **Resource monitoring** with time limit enforcement
 - **Graceful degradation** when approaching limits
 
-### Error Recovery Mechanisms
-**Validation Layers:**
+## 🛡️ Error Recovery & Security
+
+### Validation Layers
+**Comprehensive Input Validation:**
 1. **Input validation** - data types, ranges, duplicates
 2. **Workload validation** - feasibility checking with recommendations
 3. **Runtime validation** - date calculations, API responses
@@ -219,7 +296,20 @@ try {
 - **Fallback options** for service unavailability
 - **User guidance** with specific error resolution steps
 
-## 🧪 Quality Analysis and Logging
+### Security Implementation
+**Data Protection:**
+- **Webhook URLs** stored securely in Apps Script Properties
+- **No external databases** - all data remains in Google ecosystem
+- **Member information privacy** maintained in notification content
+- **Test/production separation** prevents accidental data exposure
+
+**Access Control:**
+- **Google Workspace integration** leverages existing permissions
+- **Spreadsheet-level security** controls user access
+- **Apps Script permissions** managed through Google's authorization
+- **API key management** through Google's secure storage
+
+## 🧪 Quality Analysis and Diagnostics
 
 ### Pattern Validation
 **Real-Time Analysis:**
@@ -240,13 +330,24 @@ if (visitImbalance <= 1 && coveragePercentage >= 80) {
 - **GOOD**: Visit imbalance ≤ 2, coverage ≥ 60%
 - **NEEDS IMPROVEMENT**: Higher imbalance or limited variety
 
-### Diagnostic System
-**Comprehensive Testing Framework:**
-- **Configuration loading** validation
-- **URL shortening** service connectivity
-- **Breeze URL construction** accuracy
-- **Calendar access** permission verification
-- **Script permissions** for external services
+### Comprehensive Diagnostic System
+**Notification System Testing:**
+```javascript
+function testNotificationSystem() {
+  // Test webhook connectivity
+  // Validate message formatting
+  // Check trigger configuration
+  // Verify test vs production mode detection
+  // Report comprehensive results
+}
+```
+
+**System Health Monitoring:**
+- **Configuration validation** with detailed error reporting
+- **URL shortening** service connectivity testing
+- **Breeze URL construction** accuracy verification
+- **Calendar access** permission validation
+- **Trigger management** status and troubleshooting
 
 **Performance Monitoring:**
 ```javascript
@@ -283,6 +384,36 @@ const deaconHouseholdPairs = new Map();
 - **Memory management** for long-running operations
 - **Execution time monitoring** with safety limits
 
+### Webhook Integration Architecture
+**Google Chat API Implementation:**
+```javascript
+// Rich card formatting for enhanced readability
+const buildRichChatMessage = (visits) => {
+  const sections = visits.map(visit => ({
+    widgets: [{
+      keyValue: {
+        topLabel: visit.deacon,
+        content: `${visit.household} - ${visit.date.toLocaleDateString()}`,
+        button: {
+          textButton: {
+            text: "View Breeze Profile",
+            onClick: { openLink: { url: visit.breezeUrl } }
+          }
+        }
+      }
+    }]
+  }));
+  
+  return { cards: [{ sections }] };
+};
+```
+
+**Future Extensibility:**
+- **Modular notification architecture** ready for email, SMS integration
+- **Template-based message formatting** for easy customization
+- **Multi-channel delivery** preparation
+- **Scalable webhook management** for multiple chat spaces
+
 ---
 
-**This technical reference provides the deep implementation details needed for system customization, troubleshooting, and contribution. For user-facing documentation, refer to the README and SETUP guides.** 🎯
+**This technical reference provides the comprehensive implementation details needed for system customization, troubleshooting, and contribution to the v25.0 notification-enhanced system. For user-facing documentation, refer to the README and SETUP guides.** 🎯
