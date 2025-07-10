@@ -228,16 +228,16 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
     message += `📅 <${calendarLink}|Visitation Calendar>\n\n`;
   }
   
+  const summaryLink = getSummaryLinkFromSpreadsheet();
+  if (summaryLink) {
+    message += `👀 <${summaryLink}|Schedule Summary> (quick look at all upcoming visits on the schedule, sorted by date and grouped by deacon)\n\n`;
+  }
+  
   const guideLink = getGuideLinkFromSpreadsheet();
   if (guideLink) {
     message += `📖 <${guideLink}|Visitation Guide>\n\n`;
   }
 
-  const summaryLink = getSummaryLinkFromSpreadsheet();
-  if (summaryLink) {
-    message += `🗓️ <${summaryLink}|Schedule Summary Sheet>\n\n`;
-  }
-    
   message += `🔄 This update is sent weekly. Reply in this thread with questions or scheduling conflicts.`;
   
   return message;
