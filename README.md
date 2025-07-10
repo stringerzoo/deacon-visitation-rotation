@@ -86,9 +86,11 @@ This system solves complex mathematical scheduling problems to create optimal de
 ### **Reports & Configuration (F-K)**
 - **F**: Buffer, **G-I**: Individual deacon reports, **J**: Buffer
 - **K1-K8**: Basic configuration (start date, frequency, instructions)
-- **K10-K13**: Notification settings (day, time) ⭐ **NEW**
+- **K10-K13**: Notification settings (day, time)
 - **K15-K16**: Test mode indicators
-- **K18-K19**: Calendar URL configuration ⭐ **NEW**
+- **K18-K19**: Calendar URL configuration
+- **K21-K22**: Visitation Guide URL configuration
+- **K24-K25**: Schedule Summary Sheet URL configuration
 
 ### **Contact Data (L-S)**
 - **L**: Deacons, **M**: Households, **N**: Phones, **O**: Addresses
@@ -101,7 +103,7 @@ This system solves complex mathematical scheduling problems to create optimal de
 - **2-week lookahead** - Current week assignments + next week preview
 - **Rich content** - Contact info, Breeze links, Notes access
 - **Test/production modes** - Separate chat spaces for development
-- **Calendar integration** - Clickable "View Visitation Calendar" links (K19)
+- **Resource integration** - Calendar, Guide, and Summary links (K19, K22, K25)
 
 ### **Manual Notification Tools**
 - **Instant summaries** - Send notifications on-demand
@@ -117,9 +119,11 @@ This system solves complex mathematical scheduling problems to create optimal de
 
 ### **Configurable Calendar Links**
 - **K19 URL field** - Paste Google Calendar embed URL for chat notifications
-- **Test/production switching** - Change URL in K19 to switch environments
-- **Graceful handling** - Links only appear when K19 is configured
-- **One-click access** - "📅 View Visitation Calendar" in every chat message
+- **K22 Guide field** - Paste Visitation Guide URL for ministry procedures
+- **K25 Summary field** - Paste Schedule Summary URL for archived schedules
+- **Test/production switching** - Change URLs in K19/K22/K25 to switch environments
+- **Graceful handling** - Links only appear when respective fields are configured
+- **One-click access** - "📅 Calendar", "📋 Guide", "📊 Summary" in every chat message
 
 ## 📖 Documentation
 
@@ -181,8 +185,8 @@ Our algorithm uses **modular arithmetic with prime factorization** to ensure:
 │   ├── SETUP.md
 │   ├── FEATURES.md
 │   └── CHANGELOG.md
-└── examples/
-    └── webhook-setup-guide.md             ⭐ NEW
+└── test/
+    └── test_data_table.md
 ```
 
 ### **Deployment Process**
