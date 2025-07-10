@@ -89,7 +89,11 @@ K12: Weekly Notification Time (0-23)  K13: 16 ⭐ NEW (dropdown)
 K14: [Buffer Space]
 K15: Current Mode                     K16: [Auto-detected]
 K17: [Buffer Space]
-K18: Google Calendar URL              K19: [Paste URL here] ⭐ NEW
+K18: Google Calendar URL              K19: [Paste URL here]
+K20: [Buffer Space]
+K21: Visitation Guide URL             K22: [Paste URL here] (optional)
+K23: [Buffer Space]
+K24: Schedule Summary Sheet URL       K25: [Paste URL here] (optional) ⭐ NEW
 ```
 
 💡 **Setup Tip**: Use sample data pattern during initial setup and testing. Replace with real member information only when ready for production use.
@@ -156,7 +160,29 @@ K18: Google Calendar URL              K19: [Paste URL here] ⭐ NEW
 
 ---
 
-## 🎯 Step 5: Generate First Schedule
+## 🔗 Step 5: Additional Resource Links Setup
+
+### **Configure Visitation Guide URL (K21-K22)**
+1. **Click on cell K22** in your spreadsheet
+2. **Paste your Visitation Guide URL** (Google Doc, website, etc.)
+3. **Press Enter** to save
+4. **Link appears** as "📋 Visitation Guide" in all chat notifications
+
+### **Configure Schedule Summary URL (K24-K25)**  
+1. **Click on cell K25** in your spreadsheet
+2. **Paste your Schedule Summary Sheet URL** (archived schedule, summary document, etc.)
+3. **Press Enter** to save
+4. **Link appears** as "📊 Schedule Summary" in all chat notifications
+
+### **Test/Production Switching**
+- **For testing**: Use test document URLs in K22, K25
+- **For production**: Use production document URLs
+- **Easy switching**: Simply change URLs in K22/K25
+- **Optional configuration**: These links are optional and won't appear if not configured
+
+---
+
+## 🎯 Step 6: Generate First Schedule
 
 ### **Initial Configuration**
 1. **Run header setup**: 🔄 Deacon Rotation → ❓ Setup Instructions
@@ -171,7 +197,7 @@ K18: Google Calendar URL              K19: [Paste URL here] ⭐ NEW
 
 ---
 
-## 📅 Step 6: Calendar Export & Automation
+## 📅 Step 7: Calendar Export & Automation
 
 ### **Export to Google Calendar**
 1. **Choose calendar function**: 📆 Calendar Functions → 🚨 Full Calendar Regeneration
@@ -195,7 +221,7 @@ K18: Google Calendar URL              K19: [Paste URL here] ⭐ NEW
 
 ---
 
-## 🔧 Step 7: Advanced Configuration
+## 🔧 Step 8: Advanced Configuration
 
 ### **Notification Customization**
 - **Timing flexibility**: Any day of week, any hour (0-23)
@@ -218,7 +244,7 @@ K18: Google Calendar URL              K19: [Paste URL here] ⭐ NEW
 
 ---
 
-## 🎛️ Step 8: Master the Enhanced Menu System
+## 🎛️ Step 9: Master the Enhanced Menu System
 
 ### **Menu Structure (v25.0):**
 ```
@@ -280,10 +306,10 @@ K18: Google Calendar URL              K19: [Paste URL here] ⭐ NEW
 4. **Test webhook separation**: Ensure test/production webhooks configured
 
 #### **Calendar Link Issues**
-1. **Check K19 value**: Ensure valid Google Calendar URL is pasted
-2. **URL format**: Should start with `https://calendar.google.com/`
-3. **Test calendar access**: Click link to verify it opens correct calendar
-4. **Mode switching**: Different URLs for test vs production calendars
+1. **Check K19, K22, K25 values**: Ensure valid URLs are pasted
+2. **URL format**: Should start with `https://` for web resources
+3. **Test resource access**: Click links to verify they open correct documents
+4. **Mode switching**: Different URLs for test vs production resources
 
 ### **Google Apps Script Limitations**
 - **Trigger reliability**: New triggers may not fire immediately (24-48 hour "settling")
@@ -304,10 +330,10 @@ K18: Google Calendar URL              K19: [Paste URL here] ⭐ NEW
 Your Deacon Visitation Rotation System v25.0 is now fully configured with:
 
 ✅ **Automated scheduling** with mathematical fairness  
-✅ **Google Chat notifications** with rich content and calendar links  
+✅ **Google Chat notifications** with rich content and resource links  
 ✅ **Smart calendar updates** preserving deacon customizations  
 ✅ **Test/production separation** for safe development  
-✅ **Comprehensive error handling** and diagnostics  
+✅ **Comprehensive resource integration** with calendar, guide, and summary access  
 
 **Next Steps**: Monitor your first week of automated notifications and fine-tune timing as needed!
 
