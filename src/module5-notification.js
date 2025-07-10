@@ -235,7 +235,7 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
 
   const summaryLink = getSummaryLinkFromSpreadsheet();
   if (summaryLink) {
-    message += `🗓️ <$[summaryLink}|Schedule Summary Sheet>\n\n`;
+    message += `🗓️ <${summaryLink}|Schedule Summary Sheet>\n\n`;
   }
     
   message += `🔄 This update is sent weekly. Reply in this thread with questions or scheduling conflicts.`;
