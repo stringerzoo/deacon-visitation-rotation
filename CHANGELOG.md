@@ -16,11 +16,13 @@ All notable changes to this project will be documented in this file.
 - **Comprehensive diagnostics**: Test functions and troubleshooting tools
 - **Trigger management**: Enable/disable/schedule weekly automation via menu
 
-### 🗓️ **Added - Configurable Calendar Links**
-- **K19 URL configuration**: Paste Google Calendar embed URL for notifications
-- **Dynamic calendar linking**: "📅 View Visitation Calendar" appears in all chat messages
-- **Test/production switching**: Easy environment changes by updating K19 URL
-- **Graceful degradation**: Links only appear when K19 is properly configured
+### 🗓️ **Added - Configurable Resource Links**
+- **K19 Calendar URL**: "📅 View Visitation Calendar" links in chat notifications
+- **K22 Guide URL**: "📋 Visitation Guide" links for ministry procedures and guidelines
+- **K25 Summary URL**: "📊 Schedule Summary" links for archived schedules and summaries
+- **Test/production switching**: Easy environment changes by updating URLs in K19/K22/K25
+- **Graceful degradation**: Links only appear when respective fields are configured
+- **Mobile optimization**: All resource links work on mobile devices for field access
 - **Calendar integration**: Direct access to visitation schedule from notifications
 
 ### 🏗️ **Enhanced - System Architecture**
@@ -96,24 +98,24 @@ All notable changes to this project will be documented in this file.
 │   ├── SETUP.md                         (Updated with notifications)
 │   ├── FEATURES.md                      (Updated with chat integration)
 │   └── CHANGELOG.md                     (This file)
-└── examples/
-    └── webhook-setup-guide.md           ⭐ NEW
+└── test/
+    └── test_data-table.md               ⭐ NEW
 ```
 
 ### 🆕 **New Functions (Module 5)**
 - `sendWeeklyVisitationChat()` - Main weekly notification function
 - `sendTomorrowReminders()` - Day-before visit notifications
-- `buildChatMessage()` - Rich message formatting with calendar links
+- `buildChatMessage()` - Rich message formatting with resource links
 - `sendToChatSpace()` - Webhook communication handler
 - `getUpcomingVisits()` - Smart visit filtering with calendar week logic
 - `configureNotifications()` - Interactive webhook setup
 - `testNotificationSystem()` - Comprehensive testing suite
 - `createWeeklyNotificationTrigger()` - Automated scheduling setup
-- `getCalendarLinkFromSpreadsheet()` - K19 URL retrieval
+- `getResourceLinksFromSpreadsheet()` - K19/K22/K25 URL retrieval
 - `validateScheduleDataSync()` - Data integrity checking
 
 ### 🔧 **Modified Functions**
-- `setupHeaders()` (Module 1): Added K10-K13, K18-K19 configuration
+- `setupHeaders()` (Module 1): Added K10-K13, K18-K19, K21-K22, K24-K25 configuration
 - `createMenuItems()` (Module 4): Enhanced with notifications submenu
 - `addModeIndicatorToSheet()` (Module 3): Updated to use K15-K16
 - `getCurrentTestMode()` (Module 3): Enhanced detection with new patterns
@@ -134,6 +136,8 @@ All notable changes to this project will be documented in this file.
 - **Column K layout**: K11-K12 moved to K15-K16 (automatic migration in setupHeaders)
 - **Test mode detection**: Enhanced patterns may change mode detection behavior
 - **Menu structure**: New submenu organization (all functions remain accessible)
+
+
 
 ---
 ## [v24.2] - 2025-07-04
@@ -472,32 +476,35 @@ Instructions:
 
 ## 🚀 Planned Future Enhancements
 
-### Version 24.3+ Roadmap
-- **Custom date range updates** with user-specified start and end dates
-- **Preview mode** showing what will be updated before committing changes
-- **Bulk contact sync** from Breeze CMS API integration
-- **Visit completion tracking** with automatic status updates
-- **Enhanced mobile interface** for field deacon use
+### **v25.1 - Planned Improvements**
+- **Enhanced error recovery**: Better handling of Google service interruptions
+- **Advanced scheduling**: Custom visit frequency per household
+- **Email integration**: Optional email notifications alongside chat
 
-### Potential Advanced Features
-- **Automated contact synchronization** from Breeze to spreadsheet
-- **Visit reminder system** with calendar notifications
-- **Advanced conflict detection** for scheduling overlaps
-- **Integration with other church management systems** beyond Breeze
-- **clasp CLI integration** for automated deployment from GitHub
+### **v26.0 - Advanced Features**
+- **Visit completion tracking**: Mark visits as completed with feedback
+- **Analytics dashboard**: Visit statistics and deacon performance metrics
+- **Multi-church support**: Configuration for multiple church installations
+- **Advanced customization**: Templated message formats and scheduling rules
+
+### **v27.0 - Extended Integration**
+- **Planning Center integration**: Sync with additional church management systems
+- **SMS notifications**: Mobile text message alerts for urgent scheduling
+- **Advanced reporting**: Historical analysis and trend identification
+- **API development**: External integration capabilities for third-party tools
 
 ---
 
 ## 📈 Development Statistics
 
-- **Total development time**: ~8+ months
-- **Lines of code**: 1,600+ lines (optimized modular architecture)
+- **Total development time**: ~2+ months
+- **Lines of code**: 3,400+ lines (optimized modular architecture)
 - **Major iterations**: 24+ versions
 - **Key algorithms developed**: 5 (optimal pattern, harmonic mitigation, workload balancing, URL shortening, smart calendar updates)
 - **Functions implemented**: 40+ specialized functions
 - **External API integrations**: 2 (Google Calendar, TinyURL)
 - **Testing scenarios**: 200+ deacon/household ratio combinations
-- **Architecture improvements**: 3 major refactorings (v24.0 modular, v24.1 integration, v24.2 native)
+- **Architecture improvements**: 2 major refactorings (v24.0 modular, v25 notifications)
 
 ---
 
@@ -517,6 +524,12 @@ Instructions:
 - **Rate limiting protection** - handles Google API limits gracefully
 - **Comprehensive error handling** - graceful degradation and helpful error messages
 - **Extensive testing framework** - validates all functionality automatically
+
+---
+
+**Version Numbering**: This project uses semantic versioning where major releases (24.0, 25.0) indicate significant feature additions or architectural changes, minor releases (24.1, 24.2) add functionality without breaking changes, and patch releases (25.0.1) address bugs and small improvements.
+
+**Support**: For technical support or feature requests, refer to the [Setup Guide](https://claude.ai/chat/SETUP.md) and [Features Documentation](https://claude.ai/chat/FEATURES.md). The system is designed for churches using Google Workspace and includes comprehensive diagnostic tools for troubleshooting.
 
 ---
 
