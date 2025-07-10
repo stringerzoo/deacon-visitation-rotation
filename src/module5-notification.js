@@ -210,7 +210,7 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
       
       // Add links on separate lines with Google Chat format
       if (visit.breezeShortLink) {
-        message += `   🔗 <${visit.breezeShortLink}|Breeze Profile>\n`;
+        message += `   👤 <${visit.breezeShortLink}|Breeze Profile>\n`;
       }
       if (visit.notesShortLink) {
         message += `   📝 <${visit.notesShortLink}|Visit Notes>\n`;
