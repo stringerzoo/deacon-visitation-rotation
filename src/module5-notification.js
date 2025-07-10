@@ -223,13 +223,21 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
   // Footer with instructions and configurable calendar link
   message += `💡 *Instructions*: Call ahead to set up visit times then update the event in the Visitation Calendar.\n\n`;
   
-  // NEW: Add calendar link from spreadsheet configuration
   const calendarLink = getCalendarLinkFromSpreadsheet();
   if (calendarLink) {
     message += `📅 <${calendarLink}|Visitation Calendar>\n\n`;
   }
-  message += `📖 <https://tinyurl.com/2wxvdpzs|Visitation Guide>\n\n`;
   
+  const guideLink = getGuideLinkFromSpreadsheet();
+  if (guideLink) {
+    message += `📖 <${guideLink}|Visitation Guide>\n\n`;
+  }
+
+  const summaryLink = getSummaryLinkFromSpreadsheet();
+  if (summaryLink) {
+    message += `🗓️ <$[summaryLink}|Schedule Summary Sheet>\n\n`;
+  }
+    
   message += `🔄 This update is sent weekly. Reply in this thread with questions or scheduling conflicts.`;
   
   return message;
@@ -367,6 +375,60 @@ function getCalendarLinkFromSpreadsheet() {
     
   } catch (error) {
     console.error('Error reading calendar URL:', error);
+    return '';
+  }
+}
+
+function getGuideLinkFromSpreadsheet() {
+  /**
+   * Get visitation guide URL from configuration
+   */
+  try {
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const config = getConfiguration(sheet);
+    
+    if (config.guideUrl && config.guideUrl.trim().length > 0) {
+      const trimmedUrl = config.guideUrl.trim();
+      
+      if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+        return trimmedUrl;
+      } else {
+        console.warn('Visitation Guide URL does not appear to be valid:', trimmedUrl);
+        return '';
+      }
+    }
+    
+    return '';
+    
+  } catch (error) {
+    console.error('Error reading visitation guide URL:', error);
+    return '';
+  }
+}
+
+function getSummaryLinkFromSpreadsheet() {
+  /**
+   * Get schedule summary sheet URL from configuration
+   */
+  try {
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const config = getConfiguration(sheet);
+    
+    if (config.summaryUrl && config.summaryUrl.trim().length > 0) {
+      const trimmedUrl = config.summaryUrl.trim();
+      
+      if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+        return trimmedUrl;
+      } else {
+        console.warn('Schedule Summary Sheet URL does not appear to be valid:', trimmedUrl);
+        return '';
+      }
+    }
+    
+    return '';
+    
+  } catch (error) {
+    console.error('Error reading schedule summary sheet URL:', error);
     return '';
   }
 }
