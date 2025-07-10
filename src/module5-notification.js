@@ -176,7 +176,7 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
     });
   }
   
-  message += '---\n\n';
+  message += '——————\n\n';
   
   // Week 2 Section
   message += `*Week of ${week2Start.toLocaleDateString('en-US', { 
@@ -237,7 +237,8 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
   if (guideLink) {
     message += `📖 <${guideLink}|Visitation Guide>\n\n`;
   }
-
+  message += '——————\n\n';
+  
   message += `🔄 This update is sent weekly. It will not reflect any changes made to the visitation calendar. It only shows visits scheduled for the "week of". Reply in this thread with questions or scheduling conflicts.`;
   
   return message;
