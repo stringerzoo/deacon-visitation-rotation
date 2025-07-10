@@ -604,10 +604,12 @@ function showSetupInstructions() {
    • K12: "Weekly Notification Time (0-23):" (label)
    • K13: Hour selection (0-23 dropdown, e.g., 16 = 4 PM)
 
-3️⃣ CALENDAR INTEGRATION (Column K):
-   • K18: "Google Calendar URL:" (label)
+3️⃣ LINKS INTEGRATION (Column K):
+   • The link fields support weekly notification messages
    • K19: Paste your Google Calendar embed URL here
-   • Use different URLs for test vs production switching
+     • Update URLs for test vs production
+   • K22: Paste link to the visitation guide google doc
+   • K25: Paste link to the summary page for the current visitation schedule
 
 4️⃣ DEACONS LIST (Column L):
    • L1: "Deacons" (header - auto-created)
