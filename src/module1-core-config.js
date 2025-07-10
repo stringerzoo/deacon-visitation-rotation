@@ -165,6 +165,16 @@ function getConfiguration(sheet) {
       calendarUrl = ''; // Default empty
     }
     
+    let guideUrl = sheet.getRange('K22').getValue();
+    if (!guideUrl) {
+      guideUrl = ''; // Default empty
+    }
+    
+    let summaryUrl = sheet.getRange('K25').getValue();
+    if (!summaryUrl) {
+      summaryUrl = ''; // Default empty
+    }
+     
     return {
       deacons,
       households,
@@ -180,7 +190,9 @@ function getConfiguration(sheet) {
       calendarInstructions: String(calendarInstructions),
       notificationDay: String(notificationDay),
       notificationHour: Number(notificationHour),
-      calendarUrl: String(calendarUrl)
+      calendarUrl: String(calendarUrl),
+      guideUrl: String(guideUrl),
+      summaryUrl: String(summaryUrl)
     };
     
   } catch (error) {
@@ -282,19 +294,38 @@ function setupHeaders(sheet) {
     sheet.getRange('K15').setFontWeight('bold').setBackground('#fff2cc');
   }
   
-   // Calendar configuration (K18-K19)
+   // URL place holders (K18-K25)
   if (!sheet.getRange('K18').getValue()) {
     sheet.getRange('K18').setValue('Google Calendar URL:');
     sheet.getRange('K18').setFontWeight('bold').setBackground('#fff2cc');
   }
   
-  // K19: Calendar URL input field
   if (!sheet.getRange('K19').getValue()) {
     sheet.getRange('K19').setValue(''); // Default empty, user will paste URL
     sheet.getRange('K19').setBackground('#f8f9fa');
     sheet.getRange('K19').setNote('Paste your Google Calendar embed URL here.\n\nFor testing: Use test calendar URL\nFor production: Use deacon calendar URL\n\nSwitch between test and production by changing this URL.');
   }
-  
+ 
+  if (!sheet.getRange('K21').getValue()) {
+    sheet.getRange('K21').setValue('Visitation Guide URL:');
+    sheet.getRange('K21').setFontWeight('bold').setBackground('#fff2cc');
+  }
+  if (!sheet.getRange('K22').getValue()) {
+    sheet.getRange('K22').setValue(''); // Default empty, user will paste URL
+    sheet.getRange('K22').setBackground('#f8f9fa');
+    sheet.getRange('K22').setNote('Paste your Visitation Guide URL here.');
+  }
+
+  if (!sheet.getRange('K24').getValue()) {
+    sheet.getRange('K24').setValue('Schedule Summary Sheet URL:');
+    sheet.getRange('K24').setFontWeight('bold').setBackground('#fff2cc');
+  }
+  if (!sheet.getRange('K25').getValue()) {
+    sheet.getRange('K25').setValue(''); // Default empty, user will paste URL
+    sheet.getRange('K25').setBackground('#f8f9fa');
+    sheet.getRange('K25').setNote('Paste your Schedule Summary Sheet URL here.');
+  }
+
   // Column headers for basic contact info (L-O)
   if (!sheet.getRange('L1').getValue()) {
     sheet.getRange('L1').setValue('Deacons');
