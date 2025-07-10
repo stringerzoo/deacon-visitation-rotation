@@ -229,7 +229,7 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
     message += `📅 <${calendarLink}|View Visitation Calendar>\n\n`;
   }
   
-  message += `🔄 This update is sent weekly. Reply here with questions or scheduling conflicts.`;
+  message += `🔄 This update is sent weekly. Click <https://tinyurl.com/2wxvdpzs|here for the Visitation Guide>. Reply in this thread with questions or scheduling conflicts.`;
   
   return message;
 }
