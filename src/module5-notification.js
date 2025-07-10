@@ -226,9 +226,9 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
   // NEW: Add calendar link from spreadsheet configuration
   const calendarLink = getCalendarLinkFromSpreadsheet();
   if (calendarLink) {
-    message += `📅 <${calendarLink}|View Visitation Calendar>\n\n`;
+    message += `📅 <${calendarLink}|Visitation Calendar>\n\n`;
   }
-  message += `📖 <https://tinyurl.com/2wxvdpzs|View Visitation Guide>\n\n`;
+  message += `📖 <https://tinyurl.com/2wxvdpzs|Visitation Guide>\n\n`;
   
   message += `🔄 This update is sent weekly. Reply in this thread with questions or scheduling conflicts.`;
   
