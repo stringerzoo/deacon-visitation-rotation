@@ -349,8 +349,9 @@ function setupHeaders(sheet) {
   
   // NEW: Column headers for Breeze and Notes integration (P-S)
   if (!sheet.getRange('P1').getValue()) {
-    sheet.getRange('P1').setValue('Breeze Link');
+    sheet.getRange('P1').setValue('Breeze ID');
     sheet.getRange('P1').setFontWeight('bold').setBackground('#fce5cd');
+    sheet.getRange('P1').setNote('8-digit number at the end of the URL on their Breeze profile page.');
   }
   
   if (!sheet.getRange('Q1').getValue()) {
