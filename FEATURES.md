@@ -61,32 +61,45 @@ function sendWeeklyVisitationChat() {
 - **Calendar access**: "📅 View Visitation Calendar" link from K19
 
 ### **Configurable Calendar Links (v25.0)**
-New K19 configuration enables dynamic calendar linking in notifications:
+New K19, K22, and K25 configuration enables dynamic resource linking in notifications:
 
 ```javascript
-function getCalendarLinkFromSpreadsheet() {
+function getResourceLinksFromSpreadsheet() {
   const sheet = SpreadsheetApp.getActiveSheet();
-  const calendarUrl = sheet.getRange('K19').getValue();
   
-  if (calendarUrl && typeof calendarUrl === 'string' && calendarUrl.trim().length > 0) {
-    return calendarUrl.trim();
-  }
-  
-  return null; // Graceful degradation when not configured
+  return {
+    calendar: getCalendarLinkFromSpreadsheet(),      // K19
+    guide: sheet.getRange('K22').getValue(),         // K22 - NEW
+    summary: sheet.getRange('K25').getValue()        // K25 - NEW
+  };
 }
 
-function buildCalendarLinkSection(calendarUrl) {
-  if (!calendarUrl) return '';
+function buildResourceLinksSection(links) {
+  let section = '';
   
-  return `\n📅 [View Visitation Calendar](${calendarUrl})\n`;
+  if (links.calendar) {
+    section += `\n📅 [View Visitation Calendar](${links.calendar})`;
+  }
+  
+  if (links.guide) {
+    section += `\n📋 [Visitation Guide](${links.guide})`;
+  }
+  
+  if (links.summary) {
+    section += `\n📊 [Schedule Summary](${links.summary})`;
+  }
+  
+  return section;
 }
 ```
 
-**Configuration Options:**
-- **K18**: "Google Calendar URL:" (header)
-- **K19**: Calendar URL input field (user configurable)
-- **Test/Production Switching**: Change URL in K19 to switch environments
-- **Graceful Handling**: Links only appear when K19 has valid URL
+**Enhanced Configuration Options:**
+- **K18-K19**: Google Calendar URL configuration
+- **K21-K22**: Visitation Guide URL configuration (procedures, guidelines)
+- **K24-K25**: Schedule Summary URL configuration (archived schedules)
+- **Test/Production Switching**: Change URLs in K19/K22/K25 to switch environments
+- **Graceful Handling**: Links only appear when respective fields are configured
+- **Mobile Optimization**: All resource links work on mobile devices
 
 ### **Test Mode Integration**
 Notifications respect the existing test mode detection system:
@@ -249,7 +262,11 @@ K12: Weekly Notification Time (0-23)   K13: [Dropdown validation]
 K14: [Buffer Space]
 K15: Current Mode                      K16: [Auto-detected]
 K17: [Buffer Space]
-K18: Google Calendar URL               K19: [User configurable] ⭐ NEW
+K18: Google Calendar URL               K19: [User configurable]
+K20: [Buffer Space]
+K21: Visitation Guide URL              K22: [User configurable]
+K23: [Buffer Space]
+K24: Schedule Summary Sheet URL        K25: [User configurable]
 ```
 
 **Data Validation Integration:**
