@@ -135,16 +135,16 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
   message += `Coverage: 2 weeks starting ${nextSunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}\n\n`;
   
   // Week 1 Section
-  message += `*Week 1* (${week1Start.toLocaleDateString('en-US', { 
+  message += `*Week of ${week1Start.toLocaleDateString('en-US', { 
     month: 'short', 
     day: 'numeric' 
   })} - ${week1End.toLocaleDateString('en-US', { 
     month: 'short', 
     day: 'numeric' 
-  })})\n`;
+  })}*\n`;
   
   if (week1Visits.length === 0) {
-    message += `No visits scheduled for Week 1.\n\n`;
+    message += `No visits scheduled for this week.\n\n`;
   } else {
     week1Visits.forEach(visit => {
       const visitDate = visit.date.toLocaleDateString('en-US', { 
@@ -179,16 +179,16 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
   message += '---\n\n';
   
   // Week 2 Section
-  message += `*Week 2* (${week2Start.toLocaleDateString('en-US', { 
+  message += `*Week of ${week2Start.toLocaleDateString('en-US', { 
     month: 'short', 
     day: 'numeric' 
   })} - ${week2End.toLocaleDateString('en-US', { 
     month: 'short', 
     day: 'numeric' 
-  })})\n`;
+  })}*\n`;
   
   if (week2Visits.length === 0) {
-    message += `No visits scheduled for Week 2.\n\n`;
+    message += `No visits scheduled for this week.\n\n`;
   } else {
     week2Visits.forEach(visit => {
       const visitDate = visit.date.toLocaleDateString('en-US', { 
@@ -238,7 +238,7 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
     message += `📖 <${guideLink}|Visitation Guide>\n\n`;
   }
 
-  message += `🔄 This update is sent weekly. Reply in this thread with questions or scheduling conflicts.`;
+  message += `🔄 This update is sent weekly. It will not reflect any changes made to the visitation calendar. It only shows visits scheduled for the "week of". Reply in this thread with questions or scheduling conflicts.`;
   
   return message;
 }
