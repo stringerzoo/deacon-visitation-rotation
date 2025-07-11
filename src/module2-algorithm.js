@@ -1,6 +1,6 @@
 /**
  * MODULE 2: ALGORITHM & SCHEDULE GENERATION (CORRECTED LAYOUT)
- * Deacon Visitation Rotation System - Modular Version
+ * Deacon Visitation Rotation System - Modular Version v1.1
  * 
  * This module contains:
  * - Core schedule generation algorithm
@@ -464,5 +464,3 @@ function getScheduleFromSheet(sheet) {
     return [];
   }
 }
-
-// END OF MODULE 2
