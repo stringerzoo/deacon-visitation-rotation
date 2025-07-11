@@ -1,5 +1,5 @@
 /**
- * MODULE 5: GOOGLE CHAT NOTIFICATIONS (v25.0)
+ * MODULE 5: GOOGLE CHAT NOTIFICATIONS (v1.1)
  * Deacon Visitation Rotation System - Chat Integration
  * 
  * This module contains:
