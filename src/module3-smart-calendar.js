@@ -1,11 +1,18 @@
 /**
- * MODULE 3: SMART CALENDAR UPDATE FUNCTIONS (v24.2)
- * Deacon Visitation Rotation System - Smart Calendar Updates
+ * MODULE 3: SMART CALENDAR & TEST MODE DETECTION (v1.1)
+ * Deacon Visitation Rotation System - Advanced Calendar Integration
  * 
  * This module contains:
- * - Smart calendar update functions with preservation of scheduling details
- * - Test mode configuration for safe testing
- * - Helper functions for calendar access
+ * - Smart calendar update functions
+ * - Test mode detection and management
+ * - Mode indicators and visual feedback
+ * - Intelligent calendar synchronization
+ * 
+ * Key Features:
+ * - Contact info only updates (preserves scheduling)
+ * - Future events only updates (protects current week)
+ * - Automatic test/production mode detection
+ * - Visual mode indicators in spreadsheet
  */
 
 /**
