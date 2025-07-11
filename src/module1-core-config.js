@@ -1,6 +1,6 @@
 /**
  * MODULE 1: CORE FUNCTIONS & CONFIGURATION (ENHANCED)
- * Deacon Visitation Rotation System - Modular Version
+ * Deacon Visitation Rotation System - Modular Version v1.1
  * 
  * This module contains:
  * - Main entry point and configuration loading
