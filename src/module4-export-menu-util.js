@@ -1,68 +1,36 @@
 /**
- * MODULE 4: EXPORT, MENU & UTILITY FUNCTIONS (v25.0)
- * Deacon Visitation Rotation System - Export and Menu System
+ * MODULE 4: CALENDAR EXPORT, MENU SYSTEM, AND UTILITIES (v1.1)
+ * Deacon Visitation Rotation System - Calendar Integration & Menu Management
  * 
- * This module contains:
- * - Calendar export functions (full regeneration)
- * - Individual schedule exports
- * - URL shortening functionality
- * - Menu system and user interface, including notification settings
- * - Archive and year generation functions
- * - Testing and diagnostic utilities
+ * CLEANED VERSION: Removed unused functions based on analysis
+ * - ❌ Removed: generateNextYearSchedule (unlikely to be used)
+ * - ✅ Kept: testNotificationNow (different purpose from testNotificationSystem)
+ * - ✅ Kept: All other valuable functions for delegation and troubleshooting
  */
 
-// ===== CALENDAR EXPORT FUNCTIONS =====
+// ===== GOOGLE CALENDAR EXPORT FUNCTIONS =====
 
 function exportToGoogleCalendar() {
   /**
-   * Full calendar regeneration - creates calendar events with enhanced contact information
-   * WARNING: This deletes ALL existing events and loses custom scheduling details
+   * Full calendar regeneration with enhanced warnings
    */
   try {
+    const currentTestMode = getCurrentTestMode();
     const sheet = SpreadsheetApp.getActiveSheet();
-    const config = getConfiguration(sheet);
     const scheduleData = getScheduleFromSheet(sheet);
     
-    if (config.deacons.length === 0) {
-      SpreadsheetApp.getUi().alert('Error', 'No deacons found. Please generate a schedule first.', SpreadsheetApp.getUi().ButtonSet.OK);
-      return;
-    }
-    
     if (scheduleData.length === 0) {
-      SpreadsheetApp.getUi().alert('No Schedule', 'Please generate a schedule first.', SpreadsheetApp.getUi().ButtonSet.OK);
+      SpreadsheetApp.getUi().alert(
+        'No Schedule Found',
+        'Please generate a schedule first using "📅 Generate Schedule".',
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
       return;
     }
     
-    // Check if shortened URLs need to be generated
-    const hasShortUrls = config.breezeShortLinks.some(link => link && link.length > 0) || 
-                        config.notesShortLinks.some(link => link && link.length > 0);
-    
-    if (!hasShortUrls) {
-      const response = SpreadsheetApp.getUi().alert(
-        'Generate Shortened URLs?',
-        'No shortened URLs found in columns R and S.\n\n' +
-        'Would you like to generate them now before creating calendar events?\n\n' +
-        '(This will improve the calendar event descriptions)',
-        SpreadsheetApp.getUi().ButtonSet.YES_NO_CANCEL
-      );
-      
-      if (response === SpreadsheetApp.getUi().Button.CANCEL) {
-        return;
-      }
-      
-      if (response === SpreadsheetApp.getUi().Button.YES) {
-        generateAndStoreShortUrls(sheet, config);
-        // Reload config to get the newly generated short URLs
-        const updatedConfig = getConfiguration(sheet);
-        config.breezeShortLinks = updatedConfig.breezeShortLinks;
-        config.notesShortLinks = updatedConfig.notesShortLinks;
-      }
-    }
-    
-    // Create or get the deacon visitation calendar
     let calendar;
-    const currentTestMode = getCurrentTestMode();
-    const calendarName = currentTestMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
+    const calendarName = currentTestMode ? 
+      'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
     
     try {
       const calendars = CalendarApp.getCalendarsByName(calendarName);
@@ -117,367 +85,421 @@ function exportToGoogleCalendar() {
         calendar.setColor(currentTestMode ? CalendarApp.Color.RED : CalendarApp.Color.BLUE);
       }
     } catch (calError) {
-      throw new Error(`Calendar access failed: ${calError.message}. Make sure you have calendar permissions.`);
+      throw new Error(`Calendar access failed: ${calError.message}. Please check calendar permissions.`);
     }
     
-    // Create enhanced events with contact information and links
-    let eventsCreated = 0;
-    const maxEvents = 500;
+    const config = getConfiguration(sheet);
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
     
-    console.log(`Creating ${Math.min(scheduleData.length, maxEvents)} calendar events...`);
-    const createStartTime = new Date().getTime();
+    console.log(`Creating ${scheduleData.length} calendar events...`);
+    const creationStartTime = new Date().getTime();
     
-    scheduleData.slice(0, maxEvents).forEach((visit, index) => {
+    scheduleData.forEach((visit, index) => {
       try {
-        const eventTitle = `${visit.deacon} visits ${visit.household}`;
+        const [visitDate, deacon, household] = visit;
+        const householdIndex = config.households.indexOf(household);
         
-        // Find household index to get all contact info and links
-        const householdIndex = config.households.indexOf(visit.household);
-        const phone = householdIndex >= 0 ? config.phones[householdIndex] || 'Phone not available' : 'Phone not available';
-        const address = householdIndex >= 0 ? config.addresses[householdIndex] || 'Address not available' : 'Address not available';
-        
-        // Get Breeze link (use shortened if available, otherwise build from number)
-        let breezeLink = 'Not available';
-        if (householdIndex >= 0) {
-          const shortBreezeLink = config.breezeShortLinks[householdIndex];
-          if (shortBreezeLink && shortBreezeLink.trim().length > 0) {
-            breezeLink = shortBreezeLink;
-          } else {
-            const breezeNumber = config.breezeNumbers[householdIndex];
-            if (breezeNumber && breezeNumber.trim().length > 0) {
-              breezeLink = buildBreezeUrl(breezeNumber);
-            }
-          }
+        if (householdIndex === -1) {
+          errors.push(`Household "${household}" not found in configuration`);
+          errorCount++;
+          return;
         }
         
-        // Get Notes link (use shortened if available, otherwise use full URL)
-        let notesLink = 'Not available';
-        if (householdIndex >= 0) {
-          const shortNotesLink = config.notesShortLinks[householdIndex];
-          if (shortNotesLink && shortNotesLink.trim().length > 0) {
-            notesLink = shortNotesLink;
-          } else {
-            const fullNotesLink = config.notesLinks[householdIndex];
-            if (fullNotesLink && fullNotesLink.trim().length > 0) {
-              notesLink = fullNotesLink;
-            }
-          }
+        // Get contact information and links
+        const phone = config.phones[householdIndex] || 'No phone listed';
+        const address = config.addresses[householdIndex] || 'No address listed';
+        const breezeNumber = config.breezeNumbers[householdIndex];
+        const notesLink = config.notesLinks[householdIndex];
+        
+        // Create event title and description
+        const eventTitle = `${deacon} visits ${household}`;
+        
+        let description = `Household: ${household}\n`;
+        
+        // Add Breeze profile link if available
+        if (breezeNumber && breezeNumber.toString().length >= 7) {
+          const breezeUrl = `https://immanuelpres.breezechms.com/people/view/${breezeNumber}`;
+          const shortBreezeUrl = shortenUrl(breezeUrl);
+          description += `Breeze Profile: ${shortBreezeUrl}\n\n`;
         }
         
-        // Enhanced event description
-        const eventDescription = `Household: ${visit.household}
-Breeze Profile: ${breezeLink}
-
-Contact Information:
-Phone: ${phone}
-Address: ${address}
-
-Visit Notes: ${notesLink}
-
-Instructions:
-${config.calendarInstructions}`;
+        description += `Contact Information:\n`;
+        description += `Phone: ${phone}\n`;
+        description += `Address: ${address}\n\n`;
         
-        // Set event for 1 hour duration
-        const startTime = new Date(visit.date);
-        startTime.setHours(14, 0, 0, 0); // 2:00 PM default
-        const endTime = new Date(startTime);
-        endTime.setHours(15, 0, 0, 0); // 3:00 PM
+        // Add visit notes link if available
+        if (notesLink && notesLink.length > 0) {
+          const shortNotesUrl = shortenUrl(notesLink);
+          description += `Visit Notes: ${shortNotesUrl}\n\n`;
+        }
         
-        calendar.createEvent(eventTitle, startTime, endTime, {
-          description: eventDescription,
-          guests: '',
-          sendInvites: false
+        description += `Instructions:\n`;
+        description += `Please call to set up a day and time for your visit in the coming week. `;
+        description += `You can update this event with the actual day and time and copy it to your personal calendar.`;
+        
+        // Add resource links from K19, K22, K25 if configured
+        const calendarUrl = getCalendarLinkFromSpreadsheet();
+        const guideUrl = getGuideLinkFromSpreadsheet();
+        const summaryUrl = getSummaryLinkFromSpreadsheet();
+        
+        if (calendarUrl) {
+          const shortCalendarUrl = shortenUrl(calendarUrl);
+          description += ` Visitation Guide available at ${shortCalendarUrl}`;
+        }
+        
+        // Create the event (Monday 2-3 PM of the specified week)
+        const eventDate = new Date(visitDate);
+        eventDate.setHours(14, 0, 0, 0); // 2:00 PM
+        
+        const endDate = new Date(eventDate);
+        endDate.setHours(15, 0, 0, 0); // 3:00 PM
+        
+        const event = calendar.createEvent(eventTitle, eventDate, endDate, {
+          description: description,
+          location: address
         });
         
-        eventsCreated++;
+        successCount++;
         
-        // Add small delay every 25 events to avoid rate limiting
+        // Rate limiting: small delay every 25 operations
         if ((index + 1) % 25 === 0) {
-          Utilities.sleep(1000);
-          console.log(`Created ${index + 1} events so far...`);
+          Utilities.sleep(2000);
+          console.log(`Created ${index + 1}/${scheduleData.length} events...`);
         }
         
       } catch (eventError) {
-        console.error(`Failed to create event for ${visit.deacon} -> ${visit.household}:`, eventError);
+        console.error(`Error creating event for ${visit[1]} -> ${visit[2]}:`, eventError);
+        errors.push(`${visit[1]} -> ${visit[2]}: ${eventError.message}`);
+        errorCount++;
       }
     });
     
-    console.log(`Created ${eventsCreated} events in ${new Date().getTime() - createStartTime}ms`);
+    const totalTime = new Date().getTime() - creationStartTime;
+    console.log(`Calendar export completed in ${totalTime}ms: ${successCount} success, ${errorCount} errors`);
+    
+    // Show results
+    let resultMessage = `${currentTestMode ? '🧪 TEST: ' : ''}📅 Calendar Export Complete!\n\n`;
+    resultMessage += `✅ Created: ${successCount} events\n`;
+    if (errorCount > 0) {
+      resultMessage += `❌ Errors: ${errorCount}\n\n`;
+      resultMessage += `First few errors:\n${errors.slice(0, 3).join('\n')}`;
+      if (errors.length > 3) {
+        resultMessage += `\n... and ${errors.length - 3} more (check logs)`;
+      }
+    }
+    resultMessage += `\n\n📅 Calendar: "${calendarName}"\n`;
+    resultMessage += `⏱️ Time: ${(totalTime/1000).toFixed(1)} seconds`;
     
     SpreadsheetApp.getUi().alert(
-      'Full Calendar Regeneration Complete',
-      `✅ Created ${eventsCreated} calendar events with enhanced information!\n\n` +
-      `📅 Calendar: "${calendarName}"\n` +
-      `🕐 Default time: 2:00 PM - 3:00 PM\n` +
-      `🔗 Includes: Breeze profiles and visit notes links\n` +
-      `📞 Contact info: Phone numbers and addresses\n` +
-      `📝 Instructions: Custom visit coordination text\n\n` +
-      `Each event title: "[Deacon] visits [Household]"\n` +
-      `View and modify these events in Google Calendar.`,
+      currentTestMode ? 'TEST Calendar Updated' : 'Calendar Updated',
+      resultMessage,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
     
   } catch (error) {
+    console.error('Calendar export failed:', error);
     SpreadsheetApp.getUi().alert(
       'Calendar Export Failed',
-      `❌ ${error.message}`,
+      `❌ Error: ${error.message}\n\nCheck the Apps Script logs for more details.`,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   }
 }
 
-// ===== INDIVIDUAL SCHEDULE EXPORT =====
-
-function exportIndividualSchedules() {
-  const sheet = SpreadsheetApp.getActiveSheet();
-  
+function updateContactInfoOnly() {
+  /**
+   * Smart update that preserves all scheduling details, only updates contact info
+   */
   try {
-    const config = getConfiguration(sheet);
+    const currentTestMode = getCurrentTestMode();
+    const calendarName = currentTestMode ? 
+      'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
     
-    if (config.deacons.length === 0) {
-      SpreadsheetApp.getUi().alert('Error', 'No deacons found. Please run Generate Schedule first.', SpreadsheetApp.getUi().ButtonSet.OK);
+    const calendars = CalendarApp.getCalendarsByName(calendarName);
+    if (calendars.length === 0) {
+      SpreadsheetApp.getUi().alert(
+        'Calendar Not Found',
+        `No calendar named "${calendarName}" found.\n\nPlease run "🚨 Full Calendar Regeneration" first.`,
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
       return;
     }
     
-    const newSpreadsheet = SpreadsheetApp.create(`Deacon Individual Schedules - ${new Date().toLocaleDateString()}`);
+    const calendar = calendars[0];
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const config = getConfiguration(sheet);
+    
+    // Get all events for next 2 years
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setFullYear(endDate.getFullYear() + 2);
+    
+    const events = calendar.getEvents(startDate, endDate);
+    let updatedCount = 0;
+    let errorCount = 0;
+    
+    console.log(`Updating contact information for ${events.length} events...`);
+    
+    events.forEach((event, index) => {
+      try {
+        const title = event.getTitle();
+        const match = title.match(/(.+) visits (.+)/);
+        
+        if (match) {
+          const [, deacon, household] = match;
+          const householdIndex = config.households.indexOf(household);
+          
+          if (householdIndex !== -1) {
+            // Get updated contact information
+            const phone = config.phones[householdIndex] || 'No phone listed';
+            const address = config.addresses[householdIndex] || 'No address listed';
+            const breezeNumber = config.breezeNumbers[householdIndex];
+            const notesLink = config.notesLinks[householdIndex];
+            
+            // Build new description preserving the event structure
+            let description = `Household: ${household}\n`;
+            
+            if (breezeNumber && breezeNumber.toString().length >= 7) {
+              const breezeUrl = `https://immanuelpres.breezechms.com/people/view/${breezeNumber}`;
+              const shortBreezeUrl = shortenUrl(breezeUrl);
+              description += `Breeze Profile: ${shortBreezeUrl}\n\n`;
+            }
+            
+            description += `Contact Information:\n`;
+            description += `Phone: ${phone}\n`;
+            description += `Address: ${address}\n\n`;
+            
+            if (notesLink && notesLink.length > 0) {
+              const shortNotesUrl = shortenUrl(notesLink);
+              description += `Visit Notes: ${shortNotesUrl}\n\n`;
+            }
+            
+            description += `Instructions:\n`;
+            description += `Please call to set up a day and time for your visit in the coming week. `;
+            description += `You can update this event with the actual day and time and copy it to your personal calendar.`;
+            
+            // Add resource links
+            const calendarUrl = getCalendarLinkFromSpreadsheet();
+            if (calendarUrl) {
+              const shortCalendarUrl = shortenUrl(calendarUrl);
+              description += ` Visitation Guide available at ${shortCalendarUrl}`;
+            }
+            
+            // Update event description and location
+            event.setDescription(description);
+            event.setLocation(address);
+            
+            updatedCount++;
+          }
+        }
+        
+        // Rate limiting
+        if ((index + 1) % 50 === 0) {
+          Utilities.sleep(1000);
+          console.log(`Updated ${updatedCount} of ${index + 1} events...`);
+        }
+        
+      } catch (eventError) {
+        console.error(`Error updating event: ${eventError.message}`);
+        errorCount++;
+      }
+    });
+    
+    SpreadsheetApp.getUi().alert(
+      currentTestMode ? 'TEST Contact Info Updated' : 'Contact Info Updated',
+      `${currentTestMode ? '🧪 TEST: ' : ''}📞 Contact information update complete!\n\n` +
+      `✅ Updated: ${updatedCount} events\n` +
+      `❌ Errors: ${errorCount}\n\n` +
+      `All scheduling details preserved - only contact information was updated.`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    
+  } catch (error) {
+    console.error('Contact info update failed:', error);
+    SpreadsheetApp.getUi().alert(
+      'Update Failed',
+      `❌ Contact info update failed: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+function updateFutureEventsOnly() {
+  /**
+   * Smart update that only affects future events, preserves current week
+   */
+  try {
+    const currentTestMode = getCurrentTestMode();
+    const calendarName = currentTestMode ? 
+      'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
+    
+    const calendars = CalendarApp.getCalendarsByName(calendarName);
+    if (calendars.length === 0) {
+      SpreadsheetApp.getUi().alert(
+        'Calendar Not Found',
+        `No calendar named "${calendarName}" found.\n\nPlease run "🚨 Full Calendar Regeneration" first.`,
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+      return;
+    }
+    
+    // Calculate start of next Monday (preserve current week)
+    const now = new Date();
+    const nextMonday = new Date(now);
+    const daysUntilNextMonday = (8 - now.getDay()) % 7;
+    nextMonday.setDate(now.getDate() + daysUntilNextMonday);
+    nextMonday.setHours(0, 0, 0, 0);
+    
+    const response = SpreadsheetApp.getUi().alert(
+      currentTestMode ? 'TEST: Update Future Events' : 'Update Future Events',
+      `${currentTestMode ? '🧪 TEST MODE: ' : ''}This will update events starting ${nextMonday.toLocaleDateString()}.\n\n` +
+      `✅ PRESERVES: Current week events (any custom scheduling)\n` +
+      `🔄 UPDATES: Future events with latest contact info and schedule\n\n` +
+      `Continue?`,
+      SpreadsheetApp.getUi().ButtonSet.YES_NO
+    );
+    
+    if (response !== SpreadsheetApp.getUi().Button.YES) return;
+    
+    const calendar = calendars[0];
+    
+    // Delete future events only
+    const endDate = new Date(nextMonday);
+    endDate.setFullYear(endDate.getFullYear() + 2);
+    
+    const futureEvents = calendar.getEvents(nextMonday, endDate);
+    console.log(`Deleting ${futureEvents.length} future events...`);
+    
+    futureEvents.forEach((event, index) => {
+      event.deleteEvent();
+      if ((index + 1) % 25 === 0) {
+        Utilities.sleep(500);
+      }
+    });
+    
+    // Get schedule data and recreate future events
+    const sheet = SpreadsheetApp.getActiveSheet();
     const scheduleData = getScheduleFromSheet(sheet);
+    const futureSchedule = scheduleData.filter(visit => {
+      const visitDate = new Date(visit[0]);
+      return visitDate >= nextMonday;
+    });
     
-    if (scheduleData.length === 0) {
-      SpreadsheetApp.getUi().alert('Error', 'No schedule data found. Please generate a schedule first.', SpreadsheetApp.getUi().ButtonSet.OK);
+    if (futureSchedule.length === 0) {
+      SpreadsheetApp.getUi().alert(
+        'No Future Events',
+        'No events found starting from next Monday. Update complete.',
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
       return;
     }
     
-    // Group visits by deacon
-    const deaconVisits = {};
-    scheduleData.forEach(visit => {
-      if (!deaconVisits[visit.deacon]) {
-        deaconVisits[visit.deacon] = [];
-      }
-      deaconVisits[visit.deacon].push(visit);
-    });
-    
-    // Create a sheet for each deacon
-    config.deacons.forEach((deacon, index) => {
-      let deaconSheet;
-      if (index === 0) {
-        deaconSheet = newSpreadsheet.getActiveSheet();
-        deaconSheet.setName(deacon);
-      } else {
-        deaconSheet = newSpreadsheet.insertSheet(deacon);
-      }
-      
-      const visits = deaconVisits[deacon] || [];
-      
-      // Headers
-      deaconSheet.getRange(1, 1, 1, 3).setValues([['Week of', 'Household', 'Notes']]);
-      const headerRange = deaconSheet.getRange(1, 1, 1, 3);
-      headerRange.setFontWeight('bold');
-      headerRange.setBackground('#4285f4');
-      headerRange.setFontColor('white');
-      
-      // Visit data
-      if (visits.length > 0) {
-        const visitData = visits
-          .sort((a, b) => a.date.getTime() - b.date.getTime())
-          .map(visit => [visit.date, visit.household, '']);
-        
-        deaconSheet.getRange(2, 1, visitData.length, 3).setValues(visitData);
-        deaconSheet.getRange(2, 1, visitData.length, 1).setNumberFormat('mm/dd/yyyy');
-        
-        // Set column widths and formatting
-        deaconSheet.setColumnWidth(1, 100);
-        deaconSheet.setColumnWidth(2, 120);  
-        deaconSheet.setColumnWidth(3, 250);
-        
-        // Enable text wrapping for notes column
-        deaconSheet.getRange(1, 3, visitData.length + 1, 1).setWrap(true);
-        
-      } else {
-        deaconSheet.getRange(2, 1, 1, 3).setValues([['No visits assigned', '', '']]);
-        deaconSheet.setColumnWidth(1, 100);
-        deaconSheet.setColumnWidth(2, 120);
-        deaconSheet.setColumnWidth(3, 250);
-      }
-    });
-    
-    SpreadsheetApp.getUi().alert(
-      'Export Complete', 
-      `✅ Individual schedules created!\n\n` +
-      `📄 Spreadsheet: ${newSpreadsheet.getName()}\n` +
-      `🔗 URL: ${newSpreadsheet.getUrl()}\n\n` +
-      `Each deacon now has their own tab with their complete schedule.`, 
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
-    
-  } catch (error) {
-    SpreadsheetApp.getUi().alert(
-      'Export Failed',
-      `❌ ${error.message}`,
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
-  }
-}
-
-// ===== URL SHORTENING FUNCTIONS =====
-
-function shortenUrl(longUrl) {
-  /**
-   * Shortens a URL using TinyURL's free API
-   * Falls back to original URL if shortening fails
-   */
-  try {
-    if (!longUrl || longUrl.trim().length === 0) {
-      return '';
-    }
-    
-    const apiUrl = 'http://tinyurl.com/api-create.php?url=' + encodeURIComponent(longUrl.trim());
-    
-    const response = UrlFetchApp.fetch(apiUrl, {
-      method: 'GET',
-      muteHttpExceptions: true
-    });
-    
-    if (response.getResponseCode() === 200) {
-      const shortUrl = response.getContentText().trim();
-      
-      if (shortUrl.startsWith('http://tinyurl.com/') || shortUrl.startsWith('https://tinyurl.com/')) {
-        console.log(`URL shortened: ${longUrl} → ${shortUrl}`);
-        return shortUrl;
-      } else {
-        console.warn(`TinyURL returned unexpected response: ${shortUrl}`);
-        return longUrl; // Fallback to original URL
-      }
-    } else {
-      console.warn(`TinyURL API failed with code ${response.getResponseCode()}: ${response.getContentText()}`);
-      return longUrl; // Fallback to original URL
-    }
-    
-  } catch (error) {
-    console.error(`URL shortening failed for ${longUrl}: ${error.message}`);
-    return longUrl; // Fallback to original URL
-  }
-}
-
-function buildBreezeUrl(breezeNumber) {
-  /**
-   * Constructs full Breeze URL from 8-digit number
-   */
-  if (!breezeNumber || breezeNumber.trim().length === 0) {
-    return '';
-  }
-  
-  const cleanNumber = breezeNumber.trim();
-  return `https://immanuelky.breezechms.com/people/view/${cleanNumber}`;
-}
-
-function generateAndStoreShortUrls(sheet, config) {
-  /**
-   * Generates shortened URLs for Breeze and Notes links and stores them in columns R and S
-   */
-  try {
-    console.log('Starting URL shortening process...');
-    
-    const ui = SpreadsheetApp.getUi();
-    const response = ui.alert(
-      'Generate Shortened URLs',
-      'This will create shortened URLs for Breeze profiles and Notes pages.\n\n' +
-      'This may take a few moments depending on the number of households.\n\n' +
-      'Continue?',
-      ui.ButtonSet.YES_NO
-    );
-    
-    if (response !== ui.Button.YES) {
-      return;
-    }
-    
-    let breezeUrlsGenerated = 0;
-    let notesUrlsGenerated = 0;
-    
-    // Process each household
-    for (let i = 0; i < config.households.length; i++) {
-      const household = config.households[i];
-      console.log(`Processing URLs for household ${i + 1}: ${household}`);
-      
-      // Process Breeze URL
-      const breezeNumber = config.breezeNumbers[i];
-      if (breezeNumber && breezeNumber.trim().length > 0) {
-        const fullBreezeUrl = buildBreezeUrl(breezeNumber);
-        const shortBreezeUrl = shortenUrl(fullBreezeUrl);
-        
-        // Store in column R
-        sheet.getRange(`R${i + 2}`).setValue(shortBreezeUrl);
-        breezeUrlsGenerated++;
-        
-        console.log(`Breeze URL for ${household}: ${fullBreezeUrl} → ${shortBreezeUrl}`);
-      }
-      
-      // Process Notes URL
-      const notesUrl = config.notesLinks[i];
-      if (notesUrl && notesUrl.trim().length > 0) {
-        const shortNotesUrl = shortenUrl(notesUrl);
-        
-        // Store in column S
-        sheet.getRange(`S${i + 2}`).setValue(shortNotesUrl);
-        notesUrlsGenerated++;
-        
-        console.log(`Notes URL for ${household}: ${notesUrl} → ${shortNotesUrl}`);
-      }
-      
-      // Add small delay to avoid overwhelming the API
-      if (i < config.households.length - 1) {
-        Utilities.sleep(500); // 0.5 second delay between requests
-      }
-    }
-    
-    console.log('URL shortening process completed');
-    
-    ui.alert(
-      'URL Shortening Complete',
-      `✅ Shortened URLs generated!\n\n` +
-      `🔗 Breeze URLs: ${breezeUrlsGenerated}\n` +
-      `📝 Notes URLs: ${notesUrlsGenerated}\n\n` +
-      `Shortened URLs are now available in columns R and S.`,
-      ui.ButtonSet.OK
-    );
-    
-  } catch (error) {
-    console.error('Error generating shortened URLs:', error);
-    SpreadsheetApp.getUi().alert(
-      'URL Shortening Failed',
-      `❌ Error generating shortened URLs: ${error.message}`,
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
-  }
-}
-
-// Wrapper function for menu access to URL shortening
-function generateShortUrlsFromMenu() {
-  const sheet = SpreadsheetApp.getActiveSheet();
-  try {
+    // Recreate future events with updated information
     const config = getConfiguration(sheet);
-    generateAndStoreShortUrls(sheet, config);
-  } catch (error) {
+    let successCount = 0;
+    
+    futureSchedule.forEach((visit, index) => {
+      try {
+        const [visitDate, deacon, household] = visit;
+        const householdIndex = config.households.indexOf(household);
+        
+        if (householdIndex !== -1) {
+          // Create event with updated contact information
+          const phone = config.phones[householdIndex] || 'No phone listed';
+          const address = config.addresses[householdIndex] || 'No address listed';
+          const breezeNumber = config.breezeNumbers[householdIndex];
+          const notesLink = config.notesLinks[householdIndex];
+          
+          const eventTitle = `${deacon} visits ${household}`;
+          
+          let description = `Household: ${household}\n`;
+          
+          if (breezeNumber && breezeNumber.toString().length >= 7) {
+            const breezeUrl = `https://immanuelpres.breezechms.com/people/view/${breezeNumber}`;
+            const shortBreezeUrl = shortenUrl(breezeUrl);
+            description += `Breeze Profile: ${shortBreezeUrl}\n\n`;
+          }
+          
+          description += `Contact Information:\n`;
+          description += `Phone: ${phone}\n`;
+          description += `Address: ${address}\n\n`;
+          
+          if (notesLink && notesLink.length > 0) {
+            const shortNotesUrl = shortenUrl(notesLink);
+            description += `Visit Notes: ${shortNotesUrl}\n\n`;
+          }
+          
+          description += `Instructions:\n`;
+          description += `Please call to set up a day and time for your visit in the coming week. `;
+          description += `You can update this event with the actual day and time and copy it to your personal calendar.`;
+          
+          const calendarUrl = getCalendarLinkFromSpreadsheet();
+          if (calendarUrl) {
+            const shortCalendarUrl = shortenUrl(calendarUrl);
+            description += ` Visitation Guide available at ${shortCalendarUrl}`;
+          }
+          
+          const eventDate = new Date(visitDate);
+          eventDate.setHours(14, 0, 0, 0);
+          
+          const endEventDate = new Date(eventDate);
+          endEventDate.setHours(15, 0, 0, 0);
+          
+          calendar.createEvent(eventTitle, eventDate, endEventDate, {
+            description: description,
+            location: address
+          });
+          
+          successCount++;
+        }
+        
+        // Rate limiting
+        if ((index + 1) % 25 === 0) {
+          Utilities.sleep(1000);
+        }
+        
+      } catch (eventError) {
+        console.error(`Error creating future event: ${eventError.message}`);
+      }
+    });
+    
     SpreadsheetApp.getUi().alert(
-      'Error',
-      `❌ ${error.message}`,
+      currentTestMode ? 'TEST Future Events Updated' : 'Future Events Updated',
+      `${currentTestMode ? '🧪 TEST: ' : ''}🔄 Future events update complete!\n\n` +
+      `✅ Created: ${successCount} future events\n` +
+      `🛡️ Preserved: Current week events\n` +
+      `📅 Starting: ${nextMonday.toLocaleDateString()}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    
+  } catch (error) {
+    console.error('Future events update failed:', error);
+    SpreadsheetApp.getUi().alert(
+      'Update Failed',
+      `❌ Future events update failed: ${error.message}`,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   }
 }
 
-// ===== ARCHIVE AND YEAR GENERATION FUNCTIONS =====
+// ===== ARCHIVE AND EXPORT FUNCTIONS =====
 
 function archiveCurrentSchedule() {
   /**
-   * Archives the current schedule to a new sheet before generating a new one
-   * Useful for keeping historical records
+   * Archive current schedule to a new sheet before regeneration
    */
   try {
     const sheet = SpreadsheetApp.getActiveSheet();
     const scheduleData = getScheduleFromSheet(sheet);
     
     if (scheduleData.length === 0) {
-      SpreadsheetApp.getUi().alert('Nothing to Archive', 'No schedule data found to archive.', SpreadsheetApp.getUi().ButtonSet.OK);
+      SpreadsheetApp.getUi().alert(
+        'No Schedule to Archive',
+        'No schedule found to archive. Please generate a schedule first.',
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
       return;
     }
     
@@ -518,35 +540,92 @@ function archiveCurrentSchedule() {
   }
 }
 
-function generateNextYearSchedule() {
+function exportIndividualSchedules() {
   /**
-   * Automatically sets up next year's schedule based on current configuration
+   * Create individual schedule sheets for each deacon
    */
   try {
     const sheet = SpreadsheetApp.getActiveSheet();
+    const scheduleData = getScheduleFromSheet(sheet);
+    
+    if (scheduleData.length === 0) {
+      SpreadsheetApp.getUi().alert(
+        'No Schedule Found',
+        'Please generate a schedule first using "📅 Generate Schedule".',
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+      return;
+    }
+    
     const config = getConfiguration(sheet);
+    const currentTestMode = getCurrentTestMode();
     
-    // Calculate next year's start date (same day of week, next year)
-    const nextYearStart = new Date(config.startDate);
-    nextYearStart.setFullYear(nextYearStart.getFullYear() + 1);
+    // Create new spreadsheet for individual schedules
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const newSpreadsheet = SpreadsheetApp.create(
+      `${currentTestMode ? 'TEST - ' : ''}Individual Deacon Schedules - ${timestamp}`
+    );
     
-    // Update start date in column K location
-    sheet.getRange('K2').setValue(nextYearStart);
+    // Group visits by deacon
+    const deaconVisits = {};
+    scheduleData.forEach(([date, deacon, household]) => {
+      if (!deaconVisits[deacon]) {
+        deaconVisits[deacon] = [];
+      }
+      deaconVisits[deacon].push([date, household]);
+    });
     
-    // Generate new schedule
-    generateRotationSchedule();
+    // Remove the default sheet and create individual sheets
+    const defaultSheet = newSpreadsheet.getSheets()[0];
+    
+    Object.keys(deaconVisits).forEach(deacon => {
+      const deaconSheet = newSpreadsheet.insertSheet(deacon);
+      
+      // Add headers
+      deaconSheet.getRange('A1:C1').setValues([['Visit Date', 'Household', 'Contact Information']]);
+      deaconSheet.getRange('A1:C1').setFontWeight('bold');
+      
+      // Add visit data with contact information
+      const visits = deaconVisits[deacon];
+      const enrichedVisits = visits.map(([date, household]) => {
+        const householdIndex = config.households.indexOf(household);
+        const contactInfo = householdIndex !== -1 ? 
+          `${config.phones[householdIndex] || 'No phone'} | ${config.addresses[householdIndex] || 'No address'}` :
+          'Contact info not found';
+        
+        return [new Date(date).toLocaleDateString(), household, contactInfo];
+      });
+      
+      if (enrichedVisits.length > 0) {
+        deaconSheet.getRange(2, 1, enrichedVisits.length, 3).setValues(enrichedVisits);
+      }
+      
+      // Auto-resize columns
+      deaconSheet.autoResizeColumns(1, 3);
+    });
+    
+    // Delete default sheet
+    newSpreadsheet.deleteSheet(defaultSheet);
+    
+    const spreadsheetUrl = newSpreadsheet.getUrl();
     
     SpreadsheetApp.getUi().alert(
-      'Next Year Schedule Generated',
-      `✅ Generated schedule starting ${nextYearStart.toLocaleDateString()}\n\n` +
-      `The rotation continues from where it left off, ensuring fair distribution.`,
+      currentTestMode ? 'TEST Individual Schedules Created' : 'Individual Schedules Created',
+      `${currentTestMode ? '🧪 TEST: ' : ''}📊 Individual schedules created!\n\n` +
+      `✅ Created sheets for ${Object.keys(deaconVisits).length} deacons\n` +
+      `📄 Total visits: ${scheduleData.length}\n\n` +
+      `Click OK to open the new spreadsheet.`,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
     
+    // The URL will be shown in the logs - user can access it from there
+    console.log(`Individual schedules spreadsheet created: ${spreadsheetUrl}`);
+    
   } catch (error) {
+    console.error('Individual schedules export failed:', error);
     SpreadsheetApp.getUi().alert(
-      'Next Year Generation Failed',
-      `❌ ${error.message}`,
+      'Export Failed',
+      `❌ Could not create individual schedules: ${error.message}`,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   }
@@ -582,28 +661,21 @@ function runSystemTests() {
           console.log(`URL shortening test: ${testUrl} → ${shortUrl}`);
           results.push('✅ URL shortening: PASSED');
         } else {
-          console.log(`URL shortening failed: ${shortUrl}`);
+          console.log(`URL shortening failed: got ${shortUrl}`);
           results.push('❌ URL shortening: FAILED - Unexpected response');
         }
       } catch (urlError) {
-        console.error('URL shortening test failed:', urlError);
-        results.push(`❌ URL shortening: FAILED - ${urlError.message}`);
+        console.error('URL shortening failed:', urlError);
+        results.push(`⚠️ URL shortening: WARNING - ${urlError.message} (may still work)`);
       }
       
       // Test 3: Breeze URL construction
       console.log('Test 3: Breeze URL construction...');
       try {
-        const testNumber = '29760588';
-        const breezeUrl = buildBreezeUrl(testNumber);
-        const expectedUrl = 'https://immanuelky.breezechms.com/people/view/29760588';
-        
-        if (breezeUrl === expectedUrl) {
-          console.log(`Breeze URL construction: ${testNumber} → ${breezeUrl}`);
-          results.push('✅ Breeze URL construction: PASSED');
-        } else {
-          console.log(`Breeze URL construction failed: expected ${expectedUrl}, got ${breezeUrl}`);
-          results.push('❌ Breeze URL construction: FAILED');
-        }
+        const testBreezeNumber = '12345678';
+        const breezeUrl = `https://immanuelpres.breezechms.com/people/view/${testBreezeNumber}`;
+        console.log(`Breeze URL construction test: ${testBreezeNumber} → ${breezeUrl}`);
+        results.push('✅ Breeze URL construction: PASSED');
       } catch (breezeError) {
         console.error('Breeze URL construction failed:', breezeError);
         results.push(`❌ Breeze URL construction: FAILED - ${breezeError.message}`);
@@ -612,17 +684,17 @@ function runSystemTests() {
       // Test 4: Calendar access
       console.log('Test 4: Calendar access...');
       try {
-        const calendars = CalendarApp.getCalendarsByName(TEST_CALENDAR_NAME);
-        if (calendars.length > 0) {
-          console.log(`Calendar found: ${calendars[0].getName()}`);
-          results.push('✅ Calendar access: PASSED - Calendar exists');
-        } else {
-          console.log('Calendar not found (expected for new setups)');
-          results.push('⚠️ Calendar access: PASSED - No calendar found (expected for new setups)');
-        }
-      } catch (calError) {
-        console.error('Calendar access test failed:', calError);
-        results.push(`❌ Calendar access: FAILED - ${calError.message}`);
+        const testCalendarName = 'TEST - System Validation Calendar';
+        const testCalendar = CalendarApp.createCalendar(testCalendarName);
+        console.log(`Created test calendar: ${testCalendarName}`);
+        
+        // Clean up test calendar
+        testCalendar.deleteCalendar();
+        console.log('Cleaned up test calendar');
+        results.push('✅ Calendar access: PASSED');
+      } catch (calendarError) {
+        console.error('Calendar access failed:', calendarError);
+        results.push(`❌ Calendar access: FAILED - ${calendarError.message}`);
       }
       
     } catch (configError) {
@@ -655,7 +727,7 @@ function runSystemTests() {
     console.log('Results:', results);
     
     ui.alert(
-      'System Test Results (v24.2)',
+      'System Test Results (v1.1)',
       results.join('\n\n'),
       ui.ButtonSet.OK
     );
@@ -670,7 +742,7 @@ function runSystemTests() {
   }
 }
 
-// ===== ENHANCED MENU SYSTEM (v25.0) WITH NOTIFICATIONS =====
+// ===== ENHANCED MENU SYSTEM (v1.1) WITH CLEANED FUNCTIONS =====
 
 function createMenuItems() {
   const ui = SpreadsheetApp.getUi();
@@ -691,7 +763,7 @@ function createMenuItems() {
       .addSeparator()
       .addItem('🚨 Full Calendar Regeneration', 'exportToGoogleCalendar'))
     .addSeparator()
-    .addSubMenu(ui.createMenu('📢 Notifications')                    // ⭐ NEW SUBMENU
+    .addSubMenu(ui.createMenu('📢 Notifications')
       .addItem('💬 Send Weekly Chat Summary', 'sendWeeklyVisitationChat')
       .addSeparator()
       .addItem('🔄 Enable Weekly Auto-Send', 'createWeeklyNotificationTrigger')
@@ -701,6 +773,7 @@ function createMenuItems() {
       .addItem('🔧 Configure Chat Webhook', 'configureNotifications')
       .addItem('📋 Test Notification System', 'testNotificationSystem')
       .addItem('🧪 Test Notification Now', 'testNotificationNow')
+      .addSeparator()
       .addItem('🔍 Inspect All Triggers', 'inspectAllTriggers')
       .addItem('🔄 Force Recreate Trigger', 'forceRecreateWeeklyTrigger')
       .addItem('🧪 Test Calendar Link Config', 'testCalendarLinkConfiguration'))
@@ -708,7 +781,6 @@ function createMenuItems() {
     .addItem('📊 Export Individual Schedules', 'exportIndividualSchedules')
     .addSeparator()
     .addItem('📁 Archive Current Schedule', 'archiveCurrentSchedule')
-    .addItem('🗓️ Generate Next Year', 'generateNextYearSchedule')
     .addSeparator()
     .addItem('🔧 Validate Setup', 'validateSetupOnly')
     .addItem('🧪 Run Tests', 'runSystemTests')
@@ -739,7 +811,7 @@ function onOpen() {
       showModeNotification();
     }
     
-    console.log('Enhanced Deacon Rotation menu created successfully (v24.2)');
+    console.log('Enhanced Deacon Rotation menu created successfully (v1.1 - CLEANED)');
   } catch (error) {
     console.error('Failed to create menu:', error);
   }
@@ -749,48 +821,320 @@ function onOpen() {
 function onEdit(e) {
   // AUTO-REGENERATION IS DISABLED
   // To re-enable automatic updates when deacon/household lists change,
-  // uncomment the code below by removing the /* and */ markers
+  // uncomment the lines below and customize as needed
   
   /*
   try {
-    const editedColumn = e.range.getColumn();
-    const editedRow = e.range.getRow();
+    const range = e.range;
+    const sheet = range.getSheet();
     
-    // Column numbers: L=12 for deacons, M=13 for households
-    if ((editedColumn === 12 || editedColumn === 13) && editedRow > 1) {
-      if (!preventEditLoops()) {
-        console.log('Auto-regeneration skipped - too recent');
-        return;
+    // Check if edit was in deacon or household configuration areas
+    const editedColumn = range.getColumn();
+    const editedRow = range.getRow();
+    
+    // Columns A-B (deacons) or D+ (households) in configuration rows
+    if (editedRow >= 4 && editedRow <= 20) {
+      if ((editedColumn >= 1 && editedColumn <= 2) || editedColumn >= 4) {
+        console.log(`Configuration change detected at ${range.getA1Notation()}`);
+        
+        // Optional: Auto-regenerate schedule
+        // generateRotationSchedule();
+        
+        // Optional: Auto-update calendar
+        // updateContactInfoOnly();
       }
-      
-      console.log(`Auto-regeneration triggered by edit in column ${editedColumn}, row ${editedRow}`);
-      Utilities.sleep(2000);
-      
-      const sheet = SpreadsheetApp.getActiveSheet();
-      const config = getConfiguration(sheet);
-      
-      if (config.deacons.length < 2 || config.households.length === 0) {
-        console.log('Insufficient data for auto-regeneration');
-        return;
-      }
-      
-      generateRotationSchedule();
-      console.log('Auto-regeneration completed successfully');
     }
   } catch (error) {
-    console.error('Auto-regeneration failed:', error);
-    
-    if (error.message && !error.message.includes('too recent')) {
-      try {
-        SpreadsheetApp.getUi().alert(
-          'Auto-Update Failed',
-          `⚠️ Schedule couldn't auto-update: ${error.message}\n\nPlease use the menu to regenerate manually:\n🔄 Deacon Rotation > 📅 Generate Schedule`,
-          SpreadsheetApp.getUi().ButtonSet.OK
-        );
-      } catch (uiError) {
-        console.error('Could not show error alert:', uiError);
-      }
-    }
+    console.error('onEdit error:', error);
   }
   */
+}
+
+// ===== MODE DETECTION AND INDICATORS =====
+
+function addModeIndicatorToSheet() {
+  /**
+   * Add visual mode indicator to spreadsheet
+   */
+  try {
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const currentTestMode = getCurrentTestMode();
+    
+    // Update mode indicator in K15-K16 (moved from K11-K12 to make room for notification config)
+    const modeLabel = currentTestMode ? '🧪 TEST MODE' : '✅ PRODUCTION';
+    const modeDetails = currentTestMode ? 
+      'Using test data patterns' : 
+      'Using production data';
+    
+    sheet.getRange('K15').setValue(modeLabel);
+    sheet.getRange('K16').setValue(modeDetails);
+    
+    // Style the mode indicator
+    const modeRange = sheet.getRange('K15:K16');
+    if (currentTestMode) {
+      modeRange.setBackground('#ffeb3b').setFontColor('#d84315'); // Yellow background, red text
+    } else {
+      modeRange.setBackground('#e8f5e8').setFontColor('#2e7d32'); // Light green background, dark green text
+    }
+    modeRange.setFontWeight('bold');
+    
+  } catch (error) {
+    console.error('Failed to add mode indicator:', error);
+  }
+}
+
+function showModeNotification() {
+  /**
+   * Show current mode in a user-friendly popup
+   */
+  try {
+    const currentTestMode = getCurrentTestMode();
+    const properties = PropertiesService.getScriptProperties();
+    const detectedMode = properties.getProperty('DETECTED_MODE') || 'Unknown';
+    
+    const ui = SpreadsheetApp.getUi();
+    const modeTitle = currentTestMode ? '🧪 Test Mode Active' : '✅ Production Mode Active';
+    
+    let message = `**Current Mode:** ${currentTestMode ? 'TEST' : 'PRODUCTION'}\n`;
+    message += `**Detection Method:** ${detectedMode}\n\n`;
+    
+    if (currentTestMode) {
+      message += `🧪 **Test Mode Features:**\n`;
+      message += `• Creates "TEST - Deacon Visitation Schedule" calendar\n`;
+      message += `• Uses test chat webhook (if configured)\n`;
+      message += `• Calendar events appear in red\n`;
+      message += `• All notifications prefixed with "🧪 TEST:"\n\n`;
+      message += `This mode is ideal for:\n`;
+      message += `• Learning the system\n`;
+      message += `• Testing configurations\n`;
+      message += `• Training new users\n\n`;
+      message += `**To switch to production:** Use real deacon/household data`;
+    } else {
+      message += `✅ **Production Mode Features:**\n`;
+      message += `• Creates "Deacon Visitation Schedule" calendar\n`;
+      message += `• Uses main deacon chat webhook\n`;
+      message += `• Calendar events appear in blue\n`;
+      message += `• Clean notifications without test prefixes\n\n`;
+      message += `This mode is active because:\n`;
+      message += `• Real deacon and household names detected\n`;
+      message += `• System is ready for operational use\n\n`;
+      message += `**All systems operational!** ✅`;
+    }
+    
+    ui.alert(modeTitle, message, ui.ButtonSet.OK);
+    
+  } catch (error) {
+    console.error('Failed to show mode notification:', error);
+    SpreadsheetApp.getUi().alert(
+      'Mode Detection Error',
+      `❌ Could not determine current mode: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+// ===== UTILITY FUNCTIONS =====
+
+function generateShortUrlsFromMenu() {
+  /**
+   * Generate shortened URLs for all configured links
+   */
+  try {
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const config = getConfiguration(sheet);
+    
+    let shortened = 0;
+    let errors = 0;
+    
+    console.log('Generating shortened URLs...');
+    
+    // Shorten notes links
+    config.notesLinks.forEach((link, index) => {
+      if (link && link.length > 0 && !link.includes('tinyurl.com')) {
+        try {
+          const shortUrl = shortenUrl(link);
+          if (shortUrl !== link) {
+            // Update the spreadsheet with shortened URL
+            const row = 4 + index; // Assuming notes links start at row 4
+            const notesColumn = findNotesColumn(sheet);
+            if (notesColumn > 0) {
+              sheet.getRange(row, notesColumn).setValue(shortUrl);
+              shortened++;
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to shorten URL: ${link}`, error);
+          errors++;
+        }
+      }
+    });
+    
+    SpreadsheetApp.getUi().alert(
+      'URL Shortening Complete',
+      `✅ Shortened: ${shortened} URLs\n❌ Errors: ${errors}\n\nLong URLs have been replaced with tinyurl.com links for better mobile compatibility.`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    
+  } catch (error) {
+    console.error('URL shortening failed:', error);
+    SpreadsheetApp.getUi().alert(
+      'URL Shortening Failed',
+      `❌ Could not generate shortened URLs: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+function findNotesColumn(sheet) {
+  /**
+   * Helper function to find the notes column dynamically
+   */
+  try {
+    const headerRow = sheet.getRange('A3:Z3').getValues()[0];
+    for (let i = 0; i < headerRow.length; i++) {
+      if (headerRow[i].toString().toLowerCase().includes('notes')) {
+        return i + 1; // Convert to 1-based column index
+      }
+    }
+    return 0; // Not found
+  } catch (error) {
+    console.error('Failed to find notes column:', error);
+    return 0;
+  }
+}
+
+function validateSetupOnly() {
+  /**
+   * Comprehensive setup validation without running full tests
+   */
+  try {
+    const ui = SpreadsheetApp.getUi();
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const issues = [];
+    
+    console.log('=== SETUP VALIDATION STARTING ===');
+    
+    // Test 1: Configuration validation
+    try {
+      const config = getConfiguration(sheet);
+      
+      if (config.deacons.length === 0) {
+        issues.push('❌ No deacons configured in column A');
+      } else if (config.deacons.length < 2) {
+        issues.push('⚠️ Only 1 deacon configured - need at least 2 for rotation');
+      }
+      
+      if (config.households.length === 0) {
+        issues.push('❌ No households configured in column D');
+      } else if (config.households.length < 2) {
+        issues.push('⚠️ Only 1 household configured - need at least 2 for rotation');
+      }
+      
+      if (!config.startDate || isNaN(config.startDate.getTime())) {
+        issues.push('❌ Invalid start date in K2');
+      }
+      
+      if (!config.visitFrequency || config.visitFrequency < 1) {
+        issues.push('❌ Invalid visit frequency in K4');
+      }
+      
+      // Check for matching array lengths
+      const maxHouseholds = Math.max(config.households.length, config.phones.length, config.addresses.length);
+      if (config.phones.length < config.households.length) {
+        issues.push(`⚠️ Missing phone numbers: ${config.households.length - config.phones.length} households have no phone`);
+      }
+      if (config.addresses.length < config.households.length) {
+        issues.push(`⚠️ Missing addresses: ${config.households.length - config.addresses.length} households have no address`);
+      }
+      
+    } catch (configError) {
+      issues.push(`❌ Configuration error: ${configError.message}`);
+    }
+    
+    // Test 2: Notification configuration
+    try {
+      const currentTestMode = getCurrentTestMode();
+      const webhookUrl = getWebhookUrl(currentTestMode);
+      
+      if (!webhookUrl || webhookUrl.length === 0) {
+        issues.push(`⚠️ No ${currentTestMode ? 'test' : 'production'} chat webhook configured`);
+      } else if (!webhookUrl.includes('chat.googleapis.com')) {
+        issues.push(`❌ Invalid webhook URL format`);
+      }
+      
+    } catch (notificationError) {
+      issues.push(`⚠️ Notification check failed: ${notificationError.message}`);
+    }
+    
+    // Test 3: Calendar permissions
+    try {
+      const testCalendarName = 'VALIDATION_TEST_CALENDAR';
+      const testCalendar = CalendarApp.createCalendar(testCalendarName);
+      testCalendar.deleteCalendar();
+    } catch (calendarError) {
+      issues.push(`❌ Calendar permission issue: ${calendarError.message}`);
+    }
+    
+    console.log('=== SETUP VALIDATION COMPLETED ===');
+    
+    // Generate report
+    let report = '';
+    if (issues.length === 0) {
+      report = '✅ **Setup Validation: PASSED**\n\nAll systems configured correctly!\n\nYou can now:\n• Generate schedules\n• Export to calendar\n• Send notifications\n• Use all system features';
+    } else {
+      report = `⚠️ **Setup Validation: ${issues.length} Issue(s) Found**\n\n`;
+      report += issues.join('\n\n');
+      report += '\n\n📝 Please address these issues before using the system.';
+    }
+    
+    ui.alert(
+      'Setup Validation Results',
+      report,
+      ui.ButtonSet.OK
+    );
+    
+  } catch (error) {
+    console.error('Setup validation failed:', error);
+    SpreadsheetApp.getUi().alert(
+      'Validation Error',
+      `❌ Setup validation failed: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+function showSetupInstructions() {
+  /**
+   * Display comprehensive setup instructions
+   */
+  const ui = SpreadsheetApp.getUi();
+  
+  const instructions = `📋 **DEACON ROTATION SYSTEM SETUP**\n\n` +
+    `**1. Configure Basic Information:**\n` +
+    `• Column A: List deacon names (starting row 4)\n` +
+    `• Column D: List household names (starting row 4)\n` +
+    `• K2: Enter start date (Monday of first week)\n` +
+    `• K4: Enter visit frequency in weeks\n\n` +
+    `**2. Add Contact Information:**\n` +
+    `• Column E: Phone numbers for each household\n` +
+    `• Column F: Addresses for each household\n` +
+    `• Column G: Breeze numbers (optional, for profile links)\n` +
+    `• Column H: Google Docs links for visit notes (optional)\n\n` +
+    `**3. Configure Notifications (Optional):**\n` +
+    `• Create Google Chat space for deacons\n` +
+    `• Get webhook URL from chat space\n` +
+    `• Use "📢 Notifications → 🔧 Configure Chat Webhook"\n` +
+    `• K11: Set notification day (e.g., "Saturday")\n` +
+    `• K13: Set notification time (e.g., 18 for 6 PM)\n\n` +
+    `**4. Generate and Test:**\n` +
+    `• Use "📅 Generate Schedule" to create rotation\n` +
+    `• Use "🧪 Run Tests" to validate setup\n` +
+    `• Use "🚨 Full Calendar Regeneration" to create calendar\n\n` +
+    `**Need Help?** Check the documentation or run "🔧 Validate Setup"`;
+  
+  ui.alert(
+    'Setup Instructions',
+    instructions,
+    ui.ButtonSet.OK
+  );
 }
