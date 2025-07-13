@@ -1167,5 +1167,3 @@ function buildBreezeUrl(breezeNumber) {
   const cleanNumber = breezeNumber.trim();
   return `https://immanuelky.breezechms.com/people/view/${cleanNumber}`;
 }
-
-// END OF MODULE 4
