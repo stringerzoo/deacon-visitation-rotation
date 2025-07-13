@@ -1001,77 +1001,10 @@ function onEdit(e) {
   */
 }
 
-// ===== MODE DETECTION AND INDICATORS (EXACTLY AS WORKING VERSION) =====
+// ===== MODE DETECTION AND INDICATORS (CALLS MODULE 3 FUNCTIONS) =====
 
-function addModeIndicatorToSheet() {
-  /**
-   * Add visual mode indicator to spreadsheet
-   */
-  try {
-    const sheet = SpreadsheetApp.getActiveSheet();
-    const currentTestMode = getCurrentTestMode();
-    
-    // Update mode indicator in K15-K16 (moved from K11-K12 to make room for notification config)
-    const modeLabel = currentTestMode ? '🧪 TEST MODE' : '✅ PRODUCTION';
-    const modeDetails = currentTestMode ? 
-      'Using test data patterns' : 
-      'Using production data';
-    
-    sheet.getRange('K15').setValue(modeLabel);
-    sheet.getRange('K16').setValue(modeDetails);
-    
-    // Style the mode indicator
-    const modeRange = sheet.getRange('K15:K16');
-    if (currentTestMode) {
-      modeRange.setBackground('#ffeb3b').setFontColor('#d84315'); // Yellow background, red text
-    } else {
-      modeRange.setBackground('#e8f5e8').setFontColor('#2e7d32'); // Light green background, dark green text
-    }
-    modeRange.setFontWeight('bold');
-    
-  } catch (error) {
-    console.error('Failed to add mode indicator:', error);
-  }
-}
-
-function showModeNotification() {
-  /**
-   * Show current mode in a user-friendly popup
-   */
-  try {
-    const currentTestMode = getCurrentTestMode();
-    const properties = PropertiesService.getScriptProperties();
-    const detectedMode = properties.getProperty('DETECTED_MODE') || 'Unknown';
-    
-    const ui = SpreadsheetApp.getUi();
-    const modeTitle = currentTestMode ? '🧪 Test Mode Active' : '✅ Production Mode Active';
-    
-    let message = `**Current Mode:** ${currentTestMode ? 'TEST' : 'PRODUCTION'}\n\n`;
-    message += `Calendar: "${currentTestMode ? 'TEST - ' : ''}Deacon Visitation Schedule"\n\n`;
-    
-    if (currentTestMode) {
-      message += '🧪 TEST MODE detected because:\n';
-      message += '• Sample data patterns found\n';
-      message += '• Test calendar will be used for safety\n\n';
-      message += '💡 Switch to real member data to enable production mode';
-    } else {
-      message += '✅ PRODUCTION MODE - using live data\n';
-      message += '• Real member data detected\n';
-      message += '• Live calendar will be used\n';
-      message += '• All functions ready for pastoral care';
-    }
-    
-    ui.alert(modeTitle, message, ui.ButtonSet.OK);
-    
-  } catch (error) {
-    console.error('Failed to show mode notification:', error);
-    SpreadsheetApp.getUi().alert(
-      'Mode Detection Error',
-      `❌ Could not determine current mode: ${error.message}`,
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
-  }
-}
+// Note: addModeIndicatorToSheet() and showModeNotification() are defined in Module 3
+// Module 4 just calls them - no duplicate definitions to avoid conflicts
 
 // ===== ENHANCED MENU SYSTEM (v1.1 - CLEANED) =====
 
