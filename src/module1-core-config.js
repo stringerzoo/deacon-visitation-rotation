@@ -295,15 +295,15 @@ function setupHeaders(sheet) {
   }
   
    // URL place holders (K18-K25)
-  if (!sheet.getRange('K18').getValue()) {
-    sheet.getRange('K18').setValue('Google Calendar URL:');
-    sheet.getRange('K18').setFontWeight('bold').setBackground('#fff2cc');
+ if (!sheet.getRange('K18').getValue()) {
+    sheet.getRange('K18').setValue('🔗 NOTIFICATION LINKS');
+    sheet.getRange('K18').setFontWeight('bold').setBackground('#e8f0fe');
   }
   
   if (!sheet.getRange('K19').getValue()) {
-    sheet.getRange('K19').setValue(''); // Default empty, user will paste URL
-    sheet.getRange('K19').setBackground('#f8f9fa');
-    sheet.getRange('K19').setNote('Paste your Google Calendar embed URL here.\n\nFor testing: Use test calendar URL\nFor production: Use deacon calendar URL\n\nSwitch between test and production by changing this URL.');
+    sheet.getRange('K19').setValue('(URLs included in chat messages)');
+    sheet.getRange('K19').setFontWeight('bold').setBackground('#e8f0fe');
+    sheet.getRange('K19').setNote('This section contains URLs that are included in notification messages.\n\nCalendar URLs: Auto-generated from calendar system\nGuide URLs: Configure in K22\nSummary URLs: Configure in K25\n\nThese are NOT system configuration - they are content for chat notifications.');
   }
  
   if (!sheet.getRange('K21').getValue()) {
