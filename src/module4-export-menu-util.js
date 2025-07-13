@@ -13,15 +13,14 @@
 
 function exportToGoogleCalendar() {
   /**
-   * DIAGNOSTIC VERSION: Enhanced logging to identify exact hang point
+   * Full calendar regeneration - creates calendar events with enhanced contact information
+   * WARNING: This deletes ALL existing events and loses custom scheduling details
+   * v1.1: Fixed data structure handling and optimized performance
    */
   try {
-    console.log('STEP 1: Starting function');
     const sheet = SpreadsheetApp.getActiveSheet();
     const config = getConfiguration(sheet);
     const scheduleData = getScheduleFromSheet(sheet);
-    
-    console.log('STEP 2: Got configuration and schedule data');
     
     if (config.deacons.length === 0) {
       SpreadsheetApp.getUi().alert('Error', 'No deacons found. Please generate a schedule first.', SpreadsheetApp.getUi().ButtonSet.OK);
@@ -32,8 +31,6 @@ function exportToGoogleCalendar() {
       SpreadsheetApp.getUi().alert('No Schedule', 'Please generate a schedule first.', SpreadsheetApp.getUi().ButtonSet.OK);
       return;
     }
-    
-    console.log('STEP 3: Validation passed');
     
     // Check if shortened URLs need to be generated
     const hasShortUrls = config.breezeShortLinks.some(link => link && link.length > 0) || 
@@ -61,14 +58,10 @@ function exportToGoogleCalendar() {
       }
     }
     
-    console.log('STEP 4: URL handling complete');
-    
     // Create or get the deacon visitation calendar
     let calendar;
     const currentTestMode = getCurrentTestMode();
     const calendarName = currentTestMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
-    
-    console.log('STEP 5: About to get/create calendar');
     
     try {
       const calendars = CalendarApp.getCalendarsByName(calendarName);
@@ -90,15 +83,14 @@ function exportToGoogleCalendar() {
           return;
         }
         
-        console.log('STEP 6: User confirmed, starting deletion');
-        
         // Delete all existing events
+        console.log('Deleting existing events...');
         const today = new Date();
         const futureDate = new Date();
         futureDate.setFullYear(futureDate.getFullYear() + 2);
         
         const existingEvents = calendar.getEvents(today, futureDate);
-        console.log(`STEP 7: Found ${existingEvents.length} existing events to delete`);
+        console.log(`Deleting ${existingEvents.length} existing events...`);
         
         const deleteStartTime = new Date().getTime();
         existingEvents.forEach((event, index) => {
@@ -112,38 +104,33 @@ function exportToGoogleCalendar() {
         });
         
         const deleteTime = new Date().getTime() - deleteStartTime;
-        console.log(`STEP 8: Deleted ${existingEvents.length} events in ${deleteTime}ms`);
+        console.log(`Deleted ${existingEvents.length} events in ${deleteTime}ms`);
         
         // Cooldown after deletions
-        console.log('STEP 9: API cooldown starting');
+        console.log('Waiting for API cooldown before creating new events...');
         Utilities.sleep(2000);
-        console.log('STEP 10: API cooldown complete');
         
       } else {
         calendar = CalendarApp.createCalendar(calendarName);
-        console.log(`STEP 6-ALT: Created new calendar: "${calendarName}"`);
+        console.log(`Created new calendar: "${calendarName}"`);
       }
     } catch (calendarError) {
-      console.error('Calendar setup failed:', calendarError);
       throw new Error(`Calendar setup failed: ${calendarError.message}`);
     }
     
-    console.log('STEP 11: Calendar setup complete, starting event creation');
-    
     // Create calendar events
+    console.log(`Creating ${scheduleData.length} calendar events...`);
     let eventsCreated = 0;
     const eventCreationStartTime = new Date().getTime();
     
-    console.log(`STEP 12: About to process ${scheduleData.length} visits`);
-    
-    // Use for loop instead of forEach for better debugging
+    // Use for loop for better performance and error handling
     for (let index = 0; index < scheduleData.length; index++) {
       const visit = scheduleData[index];
       
       try {
-        // Validate visit object
+        // Validate visit object structure
         if (!visit || !visit.deacon || !visit.household || !visit.date) {
-          console.warn(`STEP 12.${index}: Skipping invalid visit data:`, visit);
+          console.warn(`Skipping invalid visit data at index ${index}:`, visit);
           continue;
         }
         
@@ -202,54 +189,38 @@ function exportToGoogleCalendar() {
         
         eventsCreated++;
         
-        // Rate limiting
+        // Rate limiting: pause every 20 events
         if ((index + 1) % 20 === 0) {
           Utilities.sleep(1000);
-          console.log(`STEP 12.${index}: Created ${index + 1} events so far...`);
+          console.log(`Created ${index + 1} events so far...`);
         }
         
       } catch (eventError) {
-        console.error(`STEP 12.${index}: Failed to create event for ${visit.deacon} -> ${visit.household}:`, eventError);
+        console.error(`Failed to create event for ${visit.deacon} -> ${visit.household}:`, eventError);
       }
     }
     
-    console.log('STEP 13: Event creation loop completed');
-    
     const totalTime = new Date().getTime() - eventCreationStartTime;
-    console.log(`STEP 14: Created ${eventsCreated} events in ${totalTime}ms`);
+    console.log(`Created ${eventsCreated} events in ${totalTime}ms`);
     
-    console.log('STEP 15: About to show success dialog');
-    
-    // Try a simpler success message first
-    try {
-      SpreadsheetApp.getUi().alert(
-        'Calendar Export Complete',
-        `✅ Successfully created ${eventsCreated} calendar events!\n\nCalendar: "${calendarName}"`,
-        SpreadsheetApp.getUi().ButtonSet.OK
-      );
-      console.log('STEP 16: Success dialog completed');
-    } catch (alertError) {
-      console.error('STEP 16: Alert dialog failed:', alertError);
-      // Try alternative notification
-      console.log(`SUCCESS: Created ${eventsCreated} events in "${calendarName}"`);
-    }
-    
-    console.log('STEP 17: Function completing normally');
+    SpreadsheetApp.getUi().alert(
+      currentTestMode ? 'TEST Calendar Export Complete' : 'Calendar Export Complete',
+      `${currentTestMode ? '🧪 TEST: ' : ''}✅ Calendar export completed!\n\n` +
+      `📅 Calendar: "${calendarName}"\n` +
+      `📊 Events created: ${eventsCreated}\n` +
+      `⏱️ Time taken: ${Math.round(totalTime/1000)} seconds\n\n` +
+      'Events are scheduled for 2:00-3:00 PM by default. Deacons can adjust times as needed.',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
     
   } catch (error) {
-    console.error('STEP ERROR: Calendar export failed:', error);
-    try {
-      SpreadsheetApp.getUi().alert(
-        'Export Failed',
-        `❌ Calendar export failed: ${error.message}`,
-        SpreadsheetApp.getUi().ButtonSet.OK
-      );
-    } catch (alertError) {
-      console.error('Error alert also failed:', alertError);
-    }
+    console.error('Calendar export failed:', error);
+    SpreadsheetApp.getUi().alert(
+      'Export Failed',
+      `❌ Calendar export failed: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
   }
-  
-  console.log('STEP FINAL: Function ended');
 }
 
 function updateContactInfoOnly() {
