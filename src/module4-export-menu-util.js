@@ -15,6 +15,8 @@ function exportToGoogleCalendar() {
   /**
    * Full calendar regeneration - creates calendar events with enhanced contact information
    * WARNING: This deletes ALL existing events and loses custom scheduling details
+   * 
+   * FIXED: Corrected visit data structure handling to prevent "visit is not iterable" error
    */
   try {
     const sheet = SpreadsheetApp.getActiveSheet();
@@ -69,110 +71,111 @@ function exportToGoogleCalendar() {
         
         const response = SpreadsheetApp.getUi().alert(
           currentTestMode ? 'TEST: Full Calendar Regeneration' : 'Full Calendar Regeneration',
-          `${currentTestMode ? '🧪 TEST MODE: ' : ''}⚠️ This will completely rebuild the calendar "${calendarName}".\n\n` +
-          `🚨 WARNING: This will delete ALL existing events and lose any custom scheduling details!\n\n` +
-          `For safer updates, consider:\n` +
-          `• "📞 Update Contact Info Only" - Preserves all scheduling\n` +
-          `• "🔄 Update Future Events Only" - Preserves this week\n\n` +
+          `${currentTestMode ? '🧪 TEST: ' : ''}⚠️ This will delete ALL existing events and recreate them!\n\n` +
+          `Calendar: "${calendarName}"\n\n` +
+          `❌ LOSES: Custom scheduling details (times, guests, notes)\n` +
+          `✅ CREATES: ${scheduleData.length} new events with current contact info\n\n` +
+          `💡 ALTERNATIVE: Use "📞 Update Contact Info Only" to preserve scheduling details.\n\n` +
           `Continue with full regeneration?`,
-          SpreadsheetApp.getUi().ButtonSet.YES_NO_CANCEL
+          SpreadsheetApp.getUi().ButtonSet.YES_NO
         );
         
-        if (response === SpreadsheetApp.getUi().Button.CANCEL) return;
-        
-        if (response === SpreadsheetApp.getUi().Button.YES) {
-          const startDate = new Date();
-          startDate.setFullYear(startDate.getFullYear() - 1);
-          const endDate = new Date();
-          endDate.setFullYear(endDate.getFullYear() + 2);
-          
-          const existingEvents = calendar.getEvents(startDate, endDate);
-          console.log(`Deleting ${existingEvents.length} existing events...`);
-          
-          // Delete events in smaller batches to avoid rate limiting
-          const deleteStartTime = new Date().getTime();
-          let deletedCount = 0;
-          
-          existingEvents.forEach((event, index) => {
-            event.deleteEvent();
-            deletedCount++;
-            
-            // Add small delay every 10 deletions
-            if ((index + 1) % 10 === 0) {
-              Utilities.sleep(500);
-            }
-          });
-          
-          console.log(`Deleted ${deletedCount} events in ${new Date().getTime() - deleteStartTime}ms`);
-          
-          // Wait a bit longer before creating new events
-          console.log('Waiting for API cooldown before creating new events...');
-          Utilities.sleep(2000);
+        if (response !== SpreadsheetApp.getUi().Button.YES) {
+          return;
         }
+        
+        // Delete all existing events
+        console.log('Deleting existing events...');
+        const today = new Date();
+        const futureDate = new Date();
+        futureDate.setFullYear(futureDate.getFullYear() + 2);
+        
+        const existingEvents = calendar.getEvents(today, futureDate);
+        console.log(`Deleting ${existingEvents.length} existing events...`);
+        
+        const deleteStartTime = new Date().getTime();
+        existingEvents.forEach((event, index) => {
+          event.deleteEvent();
+          
+          // Rate limiting for deletions
+          if ((index + 1) % 10 === 0) {
+            Utilities.sleep(500);
+            console.log(`Deleted ${index + 1} events...`);
+          }
+        });
+        
+        const deleteTime = new Date().getTime() - deleteStartTime;
+        console.log(`Deleted ${existingEvents.length} events in ${deleteTime}ms`);
+        
+        // Cooldown after deletions
+        console.log('Waiting for API cooldown before creating new events...');
+        Utilities.sleep(2000);
+        
       } else {
         calendar = CalendarApp.createCalendar(calendarName);
-        calendar.setDescription(`${currentTestMode ? 'TEST: ' : ''}Automated schedule for deacon household visitations with contact information and management links`);
-        calendar.setColor(currentTestMode ? CalendarApp.Color.RED : CalendarApp.Color.BLUE);
+        console.log(`Created new calendar: "${calendarName}"`);
       }
-    } catch (calError) {
-      throw new Error(`Calendar access failed: ${calError.message}. Please check your Google Calendar permissions.`);
+    } catch (calendarError) {
+      throw new Error(`Calendar setup failed: ${calendarError.message}`);
     }
     
-    // Create events with enhanced contact information
+    // Create calendar events - FIXED DATA STRUCTURE HANDLING
+    console.log(`Creating ${scheduleData.length} calendar events...`);
     let eventsCreated = 0;
     const eventCreationStartTime = new Date().getTime();
     
     scheduleData.forEach((visit, index) => {
       try {
-        const [dateStr, deacon, household] = visit;
-        const visitDate = new Date(dateStr);
+        // FIXED: Properly handle visit object structure
+        if (!visit || !visit.deacon || !visit.household || !visit.date) {
+          console.warn(`Skipping invalid visit data at index ${index}:`, visit);
+          return;
+        }
+        
+        const visitDate = new Date(visit.date);
+        const deacon = visit.deacon;
+        const household = visit.household;
+        
+        // Get household contact information
         const householdIndex = config.households.indexOf(household);
+        const phone = householdIndex >= 0 ? (config.phones[householdIndex] || 'Phone not available') : 'Phone not available';
+        const address = householdIndex >= 0 ? (config.addresses[householdIndex] || 'Address not available') : 'Address not available';
         
-        // Build comprehensive event description
-        let description = `Household: ${household}\n`;
-        
-        if (householdIndex !== -1) {
-          const phone = config.phones[householdIndex];
-          const address = config.addresses[householdIndex];
-          const breezeNumber = config.breezeNumbers[householdIndex];
-          const breezeShortUrl = config.breezeShortLinks[householdIndex];
-          const notesUrl = config.notesLinks[householdIndex];
-          const notesShortUrl = config.notesShortLinks[householdIndex];
-          
-          // Contact information section
-          description += `\nContact Information:\n`;
-          if (phone && phone.length > 0) description += `Phone: ${phone}\n`;
-          if (address && address.length > 0) description += `Address: ${address}\n`;
-          
-          // Breeze integration
-          if (breezeNumber && breezeNumber.length > 0) {
-            if (breezeShortUrl && breezeShortUrl.length > 0) {
-              description += `\nBreeze Profile: ${breezeShortUrl}\n`;
-            } else {
-              const fullBreezeUrl = buildBreezeUrl(breezeNumber);
-              description += `\nBreeze Profile: ${fullBreezeUrl}\n`;
-            }
-          }
-          
-          // Visit notes integration
-          if (notesUrl && notesUrl.length > 0) {
-            if (notesShortUrl && notesShortUrl.length > 0) {
-              description += `\nVisit Notes: ${notesShortUrl}\n`;
-            } else {
-              description += `\nVisit Notes: ${notesUrl}\n`;
-            }
+        // Build Breeze profile link
+        let breezeLink = 'Breeze profile not available';
+        if (householdIndex >= 0 && config.breezeShortLinks[householdIndex]) {
+          breezeLink = config.breezeShortLinks[householdIndex];
+        } else if (householdIndex >= 0 && config.breezeNumbers[householdIndex]) {
+          const fullBreezeLink = buildBreezeUrl(config.breezeNumbers[householdIndex]);
+          if (fullBreezeLink && fullBreezeLink.length > 0) {
+            breezeLink = fullBreezeLink;
           }
         }
         
-        // Add custom instructions
-        const customInstructions = config.customInstructions || 
+        // Build Notes link
+        let notesLink = 'Visit notes not available';
+        if (householdIndex >= 0 && config.notesShortLinks[householdIndex]) {
+          notesLink = config.notesShortLinks[householdIndex];
+        } else if (householdIndex >= 0 && config.notesLinks[householdIndex]) {
+          const fullNotesLink = config.notesLinks[householdIndex];
+          if (fullNotesLink && fullNotesLink.length > 0) {
+            notesLink = fullNotesLink;
+          }
+        }
+        
+        // Build event description
+        let description = `Household: ${household}\nBreeze Profile: ${breezeLink}\n\n`;
+        description += `Contact Information:\nPhone: ${phone}\nAddress: ${address}\n\n`;
+        description += `Visit Notes: ${notesLink}\n\n`;
+        
+        const customInstructions = config.calendarInstructions || 
           'Please call to set up a day and time for your visit in the coming week. ' +
           'You can update this event with the actual day and time and copy it to your personal calendar.';
         
-        description += `\nInstructions:\n${customInstructions}`;
+        description += `Instructions:\n${customInstructions}`;
         
         // Create the calendar event
-        const event = calendar.createEvent(
+        calendar.createEvent(
           `${deacon} visits ${household}`,
           new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate(), 14, 0), // 2:00 PM
           new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate(), 15, 0), // 3:00 PM
@@ -191,7 +194,7 @@ function exportToGoogleCalendar() {
         }
         
       } catch (eventError) {
-        console.error(`Failed to create event for ${visit[1]} -> ${visit[2]}:`, eventError);
+        console.error(`Failed to create event for ${visit.deacon} -> ${visit.household}:`, eventError);
       }
     });
     
