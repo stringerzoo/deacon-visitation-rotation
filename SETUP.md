@@ -182,12 +182,6 @@ The system **automatically detects** your environment:
 3. **Wait** for export completion (30-60 seconds)
 4. **Verify** calendar creation and events
 
-### **Configure Calendar URL (Optional)**
-1. **Open your Google Calendar**
-2. **Settings → Calendar settings**
-3. **Copy the public/embed URL**
-4. **Paste in cell K19** for notification links
-
 ---
 
 ## 🔗 Step 6: Optional Integrations
@@ -223,7 +217,6 @@ Q3: https://docs.google.com/document/d/def456.../edit
 ### **Resource Links (v1.0)**
 Configure additional resources in notifications:
 
-- **K19**: Google Calendar embed URL
 - **K22**: Visitation Guide URL (procedures, guidelines)
 - **K25**: Schedule Summary URL (archived schedules)
 
