@@ -153,7 +153,7 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
         day: 'numeric' 
       });
       
-      message += `📅 ${visitDate} - *${visit.deacon}* visits *${visit.household}*\n`;
+      message += `🗓️ *${visit.deacon}* visits *${visit.household}*\n`;
       
       // Add contact info
       const contactInfo = [];
@@ -197,7 +197,7 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
         day: 'numeric' 
       });
       
-      message += `📅 ${visitDate} - *${visit.deacon}* visits *${visit.household}*\n`;
+      message += `🗓️ *${visit.deacon}* visits *${visit.household}*\n`;
       
       // Add contact info
       const contactInfo = [];
