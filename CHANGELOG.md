@@ -17,7 +17,29 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [v1.1] - 2025-07-11 ⭐ **CURRENT RELEASE**
+## [v1.1] - 2025-07-13 ⭐ **CURRENT RELEASE**
+
+### 🔗 **Automatic Calendar URL Detection**
+- **Eliminated K19 manual configuration** - Calendar URLs now auto-generated from calendar system
+- **Direct URL generation** - `generateCalendarUrlDirect()` function creates URLs on-demand
+- **Backwards compatibility** - Existing systems continue to work without changes
+- **Zero configuration** - Calendar links appear in notifications automatically
+
+### 🎨 **Improved Column K Layout**
+- **K18-K19 repurposed** - Now serves as section header for notification links
+- **Clear separation** - Configuration (K1-K16) vs Notification Content (K18-K25)
+- **Space optimization** - Eliminated redundant calendar URL field
+- **Future-ready** - Available space for additional features
+
+### 🧹 **Code Cleanup**
+- **Removed K19 dependency** - `getResourceLinksFromSpreadsheet()` updated for direct generation
+- **Enhanced Module 5** - Auto-detection integrated into notification system
+- **Simplified setup** - One less manual configuration step for users
+
+### 🌍 **Automatic Timezone Detection**
+- **Auto-detected timezones** - Calendar embed URLs use `Session.getScriptTimeZone()` instead of hardcoded Eastern
+- **Global compatibility** - System now works correctly for users in any timezone
+- **No configuration needed** - Timezone automatically matches user's location
 
 ### 🧹 **Menu System Cleanup**
 - **Removed**: `generateNextYearSchedule` function and menu item
@@ -40,7 +62,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [v1.0] - 2025-07-09 ⭐ **FIRST OPERATIONAL RELEASE**
+## [v1.0] - 2025-07-09 **Previous Release**
 
 ### 🔔 **Added - Google Chat Notifications (Major Feature)**
 - **Module 5 (Notifications)**: New 1288-line module for comprehensive chat integration
