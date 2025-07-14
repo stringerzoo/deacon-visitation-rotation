@@ -17,7 +17,38 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [v1.1] - 2025-07-13 ⭐ **CURRENT RELEASE**
+## [v1.1.1] - 2025-07-14 ⭐ **CURRENT RELEASE**
+
+### 🐛 Critical Bug Fixes
+#### **Data Structure Consistency**
+- **Fixed object/array data handling inconsistency** causing "not iterable" errors
+- **Corrected `updateContactInfoOnly()`** - now properly handles schedule objects
+- **Fixed `updateFutureEventsOnly()`** - eliminated array destructuring on objects
+- **Fixed `exportIndividualSchedules()`** - consistent object property access
+
+#### **Enhanced URL Management**
+- **Smart URL preservation** - `generateShortUrls()` now only processes empty cells
+- **Existing URL protection** - preserves working shortened URLs
+- **Force regeneration option** - new `forceRegenerateAllShortUrls()` function
+- **Improved user dialogs** - clear explanation of preserve vs. overwrite behavior
+
+### 🔧 Technical Improvements
+- **Architectural consistency** - all schedule data handled as objects throughout
+- **Error prevention** - added data consistency guidelines for future development
+- **Performance optimization** - fewer unnecessary API calls for URL shortening
+- **Enhanced reporting** - detailed summaries of preserved vs. generated URLs
+
+### 📋 Breaking Changes
+**None** - All changes are backward compatible improvements
+
+### 🛠️ Developer Guidelines
+- **Added comprehensive data handling guidelines** to prevent future array/object confusion
+- **Established architectural principles** for schedule data consistency
+- **Enhanced error messages** with proper object structure expectations
+
+---
+
+## [v1.1] - 2025-07-13
 
 ### 🔗 **Automatic Calendar URL Detection**
 - **Eliminated K19 manual configuration** - Calendar URLs now auto-generated from calendar system
