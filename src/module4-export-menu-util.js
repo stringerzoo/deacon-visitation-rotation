@@ -1050,6 +1050,7 @@ function createMenuItems() {
     .addItem('📅 Generate Schedule', 'generateRotationSchedule')
     .addSeparator()
     .addItem('🔗 Generate Shortened URLs', 'generateShortUrlsFromMenu')
+    .addItem('🔄 Force Regenerate All Short URLs', 'forceRegenerateAllShortUrls')
     .addSeparator()
     .addSubMenu(ui.createMenu('📆 Calendar Functions')
       .addItem('📞 Update Contact Info Only', 'updateContactInfoOnly')
