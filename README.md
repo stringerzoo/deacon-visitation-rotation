@@ -58,6 +58,12 @@ A sophisticated Google Apps Script-based system that generates mathematically fa
 - **Mode-aware** - Automatically switches between test and production calendar URLs
 - **One-click access** - "📅 Calendar", "📋 Guide", "📊 Summary" in every chat message
 
+### **Recent Improvements (v1.1)**
+- **Fixed critical data structure bugs** that caused calendar update failures
+- **Enhanced URL management** with smart preservation of existing short URLs
+- **Improved architectural consistency** throughout all modules
+- **Added comprehensive developer guidelines** to prevent regression
+
 ---
 
 ## 🚀 Quick Start
