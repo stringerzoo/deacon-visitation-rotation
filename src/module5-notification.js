@@ -356,27 +356,46 @@ function getNotesLink(config, householdIndex) {
 
 function getCalendarLinkFromSpreadsheet() {
   /**
-   * Get calendar URL from configuration (now handled by Module 1)
+   * v1.1: Auto-generate calendar URL instead of reading from K19
+   * Eliminates K19 dependency completely
    */
   try {
-    const sheet = SpreadsheetApp.getActiveSheet();
-    const config = getConfiguration(sheet);
+    return generateCalendarUrlDirect();
+  } catch (error) {
+    console.error('Error generating calendar URL:', error);
+    return '';
+  }
+}
+
+function generateCalendarUrlDirect() {
+  /**
+   * v1.1: Generates calendar URL directly from calendar system
+   * Auto-detects current mode and user timezone
+   */
+  try {
+    const currentTestMode = getCurrentTestMode();
+    const calendarName = currentTestMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
     
-    if (config.calendarUrl && config.calendarUrl.trim().length > 0) {
-      const trimmedUrl = config.calendarUrl.trim();
+    const calendars = CalendarApp.getCalendarsByName(calendarName);
+    if (calendars.length > 0) {
+      const calendarId = calendars[0].getId();
       
-      if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
-        return trimmedUrl;
-      } else {
-        console.warn('Calendar URL does not appear to be valid:', trimmedUrl);
-        return '';
-      }
+      // Auto-detect user's timezone
+      const userTimezone = Session.getScriptTimeZone();
+      const encodedId = encodeURIComponent(calendarId);
+      const encodedTimezone = encodeURIComponent(userTimezone);
+      
+      const calendarUrl = `https://calendar.google.com/calendar/embed?src=${encodedId}&ctz=${encodedTimezone}`;
+      
+      console.log(`Auto-generated calendar URL for notifications (${userTimezone}): ${calendarUrl}`);
+      return calendarUrl;
     }
     
+    console.log('No calendar found for URL generation - calendar link will not appear in notifications');
     return '';
     
   } catch (error) {
-    console.error('Error reading calendar URL:', error);
+    console.error('Failed to generate calendar URL:', error);
     return '';
   }
 }
@@ -605,32 +624,75 @@ function testNotificationSystem() {
 
 function testCalendarLinkConfiguration() {
   /**
-   * Test function to verify calendar link configuration
+   * v1.1: Test calendar auto-detection and URL generation
+   * Updated from K19 testing to auto-detection validation
    */
   try {
-    const calendarUrl = getCalendarLinkFromSpreadsheet();
-    const ui = SpreadsheetApp.getUi();
+    const currentTestMode = getCurrentTestMode();
+    const calendarName = currentTestMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
     
-    let message = '📅 CALENDAR LINK CONFIGURATION TEST\n\n';
+    console.log(`Testing calendar detection for mode: ${currentTestMode ? 'TEST' : 'PRODUCTION'}`);
     
-    if (calendarUrl) {
-      message += `✅ Calendar URL found in K19:\n${calendarUrl}\n\n`;
-      message += `This link will appear in weekly chat messages as:\n📅 View Visitation Calendar`;
-    } else {
-      message += `❌ No calendar URL found in K19\n\n`;
-      message += `To configure:\n`;
-      message += `1. Paste your Google Calendar embed URL in cell K19\n`;
-      message += `2. For testing: Use test calendar URL\n`;
-      message += `3. For production: Use production calendar URL`;
+    // Test calendar existence
+    const calendars = CalendarApp.getCalendarsByName(calendarName);
+    if (calendars.length === 0) {
+      SpreadsheetApp.getUi().alert(
+        'Calendar Test Failed',
+        `❌ Calendar not found: "${calendarName}"\n\n` +
+        `📅 Expected calendar: "${calendarName}"\n` +
+        `🔧 Solution: Run "📆 Full Calendar Regeneration" first\n\n` +
+        `💡 The system automatically creates and manages calendars.`,
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+      return;
     }
     
-    ui.alert('Calendar Link Test Results', message, ui.ButtonSet.OK);
+    const calendar = calendars[0];
+    const calendarId = calendar.getId();
+    
+    // Test URL generation
+    const generatedUrl = generateCalendarUrlDirect();
+    if (!generatedUrl) {
+      SpreadsheetApp.getUi().alert(
+        'URL Generation Failed',
+        `❌ Failed to generate calendar URL\n\n` +
+        `📅 Calendar found: "${calendarName}"\n` +
+        `🆔 Calendar ID: ${calendarId}\n` +
+        `❗ URL generation failed - check logs for details`,
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+      return;
+    }
+    
+    // Test the related functions to ensure integration works
+    const guideLink = getGuideLinkFromSpreadsheet();
+    const summaryLink = getSummaryLinkFromSpreadsheet();
+    
+    // Success report
+    SpreadsheetApp.getUi().alert(
+      currentTestMode ? 'TEST: Calendar Detection Successful' : 'Calendar Detection Successful',
+      `${currentTestMode ? '🧪 TEST: ' : ''}✅ Calendar auto-detection working perfectly!\n\n` +
+      `📅 Calendar: "${calendarName}"\n` +
+      `🆔 Calendar ID: ${calendarId}\n\n` +
+      `🔗 Generated URL (for reference):\n${generatedUrl}\n\n` +
+      `📋 Guide URL: ${guideLink ? '✅ Configured' : '❌ Not configured (K22)'}\n` +
+      `📊 Summary URL: ${summaryLink ? '✅ Configured' : '❌ Not configured (K25)'}\n\n` +
+      `💡 Calendar links now auto-generate - no need to manage K19!`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    
+    console.log('Calendar test completed successfully');
+    console.log(`Calendar: ${calendarName}`);
+    console.log(`Calendar ID: ${calendarId}`);
+    console.log(`Generated URL: ${generatedUrl}`);
     
   } catch (error) {
-    console.error('Calendar link test failed:', error);
+    console.error('Calendar test failed:', error);
     SpreadsheetApp.getUi().alert(
-      'Test Error',
-      `❌ Test failed: ${error.message}`,
+      'Calendar Test Error',
+      `❌ Calendar test failed: ${error.message}\n\n` +
+      `🔧 Check the execution logs for more details.\n` +
+      `💡 Ensure you have calendar permissions and the calendar exists.`,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   }
