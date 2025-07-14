@@ -607,8 +607,6 @@ function showSetupInstructions() {
 
 3️⃣ LINKS INTEGRATION (Column K):
    • The link fields support weekly notification messages
-   • K19: Paste your Google Calendar embed URL here
-     • Update URLs for test vs production
    • K22: Paste link to the visitation guide google doc
    • K25: Paste link to the summary page for the current visitation schedule
 
