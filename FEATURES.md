@@ -1,52 +1,22 @@
-# Features Guide - Deacon Visitation Rotation System v1.1
+# Features Overview - Deacon Visitation Rotation System
 
-> **Technical deep-dive into system capabilities and implementation details**
+> **Technical deep-dive into system capabilities and architecture**
 
-## 🎯 Core Mathematical Algorithm
+This comprehensive system manages deacon visitation schedules with mathematical optimization, smart calendar integration, automated notifications, and extensive church management features.
 
-### **Harmonic Resonance Elimination**
-The system solves a complex scheduling problem where simple rotation algorithms fail due to mathematical harmonics:
+---
 
-```javascript
-// Problem: When deacon count and household count share common factors
-// Example: 12 deacons, 6 households (ratio 2:1)
-// Simple algorithms cause each deacon to visit only 2 specific households
-
-// Solution: Modular arithmetic with prime pattern generation
-function generateOptimalRotation(deacons, households, weeks) {
-  const pattern = [];
-  for (let week = 0; week < weeks; week++) {
-    for (let d = 0; d < deacons.length; d++) {
-      const householdIndex = (d + week * getPrimeFactor(deacons.length)) % households.length;
-      pattern.push([deacons[d], households[householdIndex], week]);
-    }
-  }
-  return pattern;
-}
-```
-
-**Guaranteed Properties:**
-- Every deacon visits every household over time
-- Maximum spacing between repeat visits
-- No mathematical "locks" preventing fair distribution
-- Optimal load balancing across all participants
-
-## 🔔 Google Chat Notification System (v1.0)
+## 📢 Google Chat Notifications (v1.0)
 
 ### **Automated Weekly Summaries**
-The notification system provides rich, formatted messages via Google Chat webhooks:
+Rich notifications with comprehensive visit information:
 
 ```javascript
-// Core notification function with 2-week lookahead
-function sendWeeklyVisitationChat() {
-  const visits = getUpcomingVisits(); // Next 2 calendar weeks
-  const weekGroups = groupVisitsByCalendarWeek(visits);
-  
-  const message = buildChatMessage(weekGroups, {
-    includeContactInfo: true,
-    includeBreezeLinks: true,
-    includeNotesLinks: true,
-    includeCalendarLink: getCalendarLinkFromSpreadsheet() // K19 URL
+function buildWeeklyVisitationChatMessage(visits, config) {
+  // Group visits by week and deacon
+  // Format contact information and links
+  // Include configurable resource links
+  CalendarLink: getCalendarLinkFromSpreadsheet() // Auto-generated URL
   });
   
   sendToChatSpace(message, getCurrentTestMode());
@@ -58,20 +28,31 @@ function sendWeeklyVisitationChat() {
 - **Deacon sections**: Organized by visiting deacon
 - **Contact details**: Phone numbers and addresses
 - **Direct links**: Clickable Breeze profiles and Notes documents
-- **Calendar access**: "📅 View Visitation Calendar" link from K19
+- **Calendar access**: "📅 View Visitation Calendar" link auto-generated from calendar system
 
-### **Configurable Calendar Links (v1.0)**
-New K19, K22, and K25 configuration enables dynamic resource linking in notifications:
+### **Automatic Calendar Links (v1.1)**
+Calendar URLs are now automatically generated from the calendar system, eliminating manual configuration:
 
 ```javascript
-function getResourceLinksFromSpreadsheet() {
-  const sheet = SpreadsheetApp.getActiveSheet();
+function generateCalendarUrlDirect() {
+  const currentTestMode = getCurrentTestMode();
+  const calendarName = currentTestMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
   
-  return {
-    calendar: getCalendarLinkFromSpreadsheet(),      // K19
-    guide: sheet.getRange('K22').getValue(),         // K22 - NEW
-    summary: sheet.getRange('K25').getValue()        // K25 - NEW
-  };
+  const calendars = CalendarApp.getCalendarsByName(calendarName);
+  if (calendars.length > 0) {
+    const calendarId = calendars[0].getId();
+    const userTimezone = Session.getScriptTimeZone();
+    const encodedId = encodeURIComponent(calendarId);
+    const encodedTimezone = encodeURIComponent(userTimezone);
+    
+    return `https://calendar.google.com/calendar/embed?src=${encodedId}&ctz=${encodedTimezone}`;
+  }
+  return '';
+}
+
+function getCalendarLinkFromSpreadsheet() {
+  // v1.1: Direct generation instead of K19 reading
+  return generateCalendarUrlDirect();
 }
 
 function buildResourceLinksSection(links) {
@@ -94,12 +75,39 @@ function buildResourceLinksSection(links) {
 ```
 
 **Enhanced Configuration Options:**
-- **K18-K19**: Google Calendar URL configuration
+- **Auto-detected Calendar URLs**: System automatically generates appropriate calendar links
 - **K21-K22**: Visitation Guide URL configuration (procedures, guidelines)
 - **K24-K25**: Schedule Summary URL configuration (archived schedules)
-- **Test/Production Switching**: Change URLs in K19/K22/K25 to switch environments
-- **Graceful Handling**: Links only appear when respective fields are configured
+- **Automatic Test/Production Switching**: Calendar URLs switch based on detected data mode
+- **Timezone Detection**: Calendar links automatically use user's timezone
+- **Zero Configuration**: Calendar links work immediately without manual setup
 - **Mobile Optimization**: All resource links work on mobile devices
+
+### **Calendar Auto-Detection (v1.1)**
+Advanced calendar URL generation eliminates manual configuration:
+
+**Features:**
+- **Mode-aware generation**: Automatically detects test vs production calendars
+- **Timezone detection**: Uses `Session.getScriptTimeZone()` for user's timezone
+- **Zero configuration**: Calendar links appear in notifications without setup
+- **Error handling**: Graceful fallback when calendars don't exist
+- **Performance**: Direct generation eliminates spreadsheet reads
+
+**Technical Implementation:**
+```javascript
+// Auto-detects current mode and generates appropriate calendar URL
+const currentTestMode = getCurrentTestMode();
+const calendarName = currentTestMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
+
+// Builds URL with proper encoding and user's timezone
+const url = `https://calendar.google.com/calendar/embed?src=${encodedId}&ctz=${encodedTimezone}`;
+```
+
+**Benefits:**
+- **Simplified setup**: One less manual configuration step
+- **Reduced errors**: No more broken links from incorrect K19 URLs
+- **Global compatibility**: Works correctly for users in any timezone
+- **Maintenance-free**: Calendar links always stay current with actual calendar
 
 ### **Intelligent Test Mode Detection (v1.1)**
 Automatic environment detection based on data patterns:
@@ -119,7 +127,7 @@ function getCurrentTestMode() {
 }
 ```
 
-## 🏗️ Enhanced Modular Architecture (v1.0)
+## 🏗️ Enhanced Modular Architecture (v1.1)
 
 ### Five-Module System
 ```javascript
@@ -138,7 +146,7 @@ Module5_Notifications.gs    // Google Chat integration, triggers (~1288 lines)
 - **Error propagation** with module-specific identification
 
 ### Configuration Management System
-**Enhanced Column K Layout (v1.0):**
+**Enhanced Column K Layout (v1.1):**
 ```javascript
 K1:  Start Date                        K2:  [User input]
 K3:  Visits every x weeks              K4:  [User input]
@@ -150,7 +158,7 @@ K12: Weekly Notification Time (0-23)   K13: [Dropdown validation]
 K14: [Buffer Space]
 K15: Current Mode                      K16: [Auto-detected]
 K17: [Buffer Space]
-K18: Google Calendar URL               K19: [User configurable]
+K18: Notification Links Section        K19: [Auto-generated calendar URLs]
 K20: [Buffer Space]
 K21: Visitation Guide URL              K22: [User configurable]
 K23: [Buffer Space]
@@ -190,74 +198,31 @@ function createWeeklyNotificationTrigger() {
 ```
 
 **Trigger Configuration:**
-- **Day selection**: K11 dropdown (Sunday through Saturday)
-- **Time selection**: K13 dropdown (0-23 hour format)
-- **Automatic scheduling**: Google Apps Script manages execution
-- **Error handling**: Graceful failures with user feedback
+- **Day selection**: K11 dropdown with data validation
+- **Time selection**: K13 dropdown with 24-hour format
+- **Automatic cleanup**: Old triggers removed before creating new ones
+- **Error handling**: Comprehensive validation and user feedback
 
-### **Google Apps Script Limitations**
-Understanding and working with platform constraints:
-
-```javascript
-// Trigger timing realities
-const EXPECTED_DELAYS = {
-  newTriggers: '24-48 hours to stabilize',
-  executionDelay: '15-20+ minutes typical',
-  serviceInterruptions: 'Occasional Google service issues',
-  quotaLimits: 'Daily execution time limits'
-};
-```
-
-## 📊 Data Integration Features
-
-### **Breeze CMS Integration**
-Direct integration with church management system:
+### **Real-time Trigger Management**
+Advanced trigger inspection and maintenance:
 
 ```javascript
-function buildBreezeUrl(breezeNumber) {
-  if (!breezeNumber || breezeNumber.trim().length === 0) {
-    return '';
-  }
+function inspectAllTriggers() {
+  const triggers = ScriptApp.getProjectTriggers();
+  const triggerInfo = triggers.map(trigger => ({
+    handlerFunction: trigger.getHandlerFunction(),
+    triggerSource: trigger.getTriggerSource(),
+    eventType: trigger.getEventType()
+  }));
   
-  const cleanNumber = breezeNumber.trim();
-  // Validate 8-digit format (flexible validation)
-  return `https://immanuelky.breezechms.com/people/view/${cleanNumber}`;
+  return generateTriggerReport(triggerInfo);
 }
 ```
 
-**Breeze Features:**
-- **8-digit profile numbers** in column P
-- **Automatic URL construction** for church database
-- **Mobile-friendly shortened URLs** via TinyURL API
-- **Direct profile access** from calendar events and notifications
+## 📅 Smart Calendar System (v1.1)
 
-### **Google Docs Integration**
-Seamless visit notes management:
-
-```javascript
-function generateAndStoreShortUrls(sheet, config) {
-  const breezeUrls = config.breezeNumbers.map(buildBreezeUrl);
-  const notesUrls = config.notesLinks;
-  
-  // Batch processing with rate limiting
-  const shortenedBreeze = breezeUrls.map(url => shortenUrl(url));
-  const shortenedNotes = notesUrls.map(url => shortenUrl(url));
-  
-  // Store in columns R and S for reuse
-  updateShortUrlColumns(sheet, shortenedBreeze, shortenedNotes);
-}
-```
-
-**Notes Features:**
-- **Google Docs URLs** in column Q
-- **Automated URL shortening** for mobile compatibility
-- **Direct access** from calendar events and chat notifications
-- **Persistent storage** in columns R and S for reuse
-
-## 📅 Smart Calendar Management (v1.1)
-
-### **Three-Tier Update System**
-Sophisticated calendar synchronization with safety levels:
+### **Flexible Update Options**
+Three-tier calendar update system for different use cases:
 
 ```javascript
 // 1. SAFEST: Contact Info Only
@@ -350,66 +315,118 @@ function runSystemTests() {
 // Notification diagnostics
 function inspectAllTriggers() {
   const triggers = ScriptApp.getProjectTriggers();
-  
-  // Detailed trigger analysis
-  // Schedule verification
-  // Duplicate detection
-  // Health recommendations
+  return formatTriggerReport(triggers);
 }
 ```
 
-## 🔐 Security and Permissions
+## 🔗 Integration Systems
 
-### **Webhook Security**
-Safe handling of Google Chat integration:
+### **Breeze Church Management Integration**
+Direct profile access from calendar events:
 
 ```javascript
-function validateWebhookUrl(url) {
-  if (!url.includes('chat.googleapis.com')) {
-    throw new Error('Invalid webhook URL format');
+function buildBreezeUrl(breezeNumber) {
+  const cleanNumber = String(breezeNumber).replace(/\D/g, '');
+  
+  // Enhanced validation (flexible for different churches)
+  if (!/^\d{1,10}$/.test(cleanNumber)) {
+    console.warn(`Potentially invalid Breeze number: ${cleanNumber}`);
   }
   
-  // Additional validation for webhook structure
-  // Rate limiting protection
-  // Error handling for failed requests
+  return `https://immanuelky.breezechms.com/people/view/${cleanNumber}`;
 }
 ```
 
-### **Data Privacy**
-Responsible handling of church member information:
+**Integration Benefits:**
+- **Direct profile access** from calendar events
+- **Member information lookup** during visits
+- **Contact verification** and updates
+- **Visit history tracking** coordination
+
+### **Google Docs Notes Integration**
+Seamless visit documentation workflow:
 
 ```javascript
-// No external data transmission except Google services
-// Local processing of all sensitive information
-// Secure storage using Google Apps Script Properties
-// No third-party analytics or tracking
+function validateNotesLinks(notesLinks, householdNames) {
+  notesLinks.forEach((link, index) => {
+    if (link && link.length > 0) {
+      // Basic URL validation
+      if (!link.startsWith('http://') && !link.startsWith('https://')) {
+        console.warn(`Notes link for ${householdNames[index]} may be invalid: ${link}`);
+      }
+    }
+  });
+}
 ```
 
-## 📈 Performance Optimizations
+**Documentation Features:**
+- **Pre-visit preparation** with historical context
+- **Post-visit recording** of interactions
+- **Continuity tracking** between different deacons
+- **Shared knowledge base** for pastoral care
 
-### **Efficient Data Processing**
-Optimized algorithms for large datasets:
+## 🧪 Test Mode Detection System
+
+### **Intelligent Pattern Recognition**
+Multi-factor detection prevents accidental production use:
 
 ```javascript
-function safeCreateSchedule(config) {
-  const startTime = new Date().getTime();
-  const maxExecutionTime = 4 * 60 * 1000; // 4 minutes safety buffer
+function detectTestMode(config) {
+  const testIndicators = {
+    sampleNames: hasTestNamePatterns(config.households),
+    testPhones: hasTestPhoneNumbers(config.phoneNumbers),
+    testBreeze: hasTestBreezeNumbers(config.breezeNumbers),
+    titleIndicator: hasTestInTitle(SpreadsheetApp.getActiveSheet().getName())
+  };
   
-  // Time monitoring during generation
-  // Memory-conscious data structures
-  // Batch processing for large schedules
-  // Progress indicators for long operations
+  return Object.values(testIndicators).some(indicator => indicator);
+}
+
+function hasTestNamePatterns(households) {
+  const testPatterns = ['Alan Adams', 'Barbara Baker', 'Chloe Cooper', 'Test'];
+  return households.some(name => 
+    testPatterns.some(pattern => name.includes(pattern))
+  );
 }
 ```
 
-### **API Rate Limiting**
-Respectful usage of Google services:
+**Detection Triggers:**
+- **Sample data names**: Alan Adams, Barbara Baker, etc.
+- **Test phone numbers**: 555-xxx-xxxx patterns
+- **Test Breeze numbers**: Specific test IDs
+- **Spreadsheet title**: Contains "test" or "sample"
+
+### **Mode-Aware Operations**
+System behavior adapts to detected environment:
 
 ```javascript
-// Calendar API: 2-second delays every 25 operations
-// TinyURL API: 0.5-second delays between requests
-// Chat API: Immediate delivery with retry logic
-// Sheets API: Batch operations where possible
+function getModeAwareSettings(isTestMode) {
+  return {
+    calendarName: isTestMode ? 'Test Deacon Calendar' : 'Deacon Visitation Schedule',
+    chatPrefix: isTestMode ? '🧪 TEST: ' : '',
+    webhookProperty: isTestMode ? 'CHAT_WEBHOOK_TEST' : 'CHAT_WEBHOOK_PROD',
+    rateLimiting: isTestMode ? 'relaxed' : 'production'
+  };
+}
+```
+
+## ⚡ Performance Optimization
+
+### **URL Shortening System**
+Batch processing for mobile field access:
+
+```javascript
+function generateAndStoreShortUrls(sheet, config) {
+  const breezeUrls = config.breezeNumbers.map(buildBreezeUrl);
+  const notesUrls = config.notesLinks;
+  
+  // Batch processing with rate limiting
+  const shortenedBreeze = breezeUrls.map(url => shortenUrl(url));
+  const shortenedNotes = notesUrls.map(url => shortenUrl(url));
+  
+  // Store in columns R and S for reuse
+  updateShortUrlColumns(sheet, shortenedBreeze, shortenedNotes);
+}
 ```
 
 ## 🚀 Future Architecture Roadmap
@@ -446,41 +463,10 @@ Respectful usage of Google services:
 ### **Enterprise Features (v1.1)**
 - ✅ **Menu optimization**: Streamlined user interface
 - ✅ **Function analysis**: Zero orphaned code, 100% coverage
-- ✅ **Documentation consistency**: Aligned versioning across all materials
-- ✅ **Troubleshooting tools**: Comprehensive diagnostic capabilities
-- ✅ **Code quality**: Modular, maintainable, well-documented
-
-### **Future Enhancements (Planned)**
-- 🔄 **API integrations**: Direct church management system connections
-- 🔄 **Advanced automation**: Smart scheduling based on historical patterns
-- 🔄 **Multi-platform**: Web and mobile application interfaces
-- 🔄 **Analytics**: Usage patterns and effectiveness measurements
+- ✅ **Documentation consistency**: Complete technical documentation
+- ✅ **Calendar auto-detection**: Zero-configuration calendar URL generation
+- ✅ **Global timezone support**: Automatic timezone detection and configuration
 
 ---
 
-## 📊 Technical Specifications
-
-### **System Requirements**
-- **Google Workspace**: Business or personal account
-- **Google Apps Script**: Execution environment
-- **Google Sheets**: Data storage and user interface
-- **Google Calendar**: Schedule visualization
-- **Google Chat**: Notification delivery (optional)
-
-### **Performance Characteristics**
-- **Schedule Generation**: 2-3 seconds for 52 weeks
-- **Calendar Export**: 30-45 seconds per 100 events  
-- **Notification Delivery**: 5-10 seconds to chat
-- **Memory Usage**: <64MB for largest configurations
-- **Execution Time**: <6 minutes for complete regeneration
-
-### **Scalability Limits**
-- **Maximum Deacons**: 50+ (tested to 20)
-- **Maximum Households**: 200+ (tested to 50)
-- **Schedule Length**: 104 weeks (2 years)
-- **Calendar Events**: 5000+ (Google Calendar limit)
-- **Notification Frequency**: Daily minimum
-
----
-
-*The Deacon Visitation Rotation System v1.1 represents a mature, production-ready solution for church ministry management, built through iterative development and real-world testing. The system successfully bridges technical sophistication with user-friendly operation, making advanced scheduling algorithms accessible to church administrators without technical backgrounds.*
+*This features overview represents a mature, production-ready church management system with enterprise-grade capabilities and extensive automation features.*
