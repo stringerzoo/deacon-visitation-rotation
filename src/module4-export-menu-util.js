@@ -1065,6 +1065,153 @@ function createMenuItems() {
   addModeIndicatorToSheet();
 }
 
+// ===== URL SHORTENING FUNCTIONS - COMPLETE RESTORATION =====
+
+function shortenUrl(longUrl) {
+  /**
+   * Shortens a URL using TinyURL's free API
+   * Falls back to original URL if shortening fails
+   */
+  try {
+    if (!longUrl || longUrl.trim().length === 0) {
+      return '';
+    }
+    
+    const apiUrl = 'http://tinyurl.com/api-create.php?url=' + encodeURIComponent(longUrl.trim());
+    
+    const response = UrlFetchApp.fetch(apiUrl, {
+      method: 'GET',
+      muteHttpExceptions: true
+    });
+    
+    if (response.getResponseCode() === 200) {
+      const shortUrl = response.getContentText().trim();
+      
+      if (shortUrl.startsWith('http://tinyurl.com/') || shortUrl.startsWith('https://tinyurl.com/')) {
+        console.log(`URL shortened: ${longUrl} → ${shortUrl}`);
+        return shortUrl;
+      } else {
+        console.warn(`TinyURL returned unexpected response: ${shortUrl}`);
+        return longUrl; // Fallback to original URL
+      }
+    } else {
+      console.warn(`TinyURL API failed with code ${response.getResponseCode()}: ${response.getContentText()}`);
+      return longUrl; // Fallback to original URL
+    }
+    
+  } catch (error) {
+    console.error(`URL shortening failed for ${longUrl}: ${error.message}`);
+    return longUrl; // Fallback to original URL
+  }
+}
+
+function buildBreezeUrl(breezeNumber) {
+  /**
+   * Constructs full Breeze URL from 8-digit number
+   */
+  if (!breezeNumber || breezeNumber.trim().length === 0) {
+    return '';
+  }
+  
+  const cleanNumber = breezeNumber.trim();
+  return `https://immanuelky.breezechms.com/people/view/${cleanNumber}`;
+}
+
+function generateAndStoreShortUrls(sheet, config) {
+  /**
+   * Generates shortened URLs for Breeze and Notes links and stores them in columns R and S
+   */
+  try {
+    console.log('Starting URL shortening process...');
+    
+    const ui = SpreadsheetApp.getUi();
+    const response = ui.alert(
+      'Generate Shortened URLs',
+      'This will create shortened URLs for Breeze profiles and Notes pages.\n\n' +
+      'This may take a few moments depending on the number of households.\n\n' +
+      'Continue?',
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (response !== ui.Button.YES) {
+      return;
+    }
+    
+    let breezeUrlsGenerated = 0;
+    let notesUrlsGenerated = 0;
+    
+    // Process each household
+    for (let i = 0; i < config.households.length; i++) {
+      const household = config.households[i];
+      console.log(`Processing URLs for household ${i + 1}: ${household}`);
+      
+      // Process Breeze URL
+      const breezeNumber = config.breezeNumbers[i];
+      if (breezeNumber && breezeNumber.trim().length > 0) {
+        const fullBreezeUrl = buildBreezeUrl(breezeNumber);
+        const shortBreezeUrl = shortenUrl(fullBreezeUrl);
+        
+        // Store in column R
+        sheet.getRange(`R${i + 2}`).setValue(shortBreezeUrl);
+        breezeUrlsGenerated++;
+        
+        console.log(`Breeze URL for ${household}: ${fullBreezeUrl} → ${shortBreezeUrl}`);
+      }
+      
+      // Process Notes URL
+      const notesUrl = config.notesLinks[i];
+      if (notesUrl && notesUrl.trim().length > 0) {
+        const shortNotesUrl = shortenUrl(notesUrl);
+        
+        // Store in column S
+        sheet.getRange(`S${i + 2}`).setValue(shortNotesUrl);
+        notesUrlsGenerated++;
+        
+        console.log(`Notes URL for ${household}: ${notesUrl} → ${shortNotesUrl}`);
+      }
+      
+      // Add small delay to avoid overwhelming the API
+      if (i < config.households.length - 1) {
+        Utilities.sleep(500); // 0.5 second delay between requests
+      }
+    }
+    
+    console.log('URL shortening process completed');
+    
+    ui.alert(
+      'URL Shortening Complete',
+      `✅ Shortened URLs generated!\n\n` +
+      `🔗 Breeze URLs: ${breezeUrlsGenerated}\n` +
+      `📝 Notes URLs: ${notesUrlsGenerated}\n\n` +
+      `Shortened URLs are now available in columns R and S.`,
+      ui.ButtonSet.OK
+    );
+    
+  } catch (error) {
+    console.error('Error generating shortened URLs:', error);
+    SpreadsheetApp.getUi().alert(
+      'URL Shortening Failed',
+      `❌ Error generating shortened URLs: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+// Wrapper function for menu access to URL shortening
+function generateShortUrlsFromMenu() {
+  const sheet = SpreadsheetApp.getActiveSheet();
+  try {
+    const config = getConfiguration(sheet);
+    generateAndStoreShortUrls(sheet, config);
+  } catch (error) {
+    SpreadsheetApp.getUi().alert(
+      'Error',
+      `❌ ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
 // ===== HELPER FUNCTIONS =====
 
 function getOrCreateCalendar(calendarName = null) {
@@ -1092,16 +1239,4 @@ function getOrCreateCalendar(calendarName = null) {
   } catch (error) {
     throw new Error(`Calendar access failed: ${error.message}`);
   }
-}
-
-function buildBreezeUrl(breezeNumber) {
-  /**
-   * Constructs full Breeze URL from 8-digit number
-   */
-  if (!breezeNumber || breezeNumber.trim().length === 0) {
-    return '';
-  }
-  
-  const cleanNumber = breezeNumber.trim();
-  return `https://immanuelky.breezechms.com/people/view/${cleanNumber}`;
 }
