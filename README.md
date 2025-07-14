@@ -50,6 +50,14 @@ A sophisticated Google Apps Script-based system that generates mathematically fa
 - **Comprehensive diagnostics**: Built-in troubleshooting tools
 - **Menu cleanup**: Streamlined interface, no dead functions
 
+### 📅 **Automatic Calendar Links**
+- **Auto-detected calendar URLs** - System automatically generates calendar links for notifications
+- **K22 Guide field** - Optional Visitation Guide URL for ministry procedures  
+- **K25 Summary field** - Optional Schedule Summary URL for archived schedules
+- **Zero configuration** - Calendar links work immediately without manual setup
+- **Mode-aware** - Automatically switches between test and production calendar URLs
+- **One-click access** - "📅 Calendar", "📋 Guide", "📊 Summary" in every chat message
+
 ---
 
 ## 🚀 Quick Start
@@ -109,7 +117,6 @@ A sophisticated Google Apps Script-based system that generates mathematically fa
 - **K8**: Calendar event instructions
 - **K11**: Notification day (dropdown)
 - **K13**: Notification time (0-23 hour)
-- **K19**: Google Calendar URL
 - **K22**: Visitation Guide URL
 - **K25**: Schedule Summary URL
 
