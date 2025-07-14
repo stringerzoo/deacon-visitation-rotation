@@ -417,17 +417,26 @@ Batch processing for mobile field access:
 
 ```javascript
 function generateAndStoreShortUrls(sheet, config) {
-  const breezeUrls = config.breezeNumbers.map(buildBreezeUrl);
-  const notesUrls = config.notesLinks;
+  // ENHANCED v1.1: Only processes empty cells, preserves existing URLs
+  const existingBreezeUrl = sheet.getRange(`R${rowNumber}`).getValue();
   
-  // Batch processing with rate limiting
-  const shortenedBreeze = breezeUrls.map(url => shortenUrl(url));
-  const shortenedNotes = notesUrls.map(url => shortenUrl(url));
+  if (!existingBreezeUrl || existingBreezeUrl.toString().trim().length === 0) {
+    // Only create new short URL if cell is empty
+    const shortBreezeUrl = shortenUrl(fullBreezeUrl);
+    sheet.getRange(`R${rowNumber}`).setValue(shortBreezeUrl);
+  }
   
-  // Store in columns R and S for reuse
-  updateShortUrlColumns(sheet, shortenedBreeze, shortenedNotes);
+  // Batch processing with rate limiting and preservation logic
 }
 ```
+**Notes Features:**
+
+- **Google Docs URLs** in column Q
+- **Smart URL preservation** - only generates for empty cells (v1.1)
+- **Automated URL shortening** for mobile compatibility
+- **Direct access** from calendar events and chat notifications
+- **Persistent storage** in columns R and S for reuse
+- **Force regeneration option** for intentional URL refresh
 
 ## 🚀 Future Architecture Roadmap
 
