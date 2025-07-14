@@ -252,46 +252,48 @@ function updateContactInfoOnly() {
     const ui = SpreadsheetApp.getUi();
     const response = ui.alert(
       currentTestMode ? 'TEST: Update Contact Info Only' : 'Update Contact Info Only',
-      `${currentTestMode ? '🧪 TEST: ' : ''}📞 This will update contact information in existing calendar events.\n\n` +
-      `✅ PRESERVES: All scheduling details (times, dates, guests, locations)\n` +
-      `🔄 UPDATES: Phone numbers, addresses, Breeze links, Notes links\n\n` +
+      `${currentTestMode ? '🧪 TEST: ' : ''}This will update contact information in ${scheduleData.length} existing calendar events.\n\n` +
       `Calendar: "${currentCalendarName}"\n\n` +
-      `Continue with contact info update?`,
+      `✅ PRESERVES: All custom scheduling details, times, dates, guests\n` +
+      `🔄 UPDATES: Phone numbers, addresses, Breeze links, Notes links\n\n` +
+      'Continue with contact info update?',
       ui.ButtonSet.YES_NO
     );
     
-    if (response !== ui.Button.YES) return;
-
-    // Access the calendar
-    const calendars = CalendarApp.getCalendarsByName(currentCalendarName);
-    if (calendars.length === 0) {
-      ui.alert('Calendar Not Found', `Calendar "${currentCalendarName}" not found.\n\nPlease run "🚨 Full Calendar Regeneration" first.`, ui.ButtonSet.OK);
+    if (response !== ui.Button.YES) {
       return;
     }
 
-    const calendar = calendars[0];
-    
-    // Get existing events
-    const startDate = new Date();
-    startDate.setFullYear(startDate.getFullYear() - 1);
-    const endDate = new Date();
-    endDate.setFullYear(endDate.getFullYear() + 2);
+    // Get calendar
+    let calendar;
+    try {
+      calendar = CalendarApp.getCalendarsByName(currentCalendarName)[0];
+      if (!calendar) {
+        throw new Error(`Calendar "${currentCalendarName}" not found`);
+      }
+    } catch (calError) {
+      ui.alert('Calendar Error', `Cannot access calendar "${currentCalendarName}". Please check permissions.`, ui.ButtonSet.OK);
+      return;
+    }
+
+    // Get existing events for comparison
+    const startDate = new Date(Math.min(...scheduleData.map(entry => entry.date)));
+    const endDate = new Date(Math.max(...scheduleData.map(entry => entry.date)));
+    endDate.setDate(endDate.getDate() + 1); // Include end date
     
     const existingEvents = calendar.getEvents(startDate, endDate);
     console.log(`Found ${existingEvents.length} existing events to update`);
-
-    if (existingEvents.length === 0) {
-      ui.alert('No Events Found', 'No existing calendar events found to update.\n\nPlease run "🚨 Full Calendar Regeneration" first.', ui.ButtonSet.OK);
-      return;
-    }
 
     // Update contact information in existing events
     let updatedCount = 0;
     const updateStartTime = new Date().getTime();
     
+    // *** FIX: Correctly handle schedule data objects ***
     scheduleData.forEach(scheduleEntry => {
-      const [dateStr, deacon, household] = scheduleEntry;
-      const visitDate = new Date(dateStr);
+      // Use object properties instead of array destructuring
+      const visitDate = scheduleEntry.date;
+      const deacon = scheduleEntry.deacon;
+      const household = scheduleEntry.household;
       const householdIndex = config.households.indexOf(household);
       
       // Find matching calendar event
