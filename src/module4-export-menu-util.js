@@ -399,12 +399,14 @@ function updateFutureEventsOnly() {
    * Updates ONLY future events (next Monday onwards)
    * Preserves: This week's scheduling details completely
    * Updates: All future weeks with current assignments and contact info
+   * FIXED: Now correctly handles schedule data as objects
    */
   try {
     const currentTestMode = getCurrentTestMode();
     const calendarName = currentTestMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
     
     const sheet = SpreadsheetApp.getActiveSheet();
+    const config = getConfiguration(sheet);
     const scheduleData = getScheduleFromSheet(sheet);
     
     if (scheduleData.length === 0) {
@@ -458,10 +460,9 @@ function updateFutureEventsOnly() {
       }
     });
     
-    // Get schedule data and recreate future events
-    const config = getConfiguration(sheet);
+    // Filter schedule for future events - FIXED: Use object properties
     const futureSchedule = scheduleData.filter(visit => {
-      const visitDate = new Date(visit[0]);
+      const visitDate = new Date(visit.date);  // Use visit.date instead of visit[0]
       return visitDate >= nextMonday;
     });
     
@@ -474,12 +475,14 @@ function updateFutureEventsOnly() {
       return;
     }
     
-    // Create updated future events
+    // Create updated future events - FIXED: Use object properties
     let eventsCreated = 0;
     futureSchedule.forEach((visit, index) => {
       try {
-        const [dateStr, deacon, household] = visit;
-        const visitDate = new Date(dateStr);
+        // FIXED: Use object properties instead of array destructuring
+        const visitDate = visit.date;      // Instead of visit[0]
+        const deacon = visit.deacon;       // Instead of visit[1] 
+        const household = visit.household; // Instead of visit[2]
         const householdIndex = config.households.indexOf(household);
         
         // Build comprehensive event description
@@ -544,7 +547,7 @@ function updateFutureEventsOnly() {
         }
         
       } catch (eventError) {
-        console.error(`Failed to create future event for ${visit[1]} -> ${visit[2]}:`, eventError);
+        console.error(`Failed to create future event for ${visit.deacon} -> ${visit.household}:`, eventError);
       }
     });
     
@@ -626,22 +629,30 @@ function archiveCurrentSchedule() {
 
 function exportIndividualSchedules() {
   /**
-   * Create individual schedule sheets for each deacon
+   * Create individual spreadsheet files for each deacon with their personal schedule
+   * FIXED: Now correctly handles schedule data as objects
    */
+  const sheet = SpreadsheetApp.getActiveSheet();
+  
   try {
-    const sheet = SpreadsheetApp.getActiveSheet();
+    const config = getConfiguration(sheet);
+    
+    if (config.deacons.length === 0) {
+      SpreadsheetApp.getUi().alert('Error', 'No deacons found. Please run Generate Schedule first.', SpreadsheetApp.getUi().ButtonSet.OK);
+      return;
+    }
+    
     const scheduleData = getScheduleFromSheet(sheet);
     
     if (scheduleData.length === 0) {
       SpreadsheetApp.getUi().alert(
-        'No Schedule Found',
-        'Please generate a schedule first using "📅 Generate Schedule".',
+        'No Schedule',
+        'No schedule data found. Please generate a schedule first.',
         SpreadsheetApp.getUi().ButtonSet.OK
       );
       return;
     }
     
-    const config = getConfiguration(sheet);
     const currentTestMode = getCurrentTestMode();
     
     // Create new spreadsheet for individual schedules
@@ -650,13 +661,18 @@ function exportIndividualSchedules() {
       `${currentTestMode ? 'TEST - ' : ''}Individual Deacon Schedules - ${timestamp}`
     );
     
-    // Group visits by deacon
+    // Group visits by deacon - FIXED: Use object properties
     const deaconVisits = {};
-    scheduleData.forEach(([date, deacon, household]) => {
+    scheduleData.forEach(visit => {
+      // FIXED: Use object properties instead of array destructuring
+      const deacon = visit.deacon;       // Instead of destructuring [date, deacon, household]
+      const date = visit.date;
+      const household = visit.household;
+      
       if (!deaconVisits[deacon]) {
         deaconVisits[deacon] = [];
       }
-      deaconVisits[deacon].push([date, household]);
+      deaconVisits[deacon].push([date, household]);  // Still pass as array to maintain compatibility
     });
     
     // Remove the default sheet and create individual sheets
@@ -696,15 +712,18 @@ function exportIndividualSchedules() {
     SpreadsheetApp.getUi().alert(
       currentTestMode ? 'TEST Individual Schedules Created' : 'Individual Schedules Created',
       `${currentTestMode ? '🧪 TEST: ' : ''}✅ Individual deacon schedules created!\n\n` +
-      `📊 Created ${Object.keys(deaconVisits).length} individual sheets\n` +
-      `📱 Access at: ${spreadsheetUrl}`,
+      `📊 Created: ${Object.keys(deaconVisits).length} individual sheets\n` +
+      `📅 Total visits: ${scheduleData.length}\n` +
+      `🔗 Spreadsheet: ${spreadsheetUrl}\n\n` +
+      'Each deacon now has their own sheet with visit dates, households, and contact information.',
       SpreadsheetApp.getUi().ButtonSet.OK
     );
     
   } catch (error) {
+    console.error('Individual schedules export failed:', error);
     SpreadsheetApp.getUi().alert(
       'Export Failed',
-      `❌ Could not create individual schedules: ${error.message}`,
+      `❌ Individual schedules export failed: ${error.message}`,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   }
