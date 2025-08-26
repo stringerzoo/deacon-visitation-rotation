@@ -429,12 +429,12 @@ function writeScheduleToSheet(schedule, config) {
   sheet.getRange('A1:E1').setValues([headers]);
   sheet.getRange('A1:E1').setFontWeight('bold').setBackground('#4285f4').setFontColor('white');
   
-  // Prepare schedule data with v2.0 enhancements
+  // Prepare schedule data with CLEAN formatting (no frequency markers in main schedule)
   const scheduleData = schedule.map(visit => [
     visit.cycle,
     visit.week,
     visit.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    visit.household + (visit.isCustomFrequency ? ` (${visit.householdFrequency}w)` : ''),
+    visit.household, // Clean household name - no frequency markers
     visit.deacon
   ]);
   
@@ -442,7 +442,7 @@ function writeScheduleToSheet(schedule, config) {
   if (scheduleData.length > 0) {
     sheet.getRange(2, 1, scheduleData.length, 5).setValues(scheduleData);
     
-    // Apply conditional formatting for custom frequencies
+    // Apply SUBTLE highlighting for custom frequencies with explanation
     if (config.hasCustomFrequencies) {
       const customFreqRows = [];
       schedule.forEach((visit, index) => {
@@ -451,26 +451,40 @@ function writeScheduleToSheet(schedule, config) {
         }
       });
       
-      // Highlight custom frequency rows
+      // Use LIGHT background highlighting (much more subtle)
       customFreqRows.forEach(row => {
-        sheet.getRange(`A${row}:E${row}`).setBackground('#fff3cd');
+        sheet.getRange(`A${row}:E${row}`).setBackground('#fff9c4'); // Very light yellow
       });
+      
+      // Add explanation note for the highlighting
+      if (customFreqRows.length > 0) {
+        // Find a good spot for the legend (after the data)
+        const legendRow = schedule.length + 4;
+        sheet.getRange(`A${legendRow}`).setValue('Legend:').setFontWeight('bold');
+        sheet.getRange(`A${legendRow + 1}`).setValue('Light yellow = Custom frequency household').setBackground('#fff9c4');
+        sheet.getRange(`A${legendRow + 1}:E${legendRow + 1}`).merge();
+      }
     }
   }
   
-  // Write individual deacon reports
-  generateIndividualDeaconReports(schedule, config);
+  // Write CLEAN individual deacon reports (restored v1.1 format)
+  generateCleanDeaconReports(schedule, config);
   
-  console.log(`📝 Schedule written to sheet: ${schedule.length} visits`);
+  console.log(`📝 Schedule written to sheet: ${schedule.length} visits with clean formatting`);
 }
 
-function generateIndividualDeaconReports(schedule, config) {
+function generateCleanDeaconReports(schedule, config) {
   const sheet = SpreadsheetApp.getActiveSheet();
   
   // Clear existing deacon reports
   sheet.getRange('G:I').clear();
   
-  // Create deacon-specific schedules
+  // Write headers for deacon reports
+  sheet.getRange('G1').setValue('Deacon').setFontWeight('bold').setBackground('#34a853').setFontColor('white');
+  sheet.getRange('H1').setValue('Week of').setFontWeight('bold').setBackground('#34a853').setFontColor('white');
+  sheet.getRange('I1').setValue('Household').setFontWeight('bold').setBackground('#34a853').setFontColor('white');
+  
+  // Create deacon-specific schedules (same as v1.1)
   const deaconSchedules = {};
   config.deacons.forEach(deacon => {
     deaconSchedules[deacon] = schedule
@@ -478,26 +492,57 @@ function generateIndividualDeaconReports(schedule, config) {
       .sort((a, b) => a.date - b.date);
   });
   
-  // Write deacon reports
+  // Generate CLEAN report data (v1.1 style)
   const reportData = [];
+  
   config.deacons.forEach(deacon => {
     const visits = deaconSchedules[deacon];
-    visits.forEach(visit => {
-      const householdLabel = visit.isCustomFrequency 
-        ? `${visit.household} (${visit.householdFrequency}w)`
-        : visit.household;
-      
+    
+    if (visits.length > 0) {
+      // Add deacon header row (just like v1.1)
       reportData.push([
-        deacon,
-        visit.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        householdLabel
+        `${deacon} (${visits.length} visits)`, // Clean deacon name with count
+        '', // Empty week column for deacon header
+        ''  // Empty household column for deacon header
       ]);
-    });
+      
+      // Add visit rows with CLEAN formatting
+      visits.forEach(visit => {
+        // Clean household name with subtle frequency indicator only if custom
+        const householdDisplay = visit.isCustomFrequency 
+          ? `${visit.household} (${visit.householdFrequency}w)`
+          : visit.household;
+        
+        reportData.push([
+          '', // Empty deacon column for visit rows
+          visit.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          householdDisplay
+        ]);
+      });
+      
+      // Add spacing between deacons (like v1.1)
+      reportData.push(['', '', '']);
+    }
   });
   
+  // Write the clean report data
   if (reportData.length > 0) {
     sheet.getRange(2, 7, reportData.length, 3).setValues(reportData);
+    
+    // Apply formatting to make deacon names stand out (like v1.1)
+    let currentRow = 2;
+    config.deacons.forEach(deacon => {
+      const visits = deaconSchedules[deacon];
+      if (visits.length > 0) {
+        // Make deacon name row bold and colored (like v1.1)
+        sheet.getRange(`G${currentRow}:I${currentRow}`)
+          .setFontWeight('bold')
+          .setBackground('#e8f0fe'); // Light blue background
+        
+        currentRow += visits.length + 2; // Move to next deacon (visits + deacon header + spacing)
+      }
+    });
   }
   
-  console.log(`📋 Individual reports generated for ${config.deacons.length} deacons`);
+  console.log(`📋 Clean individual reports generated for ${config.deacons.length} deacons (v1.1 style)`);
 }
