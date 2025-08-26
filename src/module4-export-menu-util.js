@@ -132,22 +132,34 @@ function generateRotationSchedule() {
     console.log('📝 Writing schedule to spreadsheet...');
     writeScheduleToSheet(schedule, config);
     
-    // Success notification with v2.0 details
+    // Success notification with v2.0 details and formatting explanation
     const executionTime = ((new Date().getTime() - startTime) / 1000).toFixed(2);
     const customCount = config.hasCustomFrequencies 
       ? config.householdFrequencies.filter(hf => hf.isCustom).length 
       : 0;
     
+    let message = `✅ v2.0 Schedule Generated!\n\n`;
+    
+    message += `📊 Statistics:\n`;
+    message += `• Total visits: ${schedule.length}\n`;
+    message += `• Time span: ${config.numWeeks} weeks\n`;
+    message += `• Households: ${config.households.length}\n`;
+    message += `• Custom frequencies: ${customCount}\n`;
+    message += `• Generation time: ${executionTime} seconds\n\n`;
+    
+    // Add formatting explanation if custom frequencies exist
+    if (config.hasCustomFrequencies) {
+      message += `🎨 Formatting Notes:\n`;
+      message += `• Light yellow rows = Custom frequency households\n`;
+      message += `• Individual reports show frequency for custom households only\n`;
+      message += `• Clean v1.1 formatting maintained\n\n`;
+    }
+    
+    message += `${config.hasCustomFrequencies ? '🆕 Variable frequency algorithm used' : '📅 Uniform frequency (v1.1 compatible)'}`;
+    
     SpreadsheetApp.getUi().alert(
       'Schedule Generated Successfully',
-      `✅ v2.0 Schedule Generated!\n\n` +
-      `📊 Statistics:\n` +
-      `• Total visits: ${schedule.length}\n` +
-      `• Time span: ${config.numWeeks} weeks\n` +
-      `• Households: ${config.households.length}\n` +
-      `• Custom frequencies: ${customCount}\n` +
-      `• Generation time: ${executionTime} seconds\n\n` +
-      `${config.hasCustomFrequencies ? '🆕 Variable frequency algorithm used' : '📅 Uniform frequency (v1.1 compatible)'}`,
+      message,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
     
