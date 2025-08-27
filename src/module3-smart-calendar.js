@@ -1,5 +1,5 @@
 /**
- * MODULE 3: SMART CALENDAR & TEST MODE DETECTION (v1.1)
+ * MODULE 3: SMART CALENDAR & TEST MODE DETECTION (v2.0)
  * Deacon Visitation Rotation System - Advanced Calendar Integration
  * 
  * This module contains:
@@ -543,4 +543,280 @@ function getCurrentTestMode() {
   return refreshModeDetection();
 }
 
-// END OF MODULE 3
+/**
+ * v2.0 COMPATIBLE CALENDAR EXPORT FUNCTION
+ * Updated to work with v2.0 data structures and variable frequencies
+ */
+
+function exportToGoogleCalendar() {
+  /**
+   * v2.0 COMPATIBLE: Creates calendar events for each deacon's visits with enhanced contact information
+   * including shortened Breeze and Notes links, with variable frequency support
+   */
+  try {
+    const sheet = SpreadsheetApp.getActiveSheet();
+    const config = getConfiguration(); // v2.0 doesn't need sheet parameter
+    const scheduleData = getScheduleFromSheet();
+    
+    if (config.deacons.length === 0) {
+      SpreadsheetApp.getUi().alert('Error', 'No deacons found. Please generate a schedule first.', SpreadsheetApp.getUi().ButtonSet.OK);
+      return;
+    }
+    
+    if (scheduleData.length === 0) {
+      SpreadsheetApp.getUi().alert('No Schedule', 'Please generate a schedule first.', SpreadsheetApp.getUi().ButtonSet.OK);
+      return;
+    }
+    
+    // NEW v2.0: Detect test mode and set appropriate calendar name
+    const testMode = detectAndCommunicateTestMode();
+    const calendarName = testMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
+    
+    console.log(`Calendar: "${calendarName}"`);
+    console.log(`v2.0 Variable frequency support: ${config.hasCustomFrequencies ? 'ENABLED' : 'DISABLED'}`);
+    
+    // Check if shortened URLs need to be generated
+    const hasShortUrls = config.breezeShortLinks.some(link => link && link.trim().length > 0) || 
+                        config.notesShortLinks.some(link => link && link.trim().length > 0);
+    
+    if (!hasShortUrls) {
+      const response = SpreadsheetApp.getUi().alert(
+        'Generate Shortened URLs?',
+        'No shortened URLs found in columns R and S.\n\n' +
+        'Would you like to generate them now before creating calendar events?\n\n' +
+        '(This will improve the calendar event descriptions)',
+        SpreadsheetApp.getUi().ButtonSet.YES_NO_CANCEL
+      );
+      
+      if (response === SpreadsheetApp.getUi().Button.CANCEL) {
+        return;
+      }
+      
+      if (response === SpreadsheetApp.getUi().Button.YES) {
+        generateShortUrls(); // v2.0 function name
+        // Reload config to get the newly generated short URLs
+        const updatedConfig = getConfiguration();
+        config.breezeShortLinks = updatedConfig.breezeShortLinks;
+        config.notesShortLinks = updatedConfig.notesShortLinks;
+      }
+    }
+    
+    // Create or get the deacon visitation calendar
+    let calendar;
+    
+    try {
+      const calendars = CalendarApp.getCalendarsByName(calendarName);
+      if (calendars.length > 0) {
+        calendar = calendars[0];
+        
+        const response = SpreadsheetApp.getUi().alert(
+          'Calendar Exists',
+          `Calendar "${calendarName}" already exists. Clear existing events and add new ones?`,
+          SpreadsheetApp.getUi().ButtonSet.YES_NO_CANCEL
+        );
+        
+        if (response === SpreadsheetApp.getUi().Button.CANCEL) return;
+        
+        if (response === SpreadsheetApp.getUi().Button.YES) {
+          const startDate = new Date();
+          startDate.setFullYear(startDate.getFullYear() - 1);
+          const endDate = new Date();
+          endDate.setFullYear(endDate.getFullYear() + 2);
+          
+          const existingEvents = calendar.getEvents(startDate, endDate);
+          console.log(`Deleting ${existingEvents.length} existing events...`);
+          
+          // Delete events in smaller batches to avoid rate limiting
+          const deleteStartTime = new Date().getTime();
+          let deletedCount = 0;
+          
+          existingEvents.forEach((event, index) => {
+            event.deleteEvent();
+            deletedCount++;
+            
+            // Add small delay every 10 deletions
+            if ((index + 1) % 10 === 0) {
+              Utilities.sleep(500); // 0.5 second pause
+            }
+          });
+          
+          console.log(`Deleted ${deletedCount} events in ${new Date().getTime() - deleteStartTime}ms`);
+          
+          // Wait a bit longer before creating new events
+          console.log('Waiting for API cooldown before creating new events...');
+          Utilities.sleep(2000); // 2 second pause before creating new events
+        }
+      } else {
+        calendar = CalendarApp.createCalendar(calendarName);
+        const calendarDescription = testMode ? 
+          'TEST CALENDAR - Automated schedule for deacon household visitations with contact information and management links' :
+          'Automated schedule for deacon household visitations with contact information and management links';
+        calendar.setDescription(calendarDescription);
+        calendar.setColor(testMode ? CalendarApp.Color.RED : CalendarApp.Color.BLUE);
+      }
+    } catch (calError) {
+      throw new Error(`Calendar access failed: ${calError.message}. Make sure you have calendar permissions.`);
+    }
+    
+    // Create enhanced events with contact information and links
+    let eventsCreated = 0;
+    const maxEvents = 500;
+    
+    console.log(`Creating ${Math.min(scheduleData.length, maxEvents)} calendar events...`);
+    const createStartTime = new Date().getTime();
+    
+    scheduleData.slice(0, maxEvents).forEach((visit, index) => {
+      try {
+        // Enhanced event title format with test mode indicator
+        let eventTitle = `${visit.deacon} visits ${visit.household}`;
+        if (testMode) {
+          eventTitle = `TEST: ${eventTitle}`;
+        }
+        
+        // Find household index to get all contact info and links
+        const householdIndex = config.households.indexOf(visit.household);
+        const phone = householdIndex >= 0 ? config.phones[householdIndex] || 'Phone not available' : 'Phone not available';
+        const address = householdIndex >= 0 ? config.addresses[householdIndex] || 'Address not available' : 'Address not available';
+        
+        // Get Breeze link (use shortened if available, otherwise build from number)
+        let breezeLink = 'Not available';
+        if (householdIndex >= 0) {
+          const shortBreezeLink = config.breezeShortLinks[householdIndex];
+          if (shortBreezeLink && shortBreezeLink.trim().length > 0) {
+            breezeLink = shortBreezeLink;
+          } else {
+            // Check for both possible property names for backward compatibility
+            const breezeNumber = config.breezeLinks[householdIndex] || config.breezeNumbers[householdIndex];
+            if (breezeNumber && String(breezeNumber).trim().length > 0) {
+              breezeLink = `https://tinyurl.com/breeze${breezeNumber}`; // Fallback format if buildBreezeUrl missing
+            }
+          }
+        }
+        
+        // Get Notes link (use shortened if available)
+        let notesLink = 'Not available';
+        if (householdIndex >= 0) {
+          const shortNotesLink = config.notesShortLinks[householdIndex];
+          if (shortNotesLink && shortNotesLink.trim().length > 0) {
+            notesLink = shortNotesLink;
+          } else {
+            const originalNotesLink = config.notesLinks[householdIndex];
+            if (originalNotesLink && originalNotesLink.trim().length > 0) {
+              notesLink = originalNotesLink;
+            }
+          }
+        }
+        
+        // Build enhanced event description with v2.0 frequency information
+        let eventDescription = `Household: ${visit.household}\n`;
+        
+        // Add frequency information for v2.0
+        if (config.hasCustomFrequencies) {
+          const householdFreq = config.householdFrequencies.find(hf => hf.household === visit.household);
+          if (householdFreq) {
+            const freqLabel = householdFreq.isCustom ? 
+              `${householdFreq.frequency} weeks (custom)` : 
+              `${householdFreq.frequency} weeks (default)`;
+            eventDescription += `Visit Frequency: ${freqLabel}\n`;
+          }
+        }
+        
+        eventDescription += `Breeze Profile: ${breezeLink}\n\n`;
+        eventDescription += `Contact Information:\n`;
+        eventDescription += `Phone: ${phone}\n`;
+        eventDescription += `Address: ${address}\n\n`;
+        eventDescription += `Visit Notes: ${notesLink}\n\n`;
+        eventDescription += `Instructions:\n`;
+        eventDescription += config.calendarInstructions || 'Please call to confirm visit time. Contact family 1-2 days before scheduled date to arrange convenient time.';
+        
+        // Add test mode warning if applicable
+        if (testMode) {
+          eventDescription = `TEST EVENT - This is for testing purposes only.\n\n` + eventDescription;
+        }
+        
+        // Create the calendar event
+        const eventStart = new Date(visit.date);
+        eventStart.setHours(14, 0, 0, 0); // 2:00 PM default
+        
+        const eventEnd = new Date(visit.date);
+        eventEnd.setHours(15, 0, 0, 0); // 3:00 PM default (1 hour duration)
+        
+        const event = calendar.createEvent(eventTitle, eventStart, eventEnd, {
+          description: eventDescription,
+          location: address !== 'Address not available' ? address : ''
+        });
+        
+        eventsCreated++;
+        
+        // Add small delay every 25 events to avoid rate limiting
+        if ((index + 1) % 25 === 0) {
+          Utilities.sleep(1000); // 1 second pause
+          console.log(`Created ${index + 1} of ${scheduleData.length} events...`);
+        }
+        
+      } catch (eventError) {
+        console.error(`Failed to create event for ${visit.deacon} -> ${visit.household}:`, eventError);
+      }
+    });
+    
+    const totalTime = new Date().getTime() - createStartTime;
+    console.log(`Created ${eventsCreated} calendar events in ${totalTime}ms`);
+    
+    // Show success message
+    const successMessage = `Calendar Export Complete!\n\n` +
+      `Calendar: "${calendarName}"\n` +
+      `Events Created: ${eventsCreated}\n` +
+      `Time: ${(totalTime/1000).toFixed(1)} seconds\n\n` +
+      `${config.hasCustomFrequencies ? 'Variable frequency households marked with custom frequency info' : 'Uniform frequency schedule'}`;
+    
+    SpreadsheetApp.getUi().alert('Export Complete', successMessage, SpreadsheetApp.getUi().ButtonSet.OK);
+    
+  } catch (error) {
+    console.error('Calendar export failed:', error);
+    SpreadsheetApp.getUi().alert(
+      'Export Failed',
+      `Could not export to calendar:\n\n${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+function getScheduleFromSheet() {
+  /**
+   * v2.0 COMPATIBLE: Reads schedule data from spreadsheet in object format
+   */
+  const sheet = SpreadsheetApp.getActiveSheet();
+  
+  // Read the schedule data from columns A-E
+  const data = sheet.getRange('A2:E1000').getValues()
+    .filter(row => row[0] !== '' && row[0] != null); // Filter out empty rows
+  
+  return data.map(row => ({
+    cycle: row[0],
+    week: row[1],
+    date: row[2] ? new Date(row[2]) : new Date(), // Handle date parsing
+    household: row[3],
+    deacon: row[4]
+  }));
+}
+
+function getOrCreateCalendar() {
+  /**
+   * Helper function for other modules to get the correct calendar
+   */
+  const testMode = detectAndCommunicateTestMode();
+  const calendarName = testMode ? 'TEST - Deacon Visitation Schedule' : 'Deacon Visitation Schedule';
+  
+  const calendars = CalendarApp.getCalendarsByName(calendarName);
+  if (calendars.length > 0) {
+    return calendars[0];
+  } else {
+    const calendar = CalendarApp.createCalendar(calendarName);
+    const calendarDescription = testMode ? 
+      'TEST CALENDAR - Automated schedule for deacon household visitations' :
+      'Automated schedule for deacon household visitations';
+    calendar.setDescription(calendarDescription);
+    calendar.setColor(testMode ? CalendarApp.Color.RED : CalendarApp.Color.BLUE);
+    return calendar;
+  }
+}
