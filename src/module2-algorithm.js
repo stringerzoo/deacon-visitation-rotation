@@ -528,6 +528,7 @@ function logRotationAnalysis(schedule, config) {
 /**
  * SCHEDULE WRITING & FORMATTING (Enhanced for v2.0)
  */
+// UPDATE: Modified writeScheduleToSheet function
 function writeScheduleToSheet(schedule, config) {
   const sheet = SpreadsheetApp.getActiveSheet();
   
@@ -580,7 +581,10 @@ function writeScheduleToSheet(schedule, config) {
   // Write CLEAN individual deacon reports (restored v1.1 format)
   generateCleanDeaconReports(schedule, config);
   
-  console.log(`📝 Schedule written to sheet: ${schedule.length} visits with clean formatting`);
+  // 🆕 NEW: Write household visit reports below deacon reports
+  generateHouseholdReports(schedule, config);
+  
+  console.log(`📝 Schedule written to sheet: ${schedule.length} visits with clean formatting + household reports`);
 }
 
 function generateCleanDeaconReports(schedule, config) {
@@ -655,4 +659,101 @@ function generateCleanDeaconReports(schedule, config) {
   }
   
   console.log(`📋 Clean individual reports generated for ${config.deacons.length} deacons (v1.1 style)`);
+}
+
+/**
+ * HOUSEHOLD REPORTS ADDITION FOR MODULE 2 v2.0
+ * Add this function to your existing Module 2, and update the writeScheduleToSheet function
+ */
+
+function generateHouseholdReports(schedule, config) {
+  const sheet = SpreadsheetApp.getActiveSheet();
+  
+  // Find where the deacon reports end to place household reports below
+  let startRow = 2;
+  
+  // Calculate where deacon reports end
+  config.deacons.forEach(deacon => {
+    const visits = schedule.filter(visit => visit.deacon === deacon);
+    if (visits.length > 0) {
+      startRow += visits.length + 2; // visits + header + spacing
+    }
+  });
+  
+  // Add some spacing between deacon and household reports
+  startRow += 2;
+  
+  // Write household reports header
+  sheet.getRange(`G${startRow}`).setValue('🏠 HOUSEHOLD VISIT SCHEDULE').setFontWeight('bold').setFontSize(12).setBackground('#ff9900').setFontColor('white');
+  sheet.getRange(`G${startRow}:I${startRow}`).merge();
+  startRow += 2;
+  
+  // Write column headers
+  sheet.getRange(`G${startRow}`).setValue('Household').setFontWeight('bold').setBackground('#ff9900').setFontColor('white');
+  sheet.getRange(`H${startRow}`).setValue('Visit Date').setFontWeight('bold').setBackground('#ff9900').setFontColor('white');
+  sheet.getRange(`I${startRow}`).setValue('Deacon').setFontWeight('bold').setBackground('#ff9900').setFontColor('white');
+  startRow++;
+  
+  // Create household-specific schedules
+  const householdSchedules = {};
+  config.households.forEach(household => {
+    householdSchedules[household] = schedule
+      .filter(visit => visit.household === household)
+      .sort((a, b) => a.date - b.date);
+  });
+  
+  // Generate household report data
+  const householdReportData = [];
+  
+  config.households.forEach(household => {
+    const visits = householdSchedules[household];
+    
+    if (visits.length > 0) {
+      // Determine if this household has custom frequency
+      const householdFreq = config.householdFrequencies.find(hf => hf.household === household);
+      const frequencyLabel = householdFreq && householdFreq.isCustom 
+        ? ` (${householdFreq.frequency}w custom)`
+        : ` (${config.defaultVisitFrequency}w default)`;
+      
+      // Add household header row
+      householdReportData.push([
+        `${household}${frequencyLabel} - ${visits.length} visits`,
+        '', // Empty visit date column for household header
+        ''  // Empty deacon column for household header
+      ]);
+      
+      // Add visit rows
+      visits.forEach(visit => {
+        householdReportData.push([
+          '', // Empty household column for visit rows
+          visit.date.toLocaleDateString('en-US'),
+          visit.deacon
+        ]);
+      });
+      
+      // Add spacing between households
+      householdReportData.push(['', '', '']);
+    }
+  });
+  
+  // Write the household report data
+  if (householdReportData.length > 0) {
+    sheet.getRange(startRow, 7, householdReportData.length, 3).setValues(householdReportData);
+    
+    // Apply formatting to make household names stand out
+    let currentRow = startRow;
+    config.households.forEach(household => {
+      const visits = householdSchedules[household];
+      if (visits.length > 0) {
+        // Make household name row bold and colored
+        sheet.getRange(`G${currentRow}:I${currentRow}`)
+          .setFontWeight('bold')
+          .setBackground('#ffeaa7'); // Light orange background
+        
+        currentRow += visits.length + 2; // Move to next household (visits + household header + spacing)
+      }
+    });
+  }
+  
+  console.log(`🏠 Household visit reports generated for ${config.households.length} households`);
 }
