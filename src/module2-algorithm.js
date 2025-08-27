@@ -17,7 +17,7 @@
  * - Quality analysis for mixed frequency systems
  * FIXED SCORING ALGORITHM FOR v2.0
  * Addresses back-to-back visit issues and same deacon-household pairings
- */
+ **/
 
 function safeCreateSchedule(config) {
   // Check execution time limits
@@ -163,6 +163,79 @@ function generateVariableFrequencySchedule(config, startTime, maxExecutionTime) 
       }
       
       // ⭐ Factor 7: NEW - Encourage variety in high-frequency households
+      if (visit.frequency <= 2) {
+        // For high-frequency households, strongly prefer deacons who haven't visited recently
+        if (previousVisits === 0) {
+          score -= 100; // Bonus for never visiting this high-frequency household
+        }
+      }
+      
+      if (score < bestScore) {
+        bestScore = score;
+        bestDeacon = deaconIndex;
+      }
+    });
+    
+    // ⭐ FALLBACK SAFETY: If all deacons have very high scores, choose least bad option
+    if (bestDeacon === -1 || bestScore > 10000) {
+      console.warn(`⚠️ All deacons have high scores for ${visit.household} on week ${visit.week}, choosing least busy`);
+      bestDeacon = deaconWorkload.indexOf(Math.min(...deaconWorkload));
+    }
+    
+    // Assign the best deacon
+    const assignedDeacon = config.deacons[bestDeacon];
+    
+    // Calculate visit date
+    const visitDate = new Date(config.startDate);
+    visitDate.setDate(visitDate.getDate() + (visit.week - 1) * 7);
+    
+    // Create schedule entry
+    const scheduleEntry = {
+      cycle: Math.ceil(visit.week / (visit.frequency || config.defaultVisitFrequency)),
+      week: visit.week,
+      date: visitDate,
+      household: visit.household,
+      deacon: assignedDeacon,
+      deaconIndex: bestDeacon,
+      householdFrequency: visit.frequency,
+      isCustomFrequency: visit.isCustom
+    };
+    
+    schedule.push(scheduleEntry);
+    
+    // ⭐ UPDATE ENHANCED TRACKING
+    deaconWorkload[bestDeacon]++;
+    deaconLastAssignment[bestDeacon] = visit.week;
+    const pairKey = `${bestDeacon}-${visit.household}`;
+    deaconHouseholdHistory.set(pairKey, (deaconHouseholdHistory.get(pairKey) || 0) + 1);
+    deaconLastHouseholdVisit.set(pairKey, visit.week); // Track when this pair last occurred
+  });
+  
+  // Enhanced logging
+  console.log('📊 FINAL WORKLOAD DISTRIBUTION:');
+  config.deacons.forEach((deacon, index) => {
+    const workload = deaconWorkload[index];
+    const percentage = Math.round((workload / totalVisitsAcrossAllHouseholds) * 100);
+    console.log(`${deacon}: ${workload} visits (${percentage}%)`);
+  });
+  
+  // ⭐ NEW: Check for potential issues in the final schedule
+  validateScheduleQuality(schedule, config);
+  
+  logVariableFrequencyAnalysis(schedule, config);
+  
+  console.log(`✅ Enhanced variable frequency schedule generated: ${schedule.length} visits`);
+  return schedule;
+}
+
+function validateScheduleQuality(schedule, config) {
+  /**
+   * ⭐ NEW: Post-generation quality validation
+   */
+  console.log('\n🔍 === SCHEDULE QUALITY VALIDATION ===');
+  
+  const issues = [];
+  const warnings = [];
   
   // Check 1: Same deacon visiting same household too frequently
   const deaconHouseholdVisits = {};
@@ -580,5 +653,6 @@ function generateCleanDeaconReports(schedule, config) {
       }
     });
   }
+  
   console.log(`📋 Clean individual reports generated for ${config.deacons.length} deacons (v1.1 style)`);
 }
