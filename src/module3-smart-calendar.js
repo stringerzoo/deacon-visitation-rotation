@@ -742,8 +742,7 @@ function exportToGoogleCalendar() {
         eventEnd.setHours(15, 0, 0, 0); // 3:00 PM default (1 hour duration)
         
         const event = calendar.createEvent(eventTitle, eventStart, eventEnd, {
-          description: eventDescription,
-          location: address !== 'Address not available' ? address : ''
+          description: eventDescription
         });
         
         eventsCreated++;
