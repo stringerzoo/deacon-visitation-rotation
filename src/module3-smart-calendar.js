@@ -668,7 +668,7 @@ function exportToGoogleCalendar() {
     scheduleData.slice(0, maxEvents).forEach((visit, index) => {
       try {
         // Enhanced event title format with test mode indicator
-        let eventTitle = `${visit.deacon} visits ${visit.household}`;
+        let eventTitle = `${visit.deacon} ➜ ${visit.household}`;
         if (testMode) {
           eventTitle = `TEST: ${eventTitle}`;
         }
@@ -708,7 +708,9 @@ function exportToGoogleCalendar() {
         }
         
         // Build enhanced event description with v2.0 frequency information
-        let eventDescription = `Household: ${visit.household}\n`;
+        let eventDescription = `Visit Notes: ${notesLink}\n\n`;
+
+        eventDescription += `Household: ${visit.household}\n`;
         
         // Add frequency information for v2.0
         if (config.hasCustomFrequencies) {
@@ -725,7 +727,6 @@ function exportToGoogleCalendar() {
         eventDescription += `Contact Information:\n`;
         eventDescription += `Phone: ${phone}\n`;
         eventDescription += `Address: ${address}\n\n`;
-        eventDescription += `Visit Notes: ${notesLink}\n\n`;
         eventDescription += `Instructions:\n`;
         eventDescription += config.calendarInstructions || 'Please call to confirm visit time. Contact family 1-2 days before scheduled date to arrange convenient time.';
         
