@@ -782,19 +782,24 @@ function exportToGoogleCalendar() {
 }
 
 function getScheduleFromSheet() {
-  /**
-   * v2.0 COMPATIBLE: Reads schedule data from spreadsheet in object format
-   */
   const sheet = SpreadsheetApp.getActiveSheet();
   
-  // Read the schedule data from columns A-E
   const data = sheet.getRange('A2:E1000').getValues()
-    .filter(row => row[0] !== '' && row[0] != null); // Filter out empty rows
+    .filter(row => {
+      return row[0] !== '' && row[0] != null &&  // Column A: Cycle
+             row[1] !== '' && row[1] != null &&  // Column B: Week  
+             row[3] !== '' && row[3] != null &&  // Column D: Household
+             row[4] !== '' && row[4] != null &&  // Column E: Deacon
+             typeof row[0] === 'number' &&       // Cycle should be a number
+             typeof row[1] === 'number';         // Week should be a number
+    });
+  
+  console.log(`Reading ${data.length} valid schedule entries from spreadsheet`);
   
   return data.map(row => ({
     cycle: row[0],
     week: row[1],
-    date: row[2] ? new Date(row[2]) : new Date(), // Handle date parsing
+    date: row[2] ? new Date(row[2]) : new Date(), // Handle date parsing with fallback
     household: row[3],
     deacon: row[4]
   }));
