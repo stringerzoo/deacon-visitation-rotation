@@ -984,15 +984,14 @@ function createWeeklyNotificationTrigger() {
 * Calendar Week Calculations Functions
 */
 
-function getVisitsForCalendarWeeks(weeksAhead = 2, includeCurrentWeek = false) {
+function getVisitsForCalendarWeeks(weeksAhead = 2, includeCurrentWeek = true) {
   /**
-   * CORRECTED: Get visits for proper calendar weeks starting from NEXT Sunday
-   * For 2-week lookahead: Next Sunday through Saturday 2 weeks later
+   * v2.0 CORRECTED: Get visits for calendar weeks with proper date handling
+   * Default: Include remainder of current week + next week (true 2-week lookahead)
    */
   try {
-    const sheet = SpreadsheetApp.getActiveSheet();
-    const config = getConfiguration(sheet);
-    const scheduleData = getScheduleFromSheet(sheet);
+    const config = getConfiguration();  // FIXED: No sheet parameter
+    const scheduleData = getScheduleFromSheet();  // FIXED: No sheet parameter
     
     if (scheduleData.length === 0) {
       console.log('No schedule data found');
@@ -1000,31 +999,40 @@ function getVisitsForCalendarWeeks(weeksAhead = 2, includeCurrentWeek = false) {
     }
     
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const currentDayOfWeek = today.getDay(); // 0=Sunday, 6=Saturday
     
-    // ALWAYS start from next Sunday for the lookahead
-    const nextSunday = new Date(today);
-    if (currentDayOfWeek === 0) {
-      // If today is Sunday, next Sunday is 7 days away
-      nextSunday.setDate(today.getDate() + 7);
+    // Determine start date based on includeCurrentWeek parameter
+    let startDate;
+    if (includeCurrentWeek) {
+      // Start from today (include remainder of current week)
+      startDate = new Date(today);
     } else {
-      // Otherwise, next Sunday is (7 - currentDayOfWeek) days away
-      nextSunday.setDate(today.getDate() + (7 - currentDayOfWeek));
+      // Start from next Sunday
+      const nextSunday = new Date(today);
+      if (currentDayOfWeek === 0) {
+        // If today is Sunday, next Sunday is 7 days away
+        nextSunday.setDate(today.getDate() + 7);
+      } else {
+        // Otherwise, next Sunday is (7 - currentDayOfWeek) days away
+        nextSunday.setDate(today.getDate() + (7 - currentDayOfWeek));
+      }
+      startDate = nextSunday;
     }
-    nextSunday.setHours(0, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
     
-    // End date: Saturday of the final week
-    const endDate = new Date(nextSunday);
-    endDate.setDate(nextSunday.getDate() + (7 * weeksAhead) - 1); // -1 to end on Saturday
+    // End date: 2 weeks from start (14 days)
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 13); // 14 days total (start + 13 more)
     endDate.setHours(23, 59, 59, 999);
     
     // Debug logging
-    console.log(`📅 Calendar Week Lookahead: ${nextSunday.toLocaleDateString()} to ${endDate.toLocaleDateString()}`);
+    console.log(`📅 Calendar Week Lookahead: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`);
     console.log(`Today: ${today.toLocaleDateString('en-US', { weekday: 'long' })} (day ${currentDayOfWeek})`);
-    console.log(`Next Sunday: ${nextSunday.toLocaleDateString('en-US', { weekday: 'long' })}`);
-    console.log(`Looking ahead ${weeksAhead} complete calendar weeks`);
+    console.log(`Include current week: ${includeCurrentWeek}`);
+    console.log(`Looking ahead ${weeksAhead} weeks from ${startDate.toLocaleDateString()}`);
     
-    // Filter visits within the calendar week range
+    // Filter visits within the date range
     const upcomingVisits = scheduleData.filter(visit => {
       if (!visit.date || !(visit.date instanceof Date)) {
         console.warn(`Invalid date for visit: ${visit.household} - ${visit.date}`);
@@ -1034,7 +1042,7 @@ function getVisitsForCalendarWeeks(weeksAhead = 2, includeCurrentWeek = false) {
       const visitDate = new Date(visit.date);
       visitDate.setHours(0, 0, 0, 0);
       
-      const inRange = visitDate >= nextSunday && visitDate <= endDate;
+      const inRange = visitDate >= startDate && visitDate <= endDate;
       
       // Debug logging for troubleshooting
       console.log(`${inRange ? '✅ INCLUDED' : '❌ EXCLUDED'}: ${visitDate.toLocaleDateString()} - ${visit.deacon} → ${visit.household}`);
@@ -1045,7 +1053,7 @@ function getVisitsForCalendarWeeks(weeksAhead = 2, includeCurrentWeek = false) {
     // Sort by date
     upcomingVisits.sort((a, b) => new Date(a.date) - new Date(b.date));
     
-    // Enhance with contact information and calendar week context
+    // Enhance with contact information
     const enhancedVisits = upcomingVisits.map(visit => {
       const householdIndex = config.households.indexOf(visit.household);
       
@@ -1057,54 +1065,17 @@ function getVisitsForCalendarWeeks(weeksAhead = 2, includeCurrentWeek = false) {
         notesLink: householdIndex >= 0 ? config.notesLinks[householdIndex] : '',
         breezeShortLink: householdIndex >= 0 ? config.breezeShortLinks[householdIndex] : '',
         notesShortLink: householdIndex >= 0 ? config.notesShortLinks[householdIndex] : '',
-        calendarWeek: getCalendarWeekInfoFromNextSunday(visit.date, nextSunday)
+        calendarWeek: getCalendarWeekInfoFromNextSunday(visit.date, startDate)
       };
     });
     
-    console.log(`Found ${enhancedVisits.length} visits in 2-week calendar range`);
+    console.log(`Found ${enhancedVisits.length} visits in ${weeksAhead}-week range`);
     return enhancedVisits;
     
   } catch (error) {
     console.error('Error getting calendar week visits:', error);
     return [];
   }
-}
-
-function getCalendarWeekInfoFromNextSunday(visitDate, nextSunday) {
-  /**
-   * Get calendar week info relative to the next Sunday starting point
-   */
-  const visit = new Date(visitDate);
-  const startSunday = new Date(nextSunday);
-  
-  // Calculate which week this visit falls in relative to next Sunday
-  const daysDiff = Math.floor((visit - startSunday) / (24 * 60 * 60 * 1000));
-  const weekNumber = Math.floor(daysDiff / 7);
-  
-  let weekLabel;
-  if (weekNumber === 0) {
-    weekLabel = 'Week 1';
-  } else if (weekNumber === 1) {
-    weekLabel = 'Week 2';
-  } else if (weekNumber >= 2) {
-    weekLabel = `Week ${weekNumber + 1}`;
-  } else {
-    weekLabel = 'Before Range'; // Shouldn't happen
-  }
-  
-  // Calculate week boundaries
-  const weekStart = new Date(startSunday);
-  weekStart.setDate(startSunday.getDate() + (weekNumber * 7));
-  
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
-  
-  return {
-    weekLabel,
-    weekStart: weekStart,
-    weekEnd: weekEnd,
-    weekNumber: weekNumber + 1
-  };
 }
 
 function getCalendarWeekInfo(date) {
