@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.0] - 2025-01-01
+## [2.0.0] - 2025-12-31
 
 ### 🎯 Major Release: Variable Frequency Scheduling
 
