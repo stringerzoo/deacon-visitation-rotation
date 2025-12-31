@@ -44,7 +44,7 @@ function sendWeeklyVisitationChat() {
     const chatPrefix = currentTestMode ? '🧪 TEST: ' : '';
     
     // NEW: Get visits for remainder of current week + next complete week
-    const upcomingVisits = getVisitsForCalendarWeeks(2, false);
+    const upcomingVisits = getVisitsForCalendarWeeks(2, true);
     
     if (upcomingVisits.length === 0) {
       const message = `${chatPrefix}📅 **Weekly Visitation Update**\n\nNo visits scheduled for the next 2 weeks. All caught up! 🎉`;
@@ -1065,7 +1065,7 @@ function getVisitsForCalendarWeeks(weeksAhead = 2, includeCurrentWeek = true) {
         notesLink: householdIndex >= 0 ? config.notesLinks[householdIndex] : '',
         breezeShortLink: householdIndex >= 0 ? config.breezeShortLinks[householdIndex] : '',
         notesShortLink: householdIndex >= 0 ? config.notesShortLinks[householdIndex] : '',
-        calendarWeek: getCalendarWeekInfoFromNextSunday(visit.date, startDate)
+        calendarWeek: getCalendarWeekInfo(visit.date)
       };
     });
     
