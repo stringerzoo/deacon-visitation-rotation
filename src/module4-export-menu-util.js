@@ -882,7 +882,7 @@ function archiveCurrentSchedule() {
 
 function generateQRCode(url, label) {
   /**
-   * Generates a QR code image for a given URL using Google Charts API
+   * Generates a QR code image for a given URL using QR Server API
    * Returns a Blob that can be saved as a PNG file
    * 
    * @param {string} url - The URL to encode in the QR code
@@ -890,10 +890,10 @@ function generateQRCode(url, label) {
    * @returns {Blob} PNG image blob of the QR code
    */
   try {
-    // Google Charts QR code API
+    // Using QR Server API (free, no key required)
     // Size: 500x500 pixels for good print quality
-    // Error correction: H (high, 30% recovery capability)
-    const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chs=500x500&chl=${encodeURIComponent(url)}&choe=UTF-8&chld=H`;
+    // Format: PNG
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(url)}&format=png`;
     
     // Fetch the QR code image
     const response = UrlFetchApp.fetch(qrCodeUrl);
