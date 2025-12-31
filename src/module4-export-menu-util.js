@@ -753,64 +753,45 @@ function archiveCurrentSchedule() {
     const newSheet = newSpreadsheet.getSheets()[0];
     newSheet.setName('Visitation Schedule');
     
-    // Find actual last row with content (not 1000)
-    let actualLastRow = 1;
-    for (let col = 1; col <= 9; col++) {
-      const lastRowInCol = sourceSheet.getRange(1, col, sourceSheet.getMaxRows(), 1)
-        .getValues()
-        .reduce((max, val, idx) => val[0] !== '' ? idx + 1 : max, 0);
-      actualLastRow = Math.max(actualLastRow, lastRowInCol);
-    }
-    
-    console.log(`Actual last row with content: ${actualLastRow}`);
+    // Use getLastRow() which is much faster than our manual calculation
+    const lastRow = sourceSheet.getLastRow();
+    console.log(`Copying ${lastRow} rows`);
     
     // Get data from columns A-I
-    const sourceRange = sourceSheet.getRange(1, 1, actualLastRow, 9); // A1:I[actualLastRow]
+    const sourceRange = sourceSheet.getRange(1, 1, lastRow, 9); // A1:I[lastRow]
     
     // Copy values
     const values = sourceRange.getValues();
-    newSheet.getRange(1, 1, actualLastRow, 9).setValues(values);
+    newSheet.getRange(1, 1, lastRow, 9).setValues(values);
     
-    // Copy formatting (backgrounds, fonts, borders, etc.)
-    const backgrounds = sourceRange.getBackgrounds();
-    newSheet.getRange(1, 1, actualLastRow, 9).setBackgrounds(backgrounds);
-    
-    const fontColors = sourceRange.getFontColors();
-    newSheet.getRange(1, 1, actualLastRow, 9).setFontColors(fontColors);
-    
-    const fontWeights = sourceRange.getFontWeights();
-    newSheet.getRange(1, 1, actualLastRow, 9).setFontWeights(fontWeights);
-    
-    const fontSizes = sourceRange.getFontSizes();
-    newSheet.getRange(1, 1, actualLastRow, 9).setFontSizes(fontSizes);
-    
-    const horizontalAlignments = sourceRange.getHorizontalAlignments();
-    newSheet.getRange(1, 1, actualLastRow, 9).setHorizontalAlignments(horizontalAlignments);
+    // Copy formatting - do this in fewer calls
+    newSheet.getRange(1, 1, lastRow, 9)
+      .setBackgrounds(sourceRange.getBackgrounds())
+      .setFontColors(sourceRange.getFontColors())
+      .setFontWeights(sourceRange.getFontWeights())
+      .setFontSizes(sourceRange.getFontSizes())
+      .setHorizontalAlignments(sourceRange.getHorizontalAlignments());
     
     // Copy column widths
     for (let col = 1; col <= 9; col++) {
       newSheet.setColumnWidth(col, sourceSheet.getColumnWidth(col));
     }
     
-    // Manually recreate known merged cells based on typical structure
+    // Recreate merged cells based on known structure
     // Main schedule header (A1:E1)
-    if (sourceSheet.getRange('A1').isPartOfMerge()) {
-      newSheet.getRange('A1:E1').merge();
-    }
+    newSheet.getRange('A1:E1').merge();
     
-    // Individual deacon reports header (G1:I1)
-    if (sourceSheet.getRange('G1').isPartOfMerge()) {
-      newSheet.getRange('G1:I1').merge();
-    }
+    // Individual deacon reports header (G1:I1)  
+    newSheet.getRange('G1:I1').merge();
     
     // Find household reports header by looking for the characteristic text
-    for (let row = 2; row <= actualLastRow; row++) {
-      const cellValue = values[row - 1][6]; // Column G (index 6)
+    for (let row = 0; row < values.length; row++) {
+      const cellValue = values[row][6]; // Column G (index 6)
       if (cellValue && cellValue.toString().includes('HOUSEHOLD VISIT SCHEDULE')) {
         // Merge G:I for household header
-        newSheet.getRange(row, 7, 1, 3).merge(); // G:I
-        console.log(`Merged household header at row ${row}`);
-        break; // Only one household header
+        newSheet.getRange(row + 1, 7, 1, 3).merge(); // G:I (row+1 because arrays are 0-indexed)
+        console.log(`Merged household header at row ${row + 1}`);
+        break;
       }
     }
     
