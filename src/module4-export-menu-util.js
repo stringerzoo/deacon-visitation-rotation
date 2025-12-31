@@ -781,6 +781,21 @@ function archiveCurrentSchedule() {
     const horizontalAlignments = sourceRange.getHorizontalAlignments();
     newSheet.getRange(1, 1, lastRow, 9).setHorizontalAlignments(horizontalAlignments);
     
+    // Copy merged cells from source
+    const mergedRanges = sourceRange.getMergedRanges();
+    mergedRanges.forEach(mergedRange => {
+      const row = mergedRange.getRow();
+      const col = mergedRange.getColumn();
+      const numRows = mergedRange.getNumRows();
+      const numCols = mergedRange.getNumColumns();
+      
+      // Only copy if the merge is within columns A-I
+      if (col >= 1 && col <= 9) {
+        const destRange = newSheet.getRange(row, col, numRows, Math.min(numCols, 10 - col));
+        destRange.merge();
+      }
+    });
+    
     // Copy column widths
     for (let col = 1; col <= 9; col++) {
       newSheet.setColumnWidth(col, sourceSheet.getColumnWidth(col));
