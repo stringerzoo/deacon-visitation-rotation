@@ -709,3 +709,76 @@ function validateSetupOnly() {
     );
   }
 }
+
+function archiveCurrentSchedule() {
+  /**
+   * Archives the current schedule by copying it to a new sheet with timestamp
+   */
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sourceSheet = ss.getActiveSheet();
+    
+    // Get configuration to include in archive name
+    const config = getConfiguration();
+    const startDate = new Date(config.startDate);
+    const dateStr = Utilities.formatDate(startDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    
+    // Create archive sheet name with timestamp
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd_HHmm');
+    const archiveName = `Archive_${dateStr}_${timestamp}`;
+    
+    // Check if schedule exists
+    const scheduleData = getScheduleFromSheet();
+    if (scheduleData.length === 0) {
+      SpreadsheetApp.getUi().alert(
+        'No Schedule to Archive',
+        'Please generate a schedule first before archiving.',
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+      return;
+    }
+    
+    // Copy the current sheet
+    const archivedSheet = sourceSheet.copyTo(ss);
+    archivedSheet.setName(archiveName);
+    
+    // Move archive sheet to end
+    ss.moveActiveSheet(ss.getNumSheets());
+    
+    // Add archive note to the archived sheet
+    const noteCell = archivedSheet.getRange('A1');
+    const existingNote = noteCell.getNote();
+    const archiveNote = `Archived on: ${new Date().toLocaleString()}\n` +
+                       `Start date: ${startDate.toLocaleDateString()}\n` +
+                       `Frequency: ${config.defaultVisitFrequency || config.visitFrequency} weeks\n` +
+                       `${config.hasCustomFrequencies ? 'Variable frequency schedule' : 'Uniform frequency schedule'}\n` +
+                       `Deacons: ${config.deacons.length}, Households: ${config.households.length}\n` +
+                       `Total visits: ${scheduleData.length}`;
+    noteCell.setNote(existingNote ? existingNote + '\n\n' + archiveNote : archiveNote);
+    
+    // Return to original sheet
+    ss.setActiveSheet(sourceSheet);
+    
+    // Show success message
+    SpreadsheetApp.getUi().alert(
+      'Schedule Archived',
+      `✅ Schedule archived successfully!\n\n` +
+      `📋 Archive name: "${archiveName}"\n` +
+      `📅 Start date: ${startDate.toLocaleDateString()}\n` +
+      `📊 Total visits: ${scheduleData.length}\n` +
+      `${config.hasCustomFrequencies ? '🆕 Variable frequency schedule' : '📋 Uniform frequency schedule'}\n\n` +
+      `The archived sheet has been created and moved to the end of your spreadsheet.`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    
+    console.log(`Schedule archived as: ${archiveName}`);
+    
+  } catch (error) {
+    console.error('Archive failed:', error);
+    SpreadsheetApp.getUi().alert(
+      'Archive Failed',
+      `❌ Could not archive schedule:\n\n${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
