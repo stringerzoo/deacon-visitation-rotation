@@ -753,72 +753,64 @@ function archiveCurrentSchedule() {
     const newSheet = newSpreadsheet.getSheets()[0];
     newSheet.setName('Visitation Schedule');
     
-    // Determine the range to copy (columns A-I only)
-    const lastRow = Math.max(
-      sourceSheet.getLastRow(),
-      1000 // Ensure we get all data including reports
-    );
+    // Find actual last row with content (not 1000)
+    let actualLastRow = 1;
+    for (let col = 1; col <= 9; col++) {
+      const lastRowInCol = sourceSheet.getRange(1, col, sourceSheet.getMaxRows(), 1)
+        .getValues()
+        .reduce((max, val, idx) => val[0] !== '' ? idx + 1 : max, 0);
+      actualLastRow = Math.max(actualLastRow, lastRowInCol);
+    }
+    
+    console.log(`Actual last row with content: ${actualLastRow}`);
     
     // Get data from columns A-I
-    const sourceRange = sourceSheet.getRange(1, 1, lastRow, 9); // A1:I[lastRow]
+    const sourceRange = sourceSheet.getRange(1, 1, actualLastRow, 9); // A1:I[actualLastRow]
     
     // Copy values
     const values = sourceRange.getValues();
-    newSheet.getRange(1, 1, lastRow, 9).setValues(values);
+    newSheet.getRange(1, 1, actualLastRow, 9).setValues(values);
     
     // Copy formatting (backgrounds, fonts, borders, etc.)
     const backgrounds = sourceRange.getBackgrounds();
-    newSheet.getRange(1, 1, lastRow, 9).setBackgrounds(backgrounds);
+    newSheet.getRange(1, 1, actualLastRow, 9).setBackgrounds(backgrounds);
     
     const fontColors = sourceRange.getFontColors();
-    newSheet.getRange(1, 1, lastRow, 9).setFontColors(fontColors);
+    newSheet.getRange(1, 1, actualLastRow, 9).setFontColors(fontColors);
     
     const fontWeights = sourceRange.getFontWeights();
-    newSheet.getRange(1, 1, lastRow, 9).setFontWeights(fontWeights);
+    newSheet.getRange(1, 1, actualLastRow, 9).setFontWeights(fontWeights);
     
     const fontSizes = sourceRange.getFontSizes();
-    newSheet.getRange(1, 1, lastRow, 9).setFontSizes(fontSizes);
+    newSheet.getRange(1, 1, actualLastRow, 9).setFontSizes(fontSizes);
     
     const horizontalAlignments = sourceRange.getHorizontalAlignments();
-    newSheet.getRange(1, 1, lastRow, 9).setHorizontalAlignments(horizontalAlignments);
+    newSheet.getRange(1, 1, actualLastRow, 9).setHorizontalAlignments(horizontalAlignments);
     
     // Copy column widths
     for (let col = 1; col <= 9; col++) {
       newSheet.setColumnWidth(col, sourceSheet.getColumnWidth(col));
     }
     
-    // Find and recreate merged cells manually
-    // Check specific known merges in columns A-I
-    for (let row = 1; row <= lastRow; row++) {
-      // Check if cells in row are part of a merge
-      const cellA = sourceSheet.getRange(row, 1); // Column A
-      const cellG = sourceSheet.getRange(row, 7); // Column G
-      
-      // Check main schedule header (typically A1:E1)
-      if (row === 1 && cellA.isPartOfMerge()) {
-        const mergedRange = cellA.getMergedRanges()[0];
-        if (mergedRange) {
-          const startCol = mergedRange.getColumn();
-          const endCol = startCol + mergedRange.getNumColumns() - 1;
-          if (endCol <= 9) { // Only if within A-I
-            newSheet.getRange(row, startCol, 1, mergedRange.getNumColumns()).merge();
-          }
-        }
-      }
-      
-      // Check for household report header (typically G:I merge)
-      if (cellG.isPartOfMerge()) {
-        const mergedRange = cellG.getMergedRanges()[0];
-        if (mergedRange) {
-          const startCol = mergedRange.getColumn();
-          const numCols = mergedRange.getNumColumns();
-          const endCol = startCol + numCols - 1;
-          
-          // Only merge if within columns A-I
-          if (startCol >= 1 && startCol <= 9 && endCol <= 9) {
-            newSheet.getRange(row, startCol, 1, numCols).merge();
-          }
-        }
+    // Manually recreate known merged cells based on typical structure
+    // Main schedule header (A1:E1)
+    if (sourceSheet.getRange('A1').isPartOfMerge()) {
+      newSheet.getRange('A1:E1').merge();
+    }
+    
+    // Individual deacon reports header (G1:I1)
+    if (sourceSheet.getRange('G1').isPartOfMerge()) {
+      newSheet.getRange('G1:I1').merge();
+    }
+    
+    // Find household reports header by looking for the characteristic text
+    for (let row = 2; row <= actualLastRow; row++) {
+      const cellValue = values[row - 1][6]; // Column G (index 6)
+      if (cellValue && cellValue.toString().includes('HOUSEHOLD VISIT SCHEDULE')) {
+        // Merge G:I for household header
+        newSheet.getRange(row, 7, 1, 3).merge(); // G:I
+        console.log(`Merged household header at row ${row}`);
+        break; // Only one household header
       }
     }
     
