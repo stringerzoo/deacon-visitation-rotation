@@ -96,44 +96,59 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
     day: 'numeric' 
   });
   
-  // Calculate next Sunday
-  const currentDayOfWeek = today.getDay();
-  const nextSunday = new Date(today);
-  if (currentDayOfWeek === 0) {
-    nextSunday.setDate(today.getDate() + 7);
-  } else {
-    nextSunday.setDate(today.getDate() + (7 - currentDayOfWeek));
+function buildWeeklyCalendarSummary(visits, isTestMode = false) {
+  /**
+   * v2.0 CORRECTED: Use actual visit dates instead of recalculating from next Sunday
+   */
+  const chatPrefix = isTestMode ? '🧪 TEST: ' : '';
+  const today = new Date();
+  const todayFormatted = today.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  
+  // Don't recalculate - use the visits we already have
+  // Split visits into first half and second half of the 2-week period
+  if (visits.length === 0) {
+    return `${chatPrefix}📅 *Weekly Visitation Update*\n\nNo visits scheduled for the next 2 weeks.`;
   }
-  nextSunday.setHours(0, 0, 0, 0);
   
-  // Calculate week boundaries
-  const week1Start = new Date(nextSunday);
-  const week1End = new Date(nextSunday);
-  week1End.setDate(nextSunday.getDate() + 6);
+  // Get date range from actual visits
+  const firstVisitDate = new Date(visits[0].date);
+  const lastVisitDate = new Date(visits[visits.length - 1].date);
   
-  const week2Start = new Date(nextSunday);
-  week2Start.setDate(nextSunday.getDate() + 7);
-  const week2End = new Date(nextSunday);
-  week2End.setDate(nextSunday.getDate() + 13);
+  // Find the midpoint (7 days from first visit)
+  const midpoint = new Date(firstVisitDate);
+  midpoint.setDate(firstVisitDate.getDate() + 7);
   
-  // Group visits by week
+  // Split visits at the midpoint
   const week1Visits = visits.filter(visit => {
     const visitDate = new Date(visit.date);
-    visitDate.setHours(0, 0, 0, 0);
-    return visitDate >= week1Start && visitDate <= week1End;
+    return visitDate < midpoint;
   });
   
   const week2Visits = visits.filter(visit => {
     const visitDate = new Date(visit.date);
-    visitDate.setHours(0, 0, 0, 0);
-    return visitDate >= week2Start && visitDate <= week2End;
+    return visitDate >= midpoint;
   });
+  
+  // Calculate week boundaries for display
+  const week1Start = firstVisitDate;
+  const week1End = week1Visits.length > 0 
+    ? new Date(week1Visits[week1Visits.length - 1].date)
+    : new Date(midpoint.getTime() - 24 * 60 * 60 * 1000);
+  
+  const week2Start = week2Visits.length > 0
+    ? new Date(week2Visits[0].date)
+    : midpoint;
+  const week2End = lastVisitDate;
   
   // Build the message with Google Chat formatting
   let message = `${chatPrefix}📅 *Weekly Visitation Update*\n`;
   message += `Generated: ${todayFormatted}\n`;
-  message += `Coverage: 2 weeks starting ${nextSunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}\n\n`;
-  
+  message += `Coverage: ${firstVisitDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastVisitDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}\n\n`;
+    
   // Week 1 Section
   message += `*Week of ${week1Start.toLocaleDateString('en-US', { 
     month: 'short', 
