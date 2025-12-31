@@ -712,20 +712,24 @@ function validateSetupOnly() {
 
 function archiveCurrentSchedule() {
   /**
-   * Archives the current schedule by copying it to a new sheet with timestamp
+   * Archives the current schedule by creating a NEW standalone spreadsheet
+   * in the same Drive folder containing only columns A-I (schedule and reports)
+   * Optionally updates K25 with the new archive URL
    */
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sourceSheet = ss.getActiveSheet();
+    const sourceFile = DriveApp.getFileById(ss.getId());
+    const parentFolder = sourceFile.getParents().next(); // Get the folder containing this spreadsheet
     
     // Get configuration to include in archive name
     const config = getConfiguration();
     const startDate = new Date(config.startDate);
     const dateStr = Utilities.formatDate(startDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
     
-    // Create archive sheet name with timestamp
+    // Create archive file name with timestamp
     const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd_HHmm');
-    const archiveName = `Archive_${dateStr}_${timestamp}`;
+    const archiveName = `Visitation Schedule - ${dateStr}`;
     
     // Check if schedule exists
     const scheduleData = getScheduleFromSheet();
@@ -738,40 +742,97 @@ function archiveCurrentSchedule() {
       return;
     }
     
-    // Copy the current sheet
-    const archivedSheet = sourceSheet.copyTo(ss);
-    archivedSheet.setName(archiveName);
+    // Create new spreadsheet in the same folder
+    const newSpreadsheet = SpreadsheetApp.create(archiveName);
+    const newFile = DriveApp.getFileById(newSpreadsheet.getId());
     
-    // Move archive sheet to end
-    ss.moveActiveSheet(ss.getNumSheets());
+    // Move to the same folder as the source
+    parentFolder.addFile(newFile);
+    DriveApp.getRootFolder().removeFile(newFile); // Remove from root
     
-    // Add archive note to the archived sheet
-    const noteCell = archivedSheet.getRange('A1');
-    const existingNote = noteCell.getNote();
-    const archiveNote = `Archived on: ${new Date().toLocaleString()}\n` +
-                       `Start date: ${startDate.toLocaleDateString()}\n` +
-                       `Frequency: ${config.defaultVisitFrequency || config.visitFrequency} weeks\n` +
-                       `${config.hasCustomFrequencies ? 'Variable frequency schedule' : 'Uniform frequency schedule'}\n` +
-                       `Deacons: ${config.deacons.length}, Households: ${config.households.length}\n` +
-                       `Total visits: ${scheduleData.length}`;
-    noteCell.setNote(existingNote ? existingNote + '\n\n' + archiveNote : archiveNote);
+    const newSheet = newSpreadsheet.getSheets()[0];
+    newSheet.setName('Visitation Schedule');
     
-    // Return to original sheet
-    ss.setActiveSheet(sourceSheet);
-    
-    // Show success message
-    SpreadsheetApp.getUi().alert(
-      'Schedule Archived',
-      `✅ Schedule archived successfully!\n\n` +
-      `📋 Archive name: "${archiveName}"\n` +
-      `📅 Start date: ${startDate.toLocaleDateString()}\n` +
-      `📊 Total visits: ${scheduleData.length}\n` +
-      `${config.hasCustomFrequencies ? '🆕 Variable frequency schedule' : '📋 Uniform frequency schedule'}\n\n` +
-      `The archived sheet has been created and moved to the end of your spreadsheet.`,
-      SpreadsheetApp.getUi().ButtonSet.OK
+    // Determine the range to copy (columns A-I only)
+    const lastRow = Math.max(
+      sourceSheet.getLastRow(),
+      1000 // Ensure we get all data including reports
     );
     
-    console.log(`Schedule archived as: ${archiveName}`);
+    // Copy columns A-I (9 columns) with all formatting
+    const rangeToCopy = sourceSheet.getRange(1, 1, lastRow, 9); // A1:I[lastRow]
+    const destinationRange = newSheet.getRange(1, 1, lastRow, 9);
+    
+    // Copy values, formats, and formulas
+    rangeToCopy.copyTo(destinationRange, SpreadsheetApp.CopyPasteType.PASTE_NORMAL, false);
+    
+    // Copy column widths
+    for (let col = 1; col <= 9; col++) {
+      newSheet.setColumnWidth(col, sourceSheet.getColumnWidth(col));
+    }
+    
+    // Add archive note to cell A1
+    const noteCell = newSheet.getRange('A1');
+    const archiveNote = `Generated: ${new Date().toLocaleString()}\n` +
+                       `Period: ${startDate.toLocaleDateString()} - ${config.numWeeks} weeks\n` +
+                       `Frequency: ${config.defaultVisitFrequency || config.visitFrequency} weeks${config.hasCustomFrequencies ? ' (with custom frequencies)' : ''}\n` +
+                       `Deacons: ${config.deacons.length}, Households: ${config.households.length}\n` +
+                       `Total visits: ${scheduleData.length}`;
+    noteCell.setNote(archiveNote);
+    
+    // Protect the entire spreadsheet to prevent accidental edits
+    const protection = newSheet.protect().setDescription('Archived schedule - read only');
+    protection.setWarningOnly(true); // Allow edits with warning
+    
+    // Get the URL for the new spreadsheet
+    const archiveUrl = newSpreadsheet.getUrl();
+    
+    // Ask user if they want to update K25
+    const ui = SpreadsheetApp.getUi();
+    const updateK25Response = ui.alert(
+      'Update Schedule Summary URL?',
+      `✅ Schedule archived successfully!\n\n` +
+      `📋 File name: "${archiveName}"\n` +
+      `📁 Location: Same folder as this spreadsheet\n` +
+      `📅 Start date: ${startDate.toLocaleDateString()}\n` +
+      `📊 Total visits: ${scheduleData.length}\n\n` +
+      `Do you want to update K25 with the new Schedule Summary URL?\n` +
+      `(This URL is used in notification messages)`,
+      ui.ButtonSet.YES_NO
+    );
+    
+    let finalMessage = '';
+    
+    if (updateK25Response === ui.Button.YES) {
+      // Update K25 with the new URL
+      sourceSheet.getRange('K25').setValue(archiveUrl);
+      
+      finalMessage = `✅ Schedule Summary URL Updated!\n\n` +
+                    `📎 K25 now points to: "${archiveName}"\n\n` +
+                    `The new archive URL has been saved to K25.\n` +
+                    `Notification messages will now reference this schedule.`;
+      
+      console.log(`K25 updated with archive URL: ${archiveUrl}`);
+      
+    } else {
+      // User declined update
+      const currentK25 = sourceSheet.getRange('K25').getValue();
+      const k25Status = currentK25 ? `Current K25: ${currentK25}` : 'K25 is currently empty';
+      
+      finalMessage = `⚠️ K25 Not Updated\n\n` +
+                    `${k25Status}\n\n` +
+                    `📎 New archive URL:\n${archiveUrl}\n\n` +
+                    `Note: K25 may point to an old version of the Schedule Summary.\n` +
+                    `You can manually update K25 if needed.`;
+      
+      console.log(`K25 not updated. Archive URL: ${archiveUrl}`);
+    }
+    
+    // Show final status
+    ui.alert('Archive Complete', finalMessage, ui.ButtonSet.OK);
+    
+    console.log(`Schedule archived as standalone file: ${archiveName}`);
+    console.log(`Location: ${parentFolder.getName()}`);
     
   } catch (error) {
     console.error('Archive failed:', error);
