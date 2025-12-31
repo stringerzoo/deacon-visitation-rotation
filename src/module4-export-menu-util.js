@@ -727,8 +727,7 @@ function archiveCurrentSchedule() {
     const startDate = new Date(config.startDate);
     const dateStr = Utilities.formatDate(startDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
     
-    // Create archive file name with timestamp
-    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd_HHmm');
+    // Create archive file name
     const archiveName = `Visitation Schedule - ${dateStr}`;
     
     // Check if schedule exists
@@ -759,12 +758,28 @@ function archiveCurrentSchedule() {
       1000 // Ensure we get all data including reports
     );
     
-    // Copy columns A-I (9 columns) with all formatting
-    const rangeToCopy = sourceSheet.getRange(1, 1, lastRow, 9); // A1:I[lastRow]
-    const destinationRange = newSheet.getRange(1, 1, lastRow, 9);
+    // Get data from columns A-I
+    const sourceRange = sourceSheet.getRange(1, 1, lastRow, 9); // A1:I[lastRow]
     
-    // Copy values, formats, and formulas
-    rangeToCopy.copyTo(destinationRange, SpreadsheetApp.CopyPasteType.PASTE_NORMAL, false);
+    // Copy values
+    const values = sourceRange.getValues();
+    newSheet.getRange(1, 1, lastRow, 9).setValues(values);
+    
+    // Copy formatting (backgrounds, fonts, borders, etc.)
+    const backgrounds = sourceRange.getBackgrounds();
+    newSheet.getRange(1, 1, lastRow, 9).setBackgrounds(backgrounds);
+    
+    const fontColors = sourceRange.getFontColors();
+    newSheet.getRange(1, 1, lastRow, 9).setFontColors(fontColors);
+    
+    const fontWeights = sourceRange.getFontWeights();
+    newSheet.getRange(1, 1, lastRow, 9).setFontWeights(fontWeights);
+    
+    const fontSizes = sourceRange.getFontSizes();
+    newSheet.getRange(1, 1, lastRow, 9).setFontSizes(fontSizes);
+    
+    const horizontalAlignments = sourceRange.getHorizontalAlignments();
+    newSheet.getRange(1, 1, lastRow, 9).setHorizontalAlignments(horizontalAlignments);
     
     // Copy column widths
     for (let col = 1; col <= 9; col++) {
