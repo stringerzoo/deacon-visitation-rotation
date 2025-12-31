@@ -401,7 +401,7 @@ Special thanks to Claude (Anthropic) for development partnership and the open-so
 
 ---
 
-[2.0.0]: https://github.com/yourusername/deacon-rotation/compare/v1.1.1...v2.0.0
+[2.0.0]: https://github.com/stringerzoo/deacon-rotation/compare/v1.1.1...v2.0.0
 
 ---
 
