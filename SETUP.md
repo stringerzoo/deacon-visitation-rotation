@@ -1,365 +1,564 @@
-# Setup Guide - Deacon Visitation Rotation System v1.1
+# Setup Guide - Deacon Visitation Rotation System v2.0
 
-> **Complete installation guide for the Deacon Visitation Rotation System with Google Chat notifications**
-
-**v1.1 Updates**: Menu cleanup with unused functions removed, streamlined interface, enhanced user documentation.
-
-## 📋 Prerequisites
-
-- **Google Workspace account** (free Gmail accounts work for basic features)
-- **Google Chat space** for deacon communication
-- **Breeze Church Management System** account (optional but recommended)
-- **Administrator access** to Google Sheets, Apps Script, and Calendar
-- **Basic familiarity** with Google Workspace tools
+> **Complete installation and configuration guide with variable frequency support**
 
 ---
 
-## 🏗️ Step 1: Apps Script Project Setup
+## 📋 Table of Contents
 
-### **Create New Apps Script Project**
-1. Go to [Google Apps Script](https://script.google.com)
-2. Click **"New Project"**
-3. Delete the default `Code.gs` file
-4. **Rename the project** to "Deacon Visitation Rotation v1.1"
-
-### **Create 5 Module Files**
-Create these files by clicking the `+` next to "Files":
-
-```
-📁 Your Apps Script Project
-├── Module1_Core_Config.gs           (~500 lines)
-├── Module2_Algorithm.gs             (~470 lines)
-├── Module3_Smart_Calendar.gs        (~200 lines)
-├── Module4_Export_Menu.gs           (~400 lines) ⭐ UPDATED v1.1
-└── Module5_Notifications.gs         (~1288 lines) ⭐ NEW IN v1.0
-```
-
-### **Copy Module Content**
-1. **Module1_Core_Config.gs**: Copy from `src/module1-core-config.js`
-2. **Module2_Algorithm.gs**: Copy from `src/module2-algorithm.js`
-3. **Module3_Smart_Calendar.gs**: Copy from `src/module3-smart-calendar.js`
-4. **Module4_Export_Menu.gs**: Copy from `src/module4-export-menu.js` ⭐ **Updated v1.1**
-5. **Module5_Notifications.gs**: Copy from `src/module5-notifications.js`
-
-### **v1.1 Menu Changes**
-**Removed Functions** (no longer in menu):
-- ❌ **"🗓️ Generate Next Year"** - Removed as unlikely to be used (assumes same roster)
-
-**Clarified Functions** (both kept, serve different purposes):
-- ✅ **"📋 Test Notification System"** - Tests webhook connectivity with simple message
-- ✅ **"🧪 Test Notification Now"** - Tests full notification system with actual weekly summary
-
-**Result**: Cleaner, more focused menu with only essential functions.
-
-### **Save and Authorize**
-1. **Save all modules** (Ctrl/Cmd + S)
-2. **Run any function** to trigger authorization
-3. **Grant required permissions** when prompted
-4. **Verify no syntax errors** in any module
+1. [Initial Setup](#initial-setup)
+2. [Basic Configuration](#basic-configuration)
+3. [Variable Frequency Setup (v2.0)](#variable-frequency-setup-v20)
+4. [Contact Information](#contact-information)
+5. [Integration Links](#integration-links)
+6. [Google Chat Notifications](#google-chat-notifications)
+7. [Calendar Setup](#calendar-setup)
+8. [Testing & Validation](#testing--validation)
+9. [Production Deployment](#production-deployment)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
-## 📊 Step 2: Enhanced Spreadsheet Setup (v1.1)
+## 🎯 Initial Setup
 
-### **Create New Google Spreadsheet**
-1. Go to [Google Sheets](https://sheets.google.com)
-2. Create a **new blank spreadsheet**
-3. **Rename** to "Deacon Visitation Rotation Generator"
-4. **Share** with appropriate deacon leadership
+### **Step 1: Create Your Spreadsheet**
 
-### **Connect Apps Script to Spreadsheet**
-1. In your spreadsheet: **Extensions → Apps Script**
-2. **Delete** the default Code.gs file
-3. **Copy the project URL** from your standalone Apps Script project
-4. Or copy all 5 modules into this bound project
-5. **Save** and authorize when prompted
+1. Open [Google Sheets](https://sheets.google.com)
+2. Create a new blank spreadsheet
+3. Name it: `Deacon Visitation Rotation Generator` (or similar)
+4. Note the folder location for later use
 
-### **Basic Data Entry**
-Add your church information:
+### **Step 2: Install Apps Script Code**
 
-#### **Column L: Deacon Names (starting L2)**
-```
-L2: John Smith
-L3: Jane Doe
-L4: Mike Johnson
-L5: Sarah Wilson
-(continue for all deacons)
-```
+1. In your spreadsheet, click **Extensions → Apps Script**
+2. Delete any default code in the editor
+3. Create 5 script files (File → New → Script file):
+   - `Module1_Core_Config.gs`
+   - `Module2_Algorithm.gs`
+   - `Module3_Smart_Calendar.gs`
+   - `Module4_Export_Menu.gs`
+   - `Module5_Notifications.gs`
 
-#### **Column M: Household Names (starting M2)**
-```
-M2: The Anderson Family
-M3: Bob & Carol Stevens
-M4: Margaret Thompson
-M5: The Rodriguez Family
-(continue for all households)
-```
-
-#### **Column N: Phone Numbers (starting N2)**
-```
-N2: (502) 555-0123
-N3: (502) 555-0456
-N4: (502) 555-0789
-(matching household order)
-```
-
-#### **Column O: Addresses (starting O2)**
-```
-O2: 123 Main St, Louisville, KY 40203
-O3: 456 Oak Ave, Louisville, KY 40205
-O4: 789 Elm Dr, Louisville, KY 40207
-(matching household order)
-```
+4. Copy the code from each module file into the corresponding script file
+5. Click **Save** (disk icon)
+6. Return to your spreadsheet
+7. Refresh the page - you should see a new menu: **🔄 Deacon Rotation**
 
 ---
 
-## 🔧 Step 3: Configuration Settings
+## ⚙️ Basic Configuration
 
-### **Column K: System Configuration**
-The system will create these automatically, but you can customize:
+### **Step 3: Column K - Core Settings**
 
-```
-K2:  Start Date (Monday of first week)
-K4:  Visit Frequency (2-4 weeks typical)
-K6:  Schedule Length (26-52 weeks)
-K8:  Calendar Instructions (customizable)
-K11: Notification Day (dropdown)
-K13: Notification Time (0-23 hour)
-```
+Configure these settings in Column K:
 
-### **Test vs Production Mode**
-The system **automatically detects** your environment:
+| Cell | Label | Cell | Your Value |
+|------|-------|------|------------|
+| K1 | Start Date | K2 | `01/06/2025` (Monday preferred) |
+| K3 | Visits every x weeks (1,2,3,4) **(default)** 🆕 | K4 | `2` (or 1, 3, 4) |
+| K5 | Length of schedule in weeks | K6 | `26` (or your preference) |
+| K7 | Calendar Event Instructions: | K8 | Custom instructions text |
 
-**🧪 Test Mode** (sample data patterns):
-- Creates "TEST - Deacon Visitation Schedule" calendar
-- Uses test chat webhook
-- Red calendar events with "🧪 TEST:" prefixes
+**Notes:**
+- **K2 (Start Date)**: Should be a **Monday** for best results
+- **K4 (Default Frequency)**: This is the default for ALL households unless overridden in Column T
+- **K3 label change**: Now says "**(default)**" to clarify this is the baseline frequency
+- **K6 (Schedule Length)**: Typically 26 or 52 weeks
+- **K8 (Instructions)**: Appears in every calendar event
 
-**✅ Production Mode** (real names):
-- Creates "Deacon Visitation Schedule" calendar  
-- Uses production chat webhook
-- Blue calendar events, clean formatting
+### **Step 4: Notification Settings**
 
----
+| Cell | Label | Cell | Your Value |
+|------|-------|------|------------|
+| K10 | Weekly Notification Day: | K11 | Select day from dropdown |
+| K12 | Weekly Notification Time (0-23): | K13 | `18` (for 6 PM) |
 
-## 🔔 Step 4: Google Chat Integration (v1.0)
+**Note**: Dropdowns are auto-created when you first run "Generate Schedule"
 
-### **Create Deacon Chat Space**
-1. Open **Google Chat**
-2. **Create new space** for deacon visitations
-3. **Add all deacons** who need notifications
-4. **Name the space** (e.g., "Deacon Visitations")
+### **Step 5: Resource URLs**
 
-### **Generate Webhook URL**
-1. In your chat space: **Click space name**
-2. **Manage webhooks → Add webhook**
-3. **Name**: "Visitation Notifications"
-4. **Copy the webhook URL** (starts with `https://chat.googleapis.com`)
+| Cell | Label | Cell | Your Value |
+|------|-------|------|------------|
+| K18 | Google Calendar URL | K19 | Auto-detected or paste URL |
+| K21 | Visitation Guide URL | K22 | Paste Google Doc URL |
+| K24 | Schedule Summary URL | K25 | Auto-populated by summary generator 🆕 |
 
-### **Configure in Spreadsheet**
-1. **📢 Notifications → 🔧 Configure Chat Webhook**
-2. **Paste webhook URL** when prompted
-3. **Test**: Use "📋 Test Notification System"
-
-### **Set Up Automation**
-1. Configure **K11** (notification day): Sunday-Saturday
-2. Configure **K13** (notification time): 0-23 (18 = 6 PM)
-3. **📢 Notifications → 🔄 Enable Weekly Auto-Send**
-4. **Verify**: Use "📅 Show Auto-Send Schedule"
+**Notes:**
+- **K19**: Auto-detected from your calendar, or manually paste
+- **K22**: Link to your visitation guide document
+- **K25**: Automatically updated when you run "Generate Schedule Summary Sheet" 🆕
 
 ---
 
-## 📅 Step 5: Calendar Integration
+## 🆕 Variable Frequency Setup (v2.0)
 
-### **Generate Initial Schedule**
-1. **📅 Generate Schedule** (creates the rotation)
-2. **Review** the schedule in columns A-E
-3. **Check** individual deacon reports in columns G-I
+### **Step 6: Column T - Custom Frequencies**
 
-### **Export to Google Calendar**
-1. **🚨 Full Calendar Regeneration** (first time only)
-2. **Grant calendar permissions** when prompted
-3. **Wait** for export completion (30-60 seconds)
-4. **Verify** calendar creation and events
+**This is the major new feature in v2.0!**
 
----
+#### **Column T Header**
+The system auto-creates Column T with:
+- **Header (T1)**: "Custom visit frequency (every 1, 2, 3, or 4 weeks)"
+- **Data validation**: Dropdown with values 1, 2, 3, 4
+- **Light yellow background**: Makes it visually distinct
 
-## 🔗 Step 6: Optional Integrations
+#### **How to Use Column T**
 
-### **Breeze CMS Integration**
-If you use Breeze Church Management:
-
-1. **Column P**: Add 8-digit Breeze profile numbers
+**Default Behavior (Leave Blank):**
 ```
-P2: 12345678
-P3: 23456789
-P4: 34567890
-(matching household order)
+Column M (Households)    Column T (Custom Frequency)
+Alan & Alexa Adams       [blank]              ← Uses K4 default (e.g., 2 weeks)
+Barbara & Bob Baker      [blank]              ← Uses K4 default
+Chloe & Charles Copper   [blank]              ← Uses K4 default
 ```
 
-2. **🔗 Generate Shortened URLs**: Creates mobile-friendly links
-3. **Verify**: Check columns R for shortened Breeze links
-
-### **Visit Notes Integration**  
-For Google Docs visit notes:
-
-1. **Create Google Docs** for each household
-2. **Column Q**: Add Google Docs URLs
+**Custom Frequencies (Override Default):**
 ```
-Q2: https://docs.google.com/document/d/abc123.../edit
-Q3: https://docs.google.com/document/d/def456.../edit
-(matching household order)
+Column M (Households)    Column T (Custom Frequency)
+Alan & Alexa Adams       [blank]              ← Uses default (2 weeks)
+Barbara & Bob Baker      4                    ← Monthly visits
+Chloe & Charles Copper   [blank]              ← Uses default (2 weeks)
+Delilah & David Danvers  3                    ← Every 3 weeks
+Emma & Edward Evans      1                    ← Weekly visits
 ```
 
-3. **🔗 Generate Shortened URLs**: Creates mobile-friendly links
-4. **Verify**: Check columns S for shortened notes links
+#### **When to Use Custom Frequencies**
 
-### **Resource Links (v1.0)**
-Configure additional resources in notifications:
+**Use 1 week (weekly) for:**
+- Households with urgent or intensive care needs
+- Recent hospital discharge or major life events
+- Temporary increased support situations
 
-- **K22**: Visitation Guide URL (procedures, guidelines)
-- **K25**: Schedule Summary URL (archived schedules)
+**Use 2 weeks (bi-weekly) - TYPICAL DEFAULT:**
+- Standard pastoral care schedule
+- Most healthy, stable households
+- Balanced contact frequency
 
----
+**Use 3 weeks for:**
+- Households preferring slightly less frequent contact
+- Transitioning from intensive to standard care
+- Balancing workload with other commitments
 
-## 🧪 Step 7: Testing & Validation
+**Use 4 weeks (monthly) for:**
+- Households preferring minimal contact
+- Very independent members
+- Geographical distance considerations
+- Seasonal schedules (snowbirds, travelers)
 
-### **System Health Check**
-1. **🔧 Validate Setup**: Comprehensive configuration check
-2. **🧪 Run Tests**: Complete system functionality test
-3. **Review results**: Address any reported issues
+#### **Important Notes**
 
-### **Notification Testing (v1.1 Menu)**
-The v1.1 menu includes two distinct notification test functions:
-
-1. **📋 Test Notification System**: 
-   - **Purpose**: Simple connectivity test with basic message
-   - **Use**: Verify chat webhook is working
-   - **Message**: "Notification System Test" with basic info
-
-2. **🧪 Test Notification Now**: 
-   - **Purpose**: Full notification content test with actual visit data
-   - **Use**: Test complete weekly summary format and content
-   - **Message**: Real 2-week visitation summary
-
-3. **💬 Send Weekly Chat Summary**: Manual summary (same content as automation)
-
-**Testing Sequence**:
-1. **📋 Test Notification System** first (verify connectivity)
-2. **🧪 Test Notification Now** second (verify full content)  
-3. **💬 Send Weekly Chat Summary** for manual sends
-4. **Verify delivery** in your chat space
-
-**Note**: The "🗓️ Generate Next Year" function was removed in v1.1 as it made unrealistic assumptions about roster continuity.
-
-### **Calendar Testing**
-1. **Check calendar events** have proper contact information
-2. **Test Breeze links** (if configured)
-3. **Test Notes links** (if configured)
-4. **Verify mobile compatibility**
+✅ **Column T is completely optional** - leave it empty for v1.1 behavior
+✅ **System auto-creates Column T** - no manual setup needed
+✅ **Dropdown validation prevents errors** - can't enter invalid values
+✅ **Visual indicators** - custom frequency households are highlighted in light yellow
+✅ **Backward compatible** - old spreadsheets work without any changes
 
 ---
 
-## 🚀 Step 8: Go Live
+## 👥 Step 7: Lists Setup
 
-### **Final Configuration Review**
-- ✅ **Deacon and household lists** complete and accurate
-- ✅ **Contact information** current and formatted properly
-- ✅ **Notification day/time** set appropriately
-- ✅ **Chat webhook** configured and tested
-- ✅ **Calendar integration** working properly
+### **Deacons List (Column L)**
+```
+L1: Deacons
+L2: Andy A
+L3: Brian B
+L4: Chris C
+L5: David D
+...
+```
 
-### **Enable Automation**
-1. **📢 Notifications → 🔄 Enable Weekly Auto-Send**
-2. **Confirm settings** in the dialog
-3. **📅 Show Auto-Send Schedule** to verify
+**Tips:**
+- Use full names or recognizable initials
+- Order doesn't matter - algorithm handles distribution
+- Can add/remove deacons anytime
 
-### **User Training**
-1. **Share the [User Guide](USER_GUIDE.md)** with deacon leadership
-2. **Demonstrate key functions**: manual notifications, calendar updates
-3. **Review troubleshooting**: common issues and solutions
-4. **Establish contacts**: Who to call for technical issues
+### **Households List (Column M)**
+```
+M1: Households
+M2: Alan & Alexa Adams
+M3: Barbara & Bob Baker
+M4: Chloe & Charles Copper
+M5: Delilah & David Danvers
+...
+```
 
----
-
-## 🔧 Troubleshooting Setup Issues
-
-### **Apps Script Authorization**
-**Issue**: "Permission denied" or authorization failures
-**Solution**:
-1. Go to **script.google.com**
-2. **Run any function** to retrigger authorization
-3. **Grant all permissions** (Calendar, Sheets, Properties)
-4. **Try the operation again**
-
-### **Menu Not Appearing**
-**Issue**: Custom menu doesn't show in spreadsheet
-**Solution**:
-1. **Refresh the spreadsheet** (F5 or Ctrl+R)
-2. **Wait 30-60 seconds** for menu to appear
-3. **Check Apps Script logs** for errors
-4. **Re-run onOpen function** manually if needed
-
-### **Notification Configuration**
-**Issue**: Webhook configuration failing
-**Solution**:
-1. **Verify webhook URL** contains `chat.googleapis.com`
-2. **Check chat space permissions** (bot can post)
-3. **Test with simple message** first
-4. **Review error messages** for specific guidance
-
-### **Calendar Permission Issues**
-**Issue**: Cannot create or access calendar
-**Solution**:
-1. **Google Apps Script permissions**: Ensure calendar access granted
-2. **Calendar sharing**: Verify calendar is accessible
-3. **API quotas**: Check for Google API rate limiting
-4. **Try manual calendar creation** first
+**Tips:**
+- Use consistent naming format
+- Include both names for couples
+- Match exactly with Breeze if using integration
 
 ---
 
-## 📋 Post-Setup Checklist
+## 📞 Step 8: Contact Information
 
-### **Week 1: Initial Deployment**
-- [ ] System generates schedules successfully
-- [ ] Calendar export works properly  
-- [ ] Notifications deliver to chat space
-- [ ] Deacons can access calendar and links
-- [ ] Contact information is accurate
+### **Phone Numbers (Column N)**
+```
+N1: Phone Number
+N2: (555) 123-1001
+N3: (555) 123-1002
+N4: (555) 123-1003
+...
+```
 
-### **Week 2-4: Monitoring**
-- [ ] Automated notifications arrive on schedule
-- [ ] Deacons are using the system effectively
-- [ ] No significant errors or issues
-- [ ] Feedback collection and system refinement
+### **Addresses (Column O)**
+```
+O1: Address
+O2: 123 Maple Street, Louisville, KY 40202
+O3: 456 Oak Avenue, Louisville, KY 40203
+...
+```
 
-### **Monthly: Maintenance**
-- [ ] Contact information updates using "📞 Update Contact Info Only"
-- [ ] System health check with "🧪 Run Tests"
-- [ ] Review notification timing and effectiveness
-- [ ] Archive completed schedules as needed
-
----
-
-## 💡 Pro Tips
-
-### **Deployment Strategy**
-1. **Start in test mode** with sample data
-2. **Perfect the configuration** before adding real data
-3. **Train a backup administrator** before going live
-4. **Document any customizations** you make
-
-### **Change Management**
-- **Contact updates**: Use "📞 Update Contact Info Only" (safest)
-- **Roster changes**: Use "🔄 Update Future Events Only"
-- **Major issues**: Use "🚨 Full Calendar Regeneration" (last resort)
-
-### **Backup Strategy**
-- **📁 Archive Current Schedule** before major changes
-- **Export individual schedules** for external backup
-- **Document configuration settings** (K column values)
-- **Keep copy of webhook URLs** in secure location
+**Note**: These appear in calendar events and chat notifications
 
 ---
 
-*Setup complete! Your Deacon Visitation Rotation System v1.1 is now ready for operation. Refer to the [User Guide](USER_GUIDE.md) for daily operations and troubleshooting guidance.*
+## 🔗 Step 9: Integration Links (Optional but Recommended)
+
+### **Breeze Profile Numbers (Column P)**
+```
+P1: Breeze Profile (8-digit number)
+P2: 12345001
+P3: 12345002
+P4: 12345003
+...
+```
+
+**Breeze URL Format**: `https://immanuelky.breezechms.com/people/view/[number]`
+
+### **Visit Notes Links (Column Q)**
+```
+Q1: Notes Page Link
+Q2: [Google Doc URL for Adams family notes]
+Q3: [Google Doc URL for Baker family notes]
+Q4: [Google Doc URL for Copper family notes]
+...
+```
+
+**Tip**: Create a Google Doc for each household's visit notes, then paste the sharing link
+
+### **Auto-Generated Short URLs (Columns R-S)**
+
+The system automatically creates shortened URLs:
+- **Column R**: Shortened Breeze profile links
+- **Column S**: Shortened visit notes links
+
+Run **🔗 Generate Shortened URLs** from menu to create these.
+
+**Note**: Only generates for empty cells - preserves existing URLs
+
+---
+
+## 📢 Step 10: Google Chat Notifications
+
+### **Creating a Chat Webhook**
+
+1. **Create Google Chat Space:**
+   - Open Google Chat
+   - Click **+ Create space**
+   - Name it: "Deacon Visitation Notifications"
+   - Add all deacons as members
+
+2. **Generate Webhook URL:**
+   - In the space, click the space name → **Apps & integrations**
+   - Click **Add webhooks**
+   - Name: "Visitation Rotation Bot"
+   - Click **Save**
+   - **Copy the webhook URL** (starts with `https://chat.googleapis.com/...`)
+
+3. **Configure in Spreadsheet:**
+   - Menu: **📢 Notifications → 🔧 Configure Chat Webhook**
+   - Paste the webhook URL
+   - Click OK
+
+4. **Test the Connection:**
+   - Menu: **📢 Notifications → 📋 Test Notification System**
+   - Verify message appears in chat space
+
+5. **Enable Automation:**
+   - Menu: **📢 Notifications → 🔄 Enable Weekly Auto-Send**
+   - Confirms using K11 (day) and K13 (time) settings
+   - Creates automated trigger
+
+### **Separate Test & Production Webhooks**
+
+For safer testing, create two chat spaces:
+- **Test Space**: "TEST - Deacon Notifications" (smaller group)
+- **Production Space**: "Deacon Visitation Notifications" (all deacons)
+
+Configure different webhooks using **Script Properties** in Apps Script.
+
+---
+
+## 📅 Step 11: Calendar Setup
+
+### **Option 1: Auto-Detection (Recommended)**
+
+The system automatically:
+- Detects if you're in test mode (sample data)
+- Creates/finds the appropriate calendar
+- Populates K19 with the calendar URL
+
+### **Option 2: Manual Setup**
+
+1. **Create Calendar:**
+   - Google Calendar → Settings → Add calendar → Create new calendar
+   - Name: "Deacon Visitation Schedule"
+   - Save
+
+2. **Get Calendar URL:**
+   - Click calendar name → Settings
+   - Scroll to "Integrate calendar"
+   - Copy the **Public URL**
+   - Paste into K19
+
+### **Export Schedule to Calendar**
+
+1. Generate your schedule first
+2. Menu: **📆 Calendar Functions → 🚨 Full Calendar Regeneration**
+3. Confirm the operation
+4. Events appear in calendar with:
+   - Title: `Deacon ➡︎ Household`
+   - Visit Notes link at top
+   - Frequency information
+   - Contact details
+   - Instructions
+
+---
+
+## 📊 Step 12: Generate Schedule Summary Sheet
+
+### **Creating Shareable Schedule**
+
+1. **Generate Main Schedule:**
+   - Menu: **📅 Generate Schedule**
+   - Review the output
+
+2. **Create Summary Sheet:**
+   - Menu: **📊 Generate Schedule Summary Sheet** 🆕
+   - Confirm creation
+
+3. **Auto-Generated Files:**
+   - Standalone spreadsheet (columns A-I only)
+   - QR code PNG image (500×500px)
+   - Both saved in same folder
+
+4. **Update K25:**
+   - Dialog asks: "Update K25 with new URL?"
+   - Select **YES** to auto-populate K25
+   - URL used in notification messages
+
+5. **Share with Elders/Deacons:**
+   - Open the summary spreadsheet
+   - Click **Share**
+   - Add viewers (read-only recommended)
+   - Use QR code for print materials
+
+**File Naming:**
+```
+Visitation Schedule - 2025-01-06 (2025-01-06_1445)
+Visitation Schedule - 2025-01-06 (2025-01-06_1445) - QR Code.png
+```
+
+**Uses:**
+- Insert QR code in monthly bulletins
+- Share spreadsheet link in group emails
+- Post to church website or app
+- Print for physical distribution
+
+---
+
+## ✅ Step 13: Testing & Validation
+
+### **Test Mode Features**
+
+System automatically detects test mode when:
+- Household names contain "Adams", "Baker", "Copper" (test names)
+- Phone numbers start with "555"
+- Breeze numbers are "12345xxx"
+- Spreadsheet name contains "test" or "sample"
+
+**Test Mode Indicators:**
+- Calendar: "TEST - Deacon Visitation Schedule" (red)
+- Events: "TEST:" prefix
+- K16: Shows "🧪 TEST MODE"
+
+### **Validation Checklist**
+
+Run through this checklist before production:
+
+- [ ] **Configuration validated**: Menu → 🔧 Validate Setup
+- [ ] **Schedule generates**: No errors in console
+- [ ] **Deacon reports appear**: Columns G-I populated
+- [ ] **Household reports appear**: Below deacon reports 🆕
+- [ ] **Custom frequencies work**: Check Column T highlighting 🆕
+- [ ] **Calendar exports**: Events created correctly
+- [ ] **Notifications send**: Test message received
+- [ ] **Summary sheet creates**: Standalone file + QR code 🆕
+- [ ] **K25 populates**: URL appears after summary generation 🆕
+- [ ] **Quality validation passes**: No warnings in console 🆕
+
+### **Run System Tests**
+
+Menu: **🧪 Run Tests**
+- Validates all configuration
+- Checks data integrity
+- Reports any issues
+
+---
+
+## 🚀 Step 14: Production Deployment
+
+### **Migration Checklist**
+
+1. **Backup Current System:**
+   - Download existing schedules
+   - Archive current configuration
+   - Document any customizations
+
+2. **Replace Test Data:**
+   - Update Column M with real household names
+   - Update Column N-O with real contact info
+   - Update Column P-Q with real Breeze/notes links
+   - **Add Column T frequencies** if needed 🆕
+
+3. **Update Configuration:**
+   - K2: Real start date
+   - K4: Desired default frequency
+   - K11/K13: Real notification schedule
+   - K19/K22/K25: Production URLs
+
+4. **Configure Production Webhook:**
+   - Create production chat space
+   - Generate production webhook
+   - Test with production webhook
+
+5. **Generate Production Schedule:**
+   - Run: **📅 Generate Schedule**
+   - Review output carefully
+   - Check quality validation results 🆕
+
+6. **Export to Calendar:**
+   - Run: **🚨 Full Calendar Regeneration**
+   - Verify events in production calendar
+
+7. **Create Schedule Summary:**
+   - Run: **📊 Generate Schedule Summary Sheet**
+   - Update K25: Yes
+   - Share with appropriate people
+   - Use QR code in materials
+
+8. **Enable Automation:**
+   - Run: **🔄 Enable Weekly Auto-Send**
+   - Verify trigger creation
+
+9. **Monitor First Week:**
+   - Confirm notification sends
+   - Check for any errors
+   - Gather feedback from deacons
+
+---
+
+## 🔧 Troubleshooting
+
+### **Common Issues**
+
+#### **"Script function not found" Error**
+- **Cause**: Code not properly saved or named incorrectly
+- **Fix**: Verify all 5 modules are present and saved
+
+#### **Calendar Events Missing**
+- **Cause**: Permission issues or wrong calendar
+- **Fix**: 
+  - Check K19 has correct calendar URL
+  - Run: **📆 Update Future Events Only** to refresh
+
+#### **Year Rollover Issues**
+- **Cause**: Date format in spreadsheet
+- **Fix**: v2.0 includes automatic fix - dates show full year (MM/DD/YYYY) 🆕
+
+#### **Notifications Not Sending**
+- **Cause**: Webhook configuration or trigger issues
+- **Fix**:
+  - Menu: **📋 Test Notification System**
+  - Menu: **🔍 Inspect All Triggers**
+  - Recreate webhook if needed
+
+#### **Custom Frequencies Not Working**
+- **Cause**: Column T not properly configured
+- **Fix**: 
+  - Delete Column T entirely
+  - Run: **📅 Generate Schedule** (auto-recreates Column T)
+  - Add custom frequencies again
+
+#### **QR Code Generation Fails**
+- **Cause**: Network connectivity or API issue
+- **Fix**:
+  - Check internet connection
+  - Retry generation
+  - QR code can be generated manually if needed
+
+#### **Phantom Calendar Events**
+- **Cause**: Legend rows being read as schedule data
+- **Fix**: v2.0 includes improved filtering - should not occur 🆕
+
+### **Getting Help**
+
+1. **Check Console Logs:**
+   - Apps Script Editor → Executions
+   - Look for error details
+
+2. **Run Diagnostics:**
+   - Menu: **🧪 Run Tests**
+   - Menu: **🔍 Inspect All Triggers**
+
+3. **Review Documentation:**
+   - [README](README.md) - Feature overview
+   - [CHANGELOG](CHANGELOG.md) - Version history
+   - [FEATURES](FEATURES.md) - Technical details
+
+---
+
+## 📝 Quick Reference
+
+### **Essential Menu Items**
+
+| Menu Item | Purpose | Frequency |
+|-----------|---------|-----------|
+| 📅 Generate Schedule | Create rotation | When updating schedule |
+| 📊 Generate Schedule Summary Sheet 🆕 | Create shareable file + QR | After schedule changes |
+| 🚨 Full Calendar Regeneration | Rebuild all events | Major changes only |
+| 📞 Update Contact Info Only | Refresh contact data | After contact updates |
+| 💬 Send Weekly Chat Summary | Manual notification | Testing or missed auto-send |
+| 🔄 Enable Weekly Auto-Send | Start automation | Initial setup |
+
+### **File Locations**
+
+- **Main Spreadsheet**: Your Google Drive folder
+- **Schedule Summary**: Same folder as main spreadsheet 🆕
+- **QR Code**: Same folder as schedule summary 🆕
+- **Calendar**: Google Calendar (separate service)
+- **Chat Space**: Google Chat (separate service)
+
+---
+
+## 🎉 You're Ready!
+
+Your v2.0 Deacon Visitation Rotation System is now configured with:
+
+✅ Variable frequency scheduling per household
+✅ Enhanced anti-repetition algorithm  
+✅ Automatic quality validation
+✅ Household-centric reports
+✅ Schedule summary generator with QR codes
+✅ Automated notifications
+✅ Complete calendar integration
+
+**Next Steps:**
+- Generate your first production schedule
+- Create and share your schedule summary
+- Enable weekly notifications
+- Monitor and adjust as needed
+
+---
+
+*For additional support, refer to the [User Guide](USER_GUIDE.md) or [Lead Deacon Handoff Guide](docs-handoff_document_comprehensive.md).*
