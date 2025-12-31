@@ -73,7 +73,7 @@ function createMenu() {
     .addSeparator()
     .addItem('📊 Export Individual Schedules', 'exportIndividualSchedules')
     .addSeparator()
-    .addItem('📁 Archive Current Schedule', 'archiveCurrentSchedule')
+    .addItem('📊 Generate Schedule Summary Sheet', 'archiveCurrentSchedule')
     .addSeparator()
     .addSubMenu(ui.createMenu('🧪 Testing & Validation')
       .addItem('🔧 Validate Setup', 'validateSetupOnly')
@@ -714,6 +714,7 @@ function archiveCurrentSchedule() {
   /**
    * Archives the current schedule by creating a NEW standalone spreadsheet
    * in the same Drive folder containing only columns A-I (schedule and reports)
+   * Also generates a QR code image file for the spreadsheet URL
    * Optionally updates K25 with the new archive URL
    */
   try {
@@ -811,6 +812,13 @@ function archiveCurrentSchedule() {
     // Get the URL for the new spreadsheet
     const archiveUrl = newSpreadsheet.getUrl();
     
+    // Generate QR code for the archive URL
+    console.log('Generating QR code...');
+    const qrCodeBlob = generateQRCode(archiveUrl, archiveName);
+    const qrCodeFile = parentFolder.createFile(qrCodeBlob);
+    qrCodeFile.setName(`${archiveName} - QR Code.png`);
+    console.log(`QR code created: ${qrCodeFile.getName()}`);
+    
     // Ask user if they want to update K25
     const ui = SpreadsheetApp.getUi();
     const updateK25Response = ui.alert(
@@ -819,7 +827,8 @@ function archiveCurrentSchedule() {
       `📋 File name: "${archiveName}"\n` +
       `📁 Location: Same folder as this spreadsheet\n` +
       `📅 Start date: ${startDate.toLocaleDateString()}\n` +
-      `📊 Total visits: ${scheduleData.length}\n\n` +
+      `📊 Total visits: ${scheduleData.length}\n` +
+      `🔲 QR code image also generated\n\n` +
       `Do you want to update K25 with the new Schedule Summary URL?\n` +
       `(This URL is used in notification messages)`,
       ui.ButtonSet.YES_NO
@@ -832,8 +841,10 @@ function archiveCurrentSchedule() {
       sourceSheet.getRange('K25').setValue(archiveUrl);
       
       finalMessage = `✅ Schedule Summary URL Updated!\n\n` +
-                    `📎 K25 now points to: "${archiveName}"\n\n` +
-                    `The new archive URL has been saved to K25.\n` +
+                    `📎 K25 now points to: "${archiveName}"\n` +
+                    `🔲 QR code: "${archiveName} - QR Code.png"\n\n` +
+                    `The new schedule URL has been saved to K25.\n` +
+                    `QR code image is available in the same folder.\n` +
                     `Notification messages will now reference this schedule.`;
       
       console.log(`K25 updated with archive URL: ${archiveUrl}`);
@@ -845,7 +856,8 @@ function archiveCurrentSchedule() {
       
       finalMessage = `⚠️ K25 Not Updated\n\n` +
                     `${k25Status}\n\n` +
-                    `📎 New archive URL:\n${archiveUrl}\n\n` +
+                    `📎 New schedule URL:\n${archiveUrl}\n\n` +
+                    `🔲 QR code: "${archiveName} - QR Code.png"\n\n` +
                     `Note: K25 may point to an old version of the Schedule Summary.\n` +
                     `You can manually update K25 if needed.`;
       
@@ -865,5 +877,34 @@ function archiveCurrentSchedule() {
       `❌ Could not archive schedule:\n\n${error.message}`,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
+  }
+}
+
+function generateQRCode(url, label) {
+  /**
+   * Generates a QR code image for a given URL using Google Charts API
+   * Returns a Blob that can be saved as a PNG file
+   * 
+   * @param {string} url - The URL to encode in the QR code
+   * @param {string} label - Optional label for logging
+   * @returns {Blob} PNG image blob of the QR code
+   */
+  try {
+    // Google Charts QR code API
+    // Size: 500x500 pixels for good print quality
+    // Error correction: H (high, 30% recovery capability)
+    const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chs=500x500&chl=${encodeURIComponent(url)}&choe=UTF-8&chld=H`;
+    
+    // Fetch the QR code image
+    const response = UrlFetchApp.fetch(qrCodeUrl);
+    const blob = response.getBlob();
+    blob.setName(`${label} - QR Code.png`);
+    
+    console.log(`QR code generated for: ${label}`);
+    return blob;
+    
+  } catch (error) {
+    console.error('QR code generation failed:', error);
+    throw new Error(`Could not generate QR code: ${error.message}`);
   }
 }
