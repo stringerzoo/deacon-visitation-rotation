@@ -727,8 +727,9 @@ function archiveCurrentSchedule() {
     const startDate = new Date(config.startDate);
     const dateStr = Utilities.formatDate(startDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
     
-    // Create archive file name
-    const archiveName = `Visitation Schedule - ${dateStr}`;
+    // Create archive file name with timestamp for uniqueness
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd_HHmm');
+    const archiveName = `Visitation Schedule - ${dateStr} (${timestamp})`;
     
     // Check if schedule exists
     const scheduleData = getScheduleFromSheet();
@@ -781,24 +782,44 @@ function archiveCurrentSchedule() {
     const horizontalAlignments = sourceRange.getHorizontalAlignments();
     newSheet.getRange(1, 1, lastRow, 9).setHorizontalAlignments(horizontalAlignments);
     
-    // Copy merged cells from source
-    const mergedRanges = sourceRange.getMergedRanges();
-    mergedRanges.forEach(mergedRange => {
-      const row = mergedRange.getRow();
-      const col = mergedRange.getColumn();
-      const numRows = mergedRange.getNumRows();
-      const numCols = mergedRange.getNumColumns();
-      
-      // Only copy if the merge is within columns A-I
-      if (col >= 1 && col <= 9) {
-        const destRange = newSheet.getRange(row, col, numRows, Math.min(numCols, 10 - col));
-        destRange.merge();
-      }
-    });
-    
     // Copy column widths
     for (let col = 1; col <= 9; col++) {
       newSheet.setColumnWidth(col, sourceSheet.getColumnWidth(col));
+    }
+    
+    // Find and recreate merged cells manually
+    // Check specific known merges in columns A-I
+    for (let row = 1; row <= lastRow; row++) {
+      // Check if cells in row are part of a merge
+      const cellA = sourceSheet.getRange(row, 1); // Column A
+      const cellG = sourceSheet.getRange(row, 7); // Column G
+      
+      // Check main schedule header (typically A1:E1)
+      if (row === 1 && cellA.isPartOfMerge()) {
+        const mergedRange = cellA.getMergedRanges()[0];
+        if (mergedRange) {
+          const startCol = mergedRange.getColumn();
+          const endCol = startCol + mergedRange.getNumColumns() - 1;
+          if (endCol <= 9) { // Only if within A-I
+            newSheet.getRange(row, startCol, 1, mergedRange.getNumColumns()).merge();
+          }
+        }
+      }
+      
+      // Check for household report header (typically G:I merge)
+      if (cellG.isPartOfMerge()) {
+        const mergedRange = cellG.getMergedRanges()[0];
+        if (mergedRange) {
+          const startCol = mergedRange.getColumn();
+          const numCols = mergedRange.getNumColumns();
+          const endCol = startCol + numCols - 1;
+          
+          // Only merge if within columns A-I
+          if (startCol >= 1 && startCol <= 9 && endCol <= 9) {
+            newSheet.getRange(row, startCol, 1, numCols).merge();
+          }
+        }
+      }
     }
     
     // Add archive note to cell A1
