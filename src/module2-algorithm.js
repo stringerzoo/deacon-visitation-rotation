@@ -544,7 +544,7 @@ function writeScheduleToSheet(schedule, config) {
   const scheduleData = schedule.map(visit => [
     visit.cycle,
     visit.week,
-    visit.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    visit.date.toLocaleDateString('en-US'),
     visit.household, // Clean household name - no frequency markers
     visit.deacon
   ]);
@@ -629,7 +629,7 @@ function generateCleanDeaconReports(schedule, config) {
         
         reportData.push([
           '', // Empty deacon column for visit rows
-          visit.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          visit.date.toLocaleDateString('en-US'),
           householdDisplay
         ]);
       });
