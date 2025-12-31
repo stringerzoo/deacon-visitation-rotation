@@ -405,18 +405,7 @@ Special thanks to Claude (Anthropic) for development partnership and the open-so
 
 ---
 
-## 🏷️ Version Numbering Transition
-
-**Note**: Starting with v1.1, we're adopting semantic versioning. Previous versions were experimental iterations:
-- v0.1-v0.22: Rapid experimental iterations in single chat thread
-- v0.23.x: Monolithic code, pre-modular architecture  
-- v0.24.x: Introduction of modular architecture, major code restructuring
-- v1.0: First truly operational release with Google Chat notifications
-- v1.1: Menu cleanup and refinements (this release)
-
----
-
-## [v1.1.1] - 2025-07-14 ⭐ **CURRENT RELEASE**
+## [v1.1.1] - 2025-07-14
 
 ### 🐛 Critical Bug Fixes
 #### **Data Structure Consistency**
@@ -616,6 +605,16 @@ Edit modules in GitHub → Copy individual files to Apps Script → Test
 - **New dependencies**: Module 5 requires Google Chat webhook configuration
 - **Menu structure**: Notification functions moved to dedicated submenu
 
+---
+
+## 🏷️ Version Numbering Transition
+
+**Note**: Starting with v1.1, we're adopting semantic versioning. Previous versions were experimental iterations:
+- v0.1-v0.22: Rapid experimental iterations in single chat thread
+- v0.23.x: Monolithic code, pre-modular architecture  
+- v0.24.x: Introduction of modular architecture, major code restructuring
+- v1.0: First truly operational release with Google Chat notifications
+- v1.1: Menu cleanup and refinements (this release)
 ---
 
 ## [v0.24.2] - 2025-06-07 **FINAL EXPERIMENTAL RELEASE**
