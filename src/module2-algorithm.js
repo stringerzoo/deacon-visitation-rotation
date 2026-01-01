@@ -552,8 +552,11 @@ function writeScheduleToSheet(schedule, config) {
   // Write schedule data
   if (scheduleData.length > 0) {
     sheet.getRange(2, 1, scheduleData.length, 5).setValues(scheduleData);
+
+  // Force consistent date formatting for column C (Week of dates)
+    sheet.getRange(2, 3, scheduleData.length, 1).setNumberFormat('mm/dd/yyyy');
     
-    // Apply SUBTLE highlighting for custom frequencies with explanation
+  // Apply SUBTLE highlighting for custom frequencies with explanation
     if (config.hasCustomFrequencies) {
       const customFreqRows = [];
       schedule.forEach((visit, index) => {
