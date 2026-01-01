@@ -956,7 +956,7 @@ function generateAndStoreShortUrls(sheet, config) {
       
       // Process Breeze URL (Column R)
       const breezeNumber = config.breezeLinks[i];
-      if (breezeNumber && breezeNumber.trim().length > 0) {
+      if (breezeNumber && breezeNumber.toString().trim().length > 0) {
         const existingBreezeShortUrl = sheet.getRange(`R${rowNumber}`).getValue();
         
         if (!existingBreezeShortUrl || existingBreezeShortUrl.toString().trim().length === 0) {
