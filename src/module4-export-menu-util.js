@@ -978,7 +978,7 @@ function generateAndStoreShortUrls(sheet, config) {
       
       // Process Notes URL (Column S)
       const notesUrl = config.notesLinks[i];
-      if (notesUrl && notesUrl.trim().length > 0) {
+      if (notesUrl && notesUrl.toString().trim().length > 0) {
         const existingNotesShortUrl = sheet.getRange(`S${rowNumber}`).getValue();
         
         if (!existingNotesShortUrl || existingNotesShortUrl.toString().trim().length === 0) {
