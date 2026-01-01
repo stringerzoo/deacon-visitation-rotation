@@ -1068,21 +1068,21 @@ function getVisitsForCalendarWeeks(weeksAhead = 2, includeCurrentWeek = true) {
     // Sort by date
     upcomingVisits.sort((a, b) => new Date(a.date) - new Date(b.date));
     
-    // Enhance with contact information
-    const enhancedVisits = upcomingVisits.map(visit => {
-      const householdIndex = config.households.indexOf(visit.household);
-      
-      return {
-        ...visit,
-        phone: householdIndex >= 0 ? config.phones[householdIndex] : '',
-        address: householdIndex >= 0 ? config.addresses[householdIndex] : '',
-        breezeNumber: householdIndex >= 0 ? config.breezeNumbers[householdIndex] : '',
-        notesLink: householdIndex >= 0 ? config.notesLinks[householdIndex] : '',
-        breezeShortLink: householdIndex >= 0 ? config.breezeShortLinks[householdIndex] : '',
-        notesShortLink: householdIndex >= 0 ? config.notesShortLinks[householdIndex] : '',
-        calendarWeek: getCalendarWeekInfo(visit.date)
-      };
-    });
+   // Enhance with contact information
+const enhancedVisits = upcomingVisits.map(visit => {
+  const householdIndex = config.households.indexOf(visit.household);
+  
+  return {
+    ...visit,
+    phone: (householdIndex >= 0 && config.phones) ? config.phones[householdIndex] : '',
+    address: (householdIndex >= 0 && config.addresses) ? config.addresses[householdIndex] : '',
+    breezeNumber: (householdIndex >= 0 && config.breezeNumbers) ? config.breezeNumbers[householdIndex] : '',
+    notesLink: (householdIndex >= 0 && config.notesLinks) ? config.notesLinks[householdIndex] : '',
+    breezeShortLink: (householdIndex >= 0 && config.breezeShortLinks) ? config.breezeShortLinks[householdIndex] : '',
+    notesShortLink: (householdIndex >= 0 && config.notesShortLinks) ? config.notesShortLinks[householdIndex] : '',
+    calendarWeek: getCalendarWeekInfo(visit.date)
+  };
+});
     
     console.log(`Found ${enhancedVisits.length} visits in ${weeksAhead}-week range`);
     return enhancedVisits;
