@@ -908,3 +908,139 @@ function generateQRCode(url, label) {
     throw new Error(`Could not generate QR code: ${error.message}`);
   }
 }
+
+function generateShortUrlsFromMenu() {
+  /**
+   * Menu wrapper for generateAndStoreShortUrls
+   * Gets sheet and config, then calls the main function
+   */
+  const sheet = SpreadsheetApp.getActiveSheet();
+  const config = getConfiguration();
+  generateAndStoreShortUrls(sheet, config);
+}
+
+function generateAndStoreShortUrls(sheet, config) {
+  /**
+   * Generates shortened URLs for Breeze and Notes links and stores them in columns R and S
+   * ENHANCED: Only generates URLs for empty cells, preserves existing short URLs
+   */
+  try {
+    console.log('Starting URL shortening process...');
+    
+    const ui = SpreadsheetApp.getUi();
+    const response = ui.alert(
+      'Generate Shortened URLs',
+      'This will create shortened URLs for empty cells in columns R and S.\n\n' +
+      '✅ PRESERVES: Existing shortened URLs\n' +
+      '🔄 CREATES: New URLs only for empty cells\n\n' +
+      'This may take a few moments depending on the number of new URLs needed.\n\n' +
+      'Continue?',
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (response !== ui.Button.YES) {
+      return;
+    }
+    
+    let breezeUrlsGenerated = 0;
+    let notesUrlsGenerated = 0;
+    let breezeUrlsSkipped = 0;
+    let notesUrlsSkipped = 0;
+    
+    // Process each household
+    for (let i = 0; i < config.households.length; i++) {
+      const household = config.households[i];
+      const rowNumber = i + 2; // Data starts at row 2
+      
+      console.log(`Processing URLs for household ${i + 1}: ${household}`);
+      
+      // Process Breeze URL (Column R)
+      const breezeNumber = config.breezeNumbers[i];
+      if (breezeNumber && breezeNumber.trim().length > 0) {
+        const existingBreezeShortUrl = sheet.getRange(`R${rowNumber}`).getValue();
+        
+        if (!existingBreezeShortUrl || existingBreezeShortUrl.toString().trim().length === 0) {
+          // Cell is empty - create new short URL
+          const fullBreezeUrl = buildBreezeUrl(breezeNumber);
+          const shortBreezeUrl = shortenUrl(fullBreezeUrl);
+          
+          // Store in column R
+          sheet.getRange(`R${rowNumber}`).setValue(shortBreezeUrl);
+          breezeUrlsGenerated++;
+          
+          console.log(`NEW Breeze URL for ${household}: ${fullBreezeUrl} → ${shortBreezeUrl}`);
+        } else {
+          // Cell has existing URL - skip
+          breezeUrlsSkipped++;
+          console.log(`PRESERVED existing Breeze URL for ${household}: ${existingBreezeShortUrl}`);
+        }
+      }
+      
+      // Process Notes URL (Column S)
+      const notesUrl = config.notesLinks[i];
+      if (notesUrl && notesUrl.trim().length > 0) {
+        const existingNotesShortUrl = sheet.getRange(`S${rowNumber}`).getValue();
+        
+        if (!existingNotesShortUrl || existingNotesShortUrl.toString().trim().length === 0) {
+          // Cell is empty - create new short URL
+          const shortNotesUrl = shortenUrl(notesUrl);
+          
+          // Store in column S
+          sheet.getRange(`S${rowNumber}`).setValue(shortNotesUrl);
+          notesUrlsGenerated++;
+          
+          console.log(`NEW Notes URL for ${household}: ${notesUrl} → ${shortNotesUrl}`);
+        } else {
+          // Cell has existing URL - skip
+          notesUrlsSkipped++;
+          console.log(`PRESERVED existing Notes URL for ${household}: ${existingNotesShortUrl}`);
+        }
+      }
+      
+      // Add small delay to avoid overwhelming the API (only if we made API calls)
+      if (i < config.households.length - 1 && (breezeUrlsGenerated + notesUrlsGenerated) > 0) {
+        Utilities.sleep(500); // 0.5 second delay between requests
+      }
+    }
+    
+    console.log('URL shortening process completed');
+    
+    // Create detailed summary message
+    const totalNew = breezeUrlsGenerated + notesUrlsGenerated;
+    const totalPreserved = breezeUrlsSkipped + notesUrlsSkipped;
+    
+    let summaryMessage = `✅ URL shortening completed!\n\n`;
+    
+    if (totalNew > 0) {
+      summaryMessage += `🆕 NEW URLs Generated:\n`;
+      summaryMessage += `   🔗 Breeze URLs: ${breezeUrlsGenerated}\n`;
+      summaryMessage += `   📝 Notes URLs: ${notesUrlsGenerated}\n\n`;
+    }
+    
+    if (totalPreserved > 0) {
+      summaryMessage += `🛡️ PRESERVED Existing URLs:\n`;
+      summaryMessage += `   🔗 Breeze URLs: ${breezeUrlsSkipped}\n`;
+      summaryMessage += `   📝 Notes URLs: ${notesUrlsSkipped}\n\n`;
+    }
+    
+    if (totalNew === 0 && totalPreserved === 0) {
+      summaryMessage += `ℹ️ No URLs to process.\n\n`;
+    }
+    
+    summaryMessage += `Shortened URLs are available in columns R and S.`;
+    
+    ui.alert(
+      'URL Shortening Complete',
+      summaryMessage,
+      ui.ButtonSet.OK
+    );
+    
+  } catch (error) {
+    console.error('Error generating shortened URLs:', error);
+    SpreadsheetApp.getUi().alert(
+      'URL Shortening Failed',
+      `❌ Error generating shortened URLs: ${error.message}`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
