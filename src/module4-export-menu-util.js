@@ -909,6 +909,44 @@ function generateQRCode(url, label) {
   }
 }
 
+function shortenUrl(longUrl) {
+  /**
+   * Shortens a URL using TinyURL's free API
+   * Falls back to original URL if shortening fails
+   */
+  try {
+    if (!longUrl || longUrl.toString().trim().length === 0) {  // Added .toString()
+      return '';
+    }
+    
+    const apiUrl = 'http://tinyurl.com/api-create.php?url=' + encodeURIComponent(longUrl.toString().trim());  // Added .toString()
+    
+    const response = UrlFetchApp.fetch(apiUrl, {
+      method: 'GET',
+      muteHttpExceptions: true
+    });
+    
+    if (response.getResponseCode() === 200) {
+      const shortUrl = response.getContentText().trim();
+      
+      if (shortUrl.startsWith('http://tinyurl.com/') || shortUrl.startsWith('https://tinyurl.com/')) {
+        console.log(`URL shortened: ${longUrl} → ${shortUrl}`);
+        return shortUrl;
+      } else {
+        console.warn(`TinyURL returned unexpected response: ${shortUrl}`);
+        return longUrl; // Fallback to original URL
+      }
+    } else {
+      console.warn(`TinyURL API failed with code ${response.getResponseCode()}: ${response.getContentText()}`);
+      return longUrl; // Fallback to original URL
+    }
+    
+  } catch (error) {
+    console.error(`URL shortening failed for ${longUrl}: ${error.message}`);
+    return longUrl; // Fallback to original URL
+  }
+}
+
 function generateShortUrlsFromMenu() {
   /**
    * Menu wrapper for generateAndStoreShortUrls
