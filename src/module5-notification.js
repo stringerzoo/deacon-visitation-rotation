@@ -83,19 +83,6 @@ function sendWeeklyVisitationChat() {
 }
 
 // ===== MESSAGE BUILDING FUNCTIONS =====
-
-function buildWeeklyCalendarSummary(visits, isTestMode = false) {
-  /**
-   * UPDATED: Build summary with configurable calendar link from spreadsheet
-   */
-  const chatPrefix = isTestMode ? '🧪 TEST: ' : '';
-  const today = new Date();
-  const todayFormatted = today.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    month: 'long', 
-    day: 'numeric' 
-  });
-}
   
 function buildWeeklyCalendarSummary(visits, isTestMode = false) {
   /**
@@ -108,47 +95,47 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
     month: 'long', 
     day: 'numeric' 
   });
-  
   // Don't recalculate - use the visits we already have
-  // Split visits into first half and second half of the 2-week period
-  if (visits.length === 0) {
-    return `${chatPrefix}📅 *Weekly Visitation Update*\n\nNo visits scheduled for the next 2 weeks.`;
-  }
-  
-  // Get date range from actual visits
-  const firstVisitDate = new Date(visits[0].date);
-  const lastVisitDate = new Date(visits[visits.length - 1].date);
-  
-  // Find the midpoint (7 days from first visit)
-  const midpoint = new Date(firstVisitDate);
-  midpoint.setDate(firstVisitDate.getDate() + 7);
-  
-  // Split visits at the midpoint
-  const week1Visits = visits.filter(visit => {
-    const visitDate = new Date(visit.date);
-    return visitDate < midpoint;
-  });
-  
-  const week2Visits = visits.filter(visit => {
-    const visitDate = new Date(visit.date);
-    return visitDate >= midpoint;
-  });
-  
-  // Calculate week boundaries for display
-  const week1Start = firstVisitDate;
-  const week1End = week1Visits.length > 0 
-    ? new Date(week1Visits[week1Visits.length - 1].date)
-    : new Date(midpoint.getTime() - 24 * 60 * 60 * 1000);
-  
-  const week2Start = week2Visits.length > 0
-    ? new Date(week2Visits[0].date)
-    : midpoint;
-  const week2End = lastVisitDate;
-  
-  // Build the message with Google Chat formatting
-  let message = `${chatPrefix}📅 *Weekly Visitation Update*\n`;
-  message += `Generated: ${todayFormatted}\n`;
-  message += `Coverage: ${firstVisitDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastVisitDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}\n\n`;
+// Split visits into first half and second half of the 2-week period
+if (visits.length === 0) {
+  return `${chatPrefix}📅 *Weekly Visitation Update*\n\nNo visits scheduled for the next 2 weeks.`;
+}
+
+// Calculate 2-week coverage starting from tomorrow
+const tomorrow = new Date(today);
+tomorrow.setDate(today.getDate() + 1);
+tomorrow.setHours(0, 0, 0, 0);
+
+const coverageEnd = new Date(tomorrow);
+coverageEnd.setDate(tomorrow.getDate() + 13);  // 14 days total
+
+// Week 1: Tomorrow through 6 days later
+const week1Start = new Date(tomorrow);
+const week1End = new Date(tomorrow);
+week1End.setDate(tomorrow.getDate() + 6);
+
+// Week 2: Day 8 through Day 14
+const week2Start = new Date(tomorrow);
+week2Start.setDate(tomorrow.getDate() + 7);
+const week2End = new Date(coverageEnd);
+
+// Split visits by week
+const week1Visits = visits.filter(visit => {
+  const visitDate = new Date(visit.date);
+  visitDate.setHours(0, 0, 0, 0);
+  return visitDate >= week1Start && visitDate <= week1End;
+});
+
+const week2Visits = visits.filter(visit => {
+  const visitDate = new Date(visit.date);
+  visitDate.setHours(0, 0, 0, 0);
+  return visitDate >= week2Start && visitDate <= week2End;
+});
+
+// Build the message with Google Chat formatting
+let message = `${chatPrefix}📅 *Weekly Visitation Update*\n`;
+message += `Generated: ${todayFormatted}\n`;
+message += `Coverage: ${tomorrow.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${coverageEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}\n\n`;
     
   // Week 1 Section
   message += `*Week of ${week1Start.toLocaleDateString('en-US', { 
@@ -157,7 +144,7 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
   })} - ${week1End.toLocaleDateString('en-US', { 
     month: 'short', 
     day: 'numeric' 
-  })}*\n`;
+  })}*\n\n`;
   
   if (week1Visits.length === 0) {
     message += `No visits scheduled for this week.\n\n`;
@@ -201,7 +188,7 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
   })} - ${week2End.toLocaleDateString('en-US', { 
     month: 'short', 
     day: 'numeric' 
-  })}*\n`;
+  })}*\n\n`;
   
   if (week2Visits.length === 0) {
     message += `No visits scheduled for this week.\n\n`;
