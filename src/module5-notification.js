@@ -843,11 +843,11 @@ function buildBreezeUrl(breezeNumber) {
   /**
    * Build full Breeze URL from number (reused from Module 4)
    */
-  if (!breezeNumber || breezeNumber.trim().length === 0) {
+  if (!breezeNumber || breezeNumber.toString().trim().length === 0) {
     return '';
   }
   
-  const cleanNumber = breezeNumber.trim();
+  const cleanNumber = breezeNumber.toString().trim();
   return `https://immanuelky.breezechms.com/people/view/${cleanNumber}`;
 }
 
