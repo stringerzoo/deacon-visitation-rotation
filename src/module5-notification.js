@@ -95,6 +95,7 @@ function buildWeeklyCalendarSummary(visits, isTestMode = false) {
     month: 'long', 
     day: 'numeric' 
   });
+}
   
 function buildWeeklyCalendarSummary(visits, isTestMode = false) {
   /**
