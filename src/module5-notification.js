@@ -168,11 +168,11 @@ message += `Coverage: ${tomorrow.toLocaleDateString('en-US', { month: 'short', d
       }
       
       // Add links on separate lines with Google Chat format
-      if (visit.breezeShortLink) {
-        message += `   👤 <${visit.breezeShortLink}|Breeze Profile>\n`;
+      if (visit.breezeLink) {
+        message += `   👤 <${visit.breezeLink}|Breeze Profile>\n`;
       }
-      if (visit.notesShortLink) {
-        message += `   📝 <${visit.notesShortLink}|Visit Notes>\n`;
+      if (visit.notesLink) {
+        message += `   📝 <${visit.notesLink}|Visit Notes>\n`;
       }
       
       message += '\n';
@@ -212,11 +212,11 @@ message += `Coverage: ${tomorrow.toLocaleDateString('en-US', { month: 'short', d
       }
       
       // Add links on separate lines with Google Chat format
-      if (visit.breezeShortLink) {
-        message += `   👤 <${visit.breezeShortLink}|Breeze Profile>\n`;
+      if (visit.breezeLink) {
+        message += `   👤 <${visit.breezeLink}|Breeze Profile>\n`;
       }
-      if (visit.notesShortLink) {
-        message += `   📝 <${visit.notesShortLink}|Visit Notes>\n`;
+      if (visit.notesLink) {
+        message += `   📝 <${visit.notesLink}|Visit Notes>\n`;
       }
       
       message += '\n';
@@ -315,19 +315,13 @@ function groupVisitsByDeacon(visits) {
 
 function getBreezeLink(config, householdIndex) {
   /**
-   * Get Breeze link for household (prefer shortened, fallback to full)
+   * Get Breeze link for household
    */
   if (householdIndex < 0) return '';
   
-  // Try shortened link first
-  const shortLink = config.breezeShortLinks[householdIndex];
-  if (shortLink && shortLink.trim().length > 0) {
-    return shortLink;
-  }
-  
-  // Fallback to building from Breeze number
-  const breezeNumber = config.breezeNumbers[householdIndex];
-  if (breezeNumber && breezeNumber.trim().length > 0) {
+  // Use Breeze number to build URL
+  const breezeNumber = config.breezeLinks[householdIndex];  // Changed from breezeNumbers
+  if (breezeNumber && breezeNumber.toString().trim().length > 0) {
     return buildBreezeUrl(breezeNumber);
   }
   
@@ -336,20 +330,14 @@ function getBreezeLink(config, householdIndex) {
 
 function getNotesLink(config, householdIndex) {
   /**
-   * Get Notes link for household (prefer shortened, fallback to full)
+   * Get Notes link for household
    */
   if (householdIndex < 0) return '';
   
-  // Try shortened link first
-  const shortLink = config.notesShortLinks[householdIndex];
-  if (shortLink && shortLink.trim().length > 0) {
-    return shortLink;
-  }
-  
-  // Fallback to full link
+  // Return full notes link
   const fullLink = config.notesLinks[householdIndex];
-  if (fullLink && fullLink.trim().length > 0) {
-    return fullLink;
+  if (fullLink && fullLink.toString().trim().length > 0) {
+    return fullLink.toString().trim();
   }
   
   return '';
@@ -1064,10 +1052,9 @@ const enhancedVisits = upcomingVisits.map(visit => {
     ...visit,
     phone: (householdIndex >= 0 && config.phones) ? config.phones[householdIndex] : '',
     address: (householdIndex >= 0 && config.addresses) ? config.addresses[householdIndex] : '',
-    breezeNumber: (householdIndex >= 0 && config.breezeNumbers) ? config.breezeNumbers[householdIndex] : '',
-    notesLink: (householdIndex >= 0 && config.notesLinks) ? config.notesLinks[householdIndex] : '',
-    breezeShortLink: (householdIndex >= 0 && config.breezeShortLinks) ? config.breezeShortLinks[householdIndex] : '',
-    notesShortLink: (householdIndex >= 0 && config.notesShortLinks) ? config.notesShortLinks[householdIndex] : '',
+    breezeNumber: (householdIndex >= 0 && config.breezeNumbers) ? config.breezeNumbers[householdIndex] : '',notesLink: (householdIndex >= 0 && config.notesLinks) ? config.notesLinks[householdIndex] : '',
+    breezeLink: (householdIndex >= 0 && config.breezeLinks) ? config.breezeLinks[householdIndex] : '',
+      // Remove the breezeShortLink and notesShortLink lines entirely
     calendarWeek: getCalendarWeekInfo(visit.date)
   };
 });
