@@ -911,7 +911,7 @@ function generateQRCode(url, label) {
 
 function shortenUrl(longUrl) {
   /**
-   * Shortens a URL using TinyURL's current API
+   * Shortens a URL using is.gd API (free, stable, no registration needed)
    * Falls back to original URL if shortening fails
    */
   try {
@@ -921,27 +921,26 @@ function shortenUrl(longUrl) {
     
     const cleanUrl = longUrl.toString().trim();
     
-    // Use TinyURL's current API endpoint
-    const apiUrl = 'https://tinyurl.com/api-create.php?url=' + encodeURIComponent(cleanUrl);
+    // Use is.gd API (free, stable, no auth required)
+    const apiUrl = `https://is.gd/create.php?format=simple&url=${encodeURIComponent(cleanUrl)}`;
     
     const response = UrlFetchApp.fetch(apiUrl, {
       method: 'GET',
-      muteHttpExceptions: true,
-      followRedirects: false
+      muteHttpExceptions: true
     });
     
     if (response.getResponseCode() === 200) {
       const shortUrl = response.getContentText().trim();
       
-      if (shortUrl.startsWith('http://tinyurl.com/') || shortUrl.startsWith('https://tinyurl.com/')) {
+      if (shortUrl.startsWith('https://is.gd/')) {
         console.log(`URL shortened: ${cleanUrl} → ${shortUrl}`);
         return shortUrl;
       } else {
-        console.warn(`TinyURL returned unexpected response: ${shortUrl}`);
+        console.warn(`is.gd returned unexpected response: ${shortUrl}`);
         return cleanUrl;
       }
     } else {
-      console.warn(`TinyURL API failed with code ${response.getResponseCode()}: ${response.getContentText()}`);
+      console.warn(`is.gd API failed with code ${response.getResponseCode()}: ${response.getContentText()}`);
       return cleanUrl;
     }
     
