@@ -911,39 +911,43 @@ function generateQRCode(url, label) {
 
 function shortenUrl(longUrl) {
   /**
-   * Shortens a URL using TinyURL's free API
+   * Shortens a URL using TinyURL's current API
    * Falls back to original URL if shortening fails
    */
   try {
-    if (!longUrl || longUrl.toString().trim().length === 0) {  // Added .toString()
+    if (!longUrl || longUrl.toString().trim().length === 0) {
       return '';
     }
     
-    const apiUrl = 'http://tinyurl.com/api-create.php?url=' + encodeURIComponent(longUrl.toString().trim());  // Added .toString()
+    const cleanUrl = longUrl.toString().trim();
+    
+    // Use TinyURL's current API endpoint
+    const apiUrl = 'https://tinyurl.com/api-create.php?url=' + encodeURIComponent(cleanUrl);
     
     const response = UrlFetchApp.fetch(apiUrl, {
       method: 'GET',
-      muteHttpExceptions: true
+      muteHttpExceptions: true,
+      followRedirects: false
     });
     
     if (response.getResponseCode() === 200) {
       const shortUrl = response.getContentText().trim();
       
       if (shortUrl.startsWith('http://tinyurl.com/') || shortUrl.startsWith('https://tinyurl.com/')) {
-        console.log(`URL shortened: ${longUrl} → ${shortUrl}`);
+        console.log(`URL shortened: ${cleanUrl} → ${shortUrl}`);
         return shortUrl;
       } else {
         console.warn(`TinyURL returned unexpected response: ${shortUrl}`);
-        return longUrl; // Fallback to original URL
+        return cleanUrl;
       }
     } else {
       console.warn(`TinyURL API failed with code ${response.getResponseCode()}: ${response.getContentText()}`);
-      return longUrl; // Fallback to original URL
+      return cleanUrl;
     }
     
   } catch (error) {
     console.error(`URL shortening failed for ${longUrl}: ${error.message}`);
-    return longUrl; // Fallback to original URL
+    return longUrl.toString().trim();
   }
 }
 
