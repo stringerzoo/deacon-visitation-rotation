@@ -911,7 +911,7 @@ function generateQRCode(url, label) {
 
 function shortenUrl(longUrl) {
   /**
-   * Shortens a URL using is.gd API (free, stable, no registration needed)
+   * Shortens a URL using v.gd API (same as is.gd but no preview pages)
    * Falls back to original URL if shortening fails
    */
   try {
@@ -921,8 +921,8 @@ function shortenUrl(longUrl) {
     
     const cleanUrl = longUrl.toString().trim();
     
-    // Use is.gd API (free, stable, no auth required)
-    const apiUrl = `https://is.gd/create.php?format=simple&url=${encodeURIComponent(cleanUrl)}`;
+    // Use v.gd API (is.gd's sister service without preview pages)
+    const apiUrl = `https://v.gd/create.php?format=simple&url=${encodeURIComponent(cleanUrl)}`;
     
     const response = UrlFetchApp.fetch(apiUrl, {
       method: 'GET',
@@ -932,15 +932,15 @@ function shortenUrl(longUrl) {
     if (response.getResponseCode() === 200) {
       const shortUrl = response.getContentText().trim();
       
-      if (shortUrl.startsWith('https://is.gd/')) {
+      if (shortUrl.startsWith('https://v.gd/')) {
         console.log(`URL shortened: ${cleanUrl} → ${shortUrl}`);
         return shortUrl;
       } else {
-        console.warn(`is.gd returned unexpected response: ${shortUrl}`);
+        console.warn(`v.gd returned unexpected response: ${shortUrl}`);
         return cleanUrl;
       }
     } else {
-      console.warn(`is.gd API failed with code ${response.getResponseCode()}: ${response.getContentText()}`);
+      console.warn(`v.gd API failed with code ${response.getResponseCode()}: ${response.getContentText()}`);
       return cleanUrl;
     }
     
