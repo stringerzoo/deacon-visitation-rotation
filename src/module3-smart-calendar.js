@@ -218,29 +218,19 @@ function updateContactInfoOnly() {
             const phone = config.phones[householdIndex] || 'Phone not available';
             const address = config.addresses[householdIndex] || 'Address not available';
             
-            // Get Breeze link (use shortened if available)
-            let breezeLink = 'Not available';
-            const shortBreezeLink = config.breezeShortLinks[householdIndex];
-            if (shortBreezeLink && shortBreezeLink.trim().length > 0) {
-              breezeLink = shortBreezeLink;
-            } else {
-              const breezeNumber = config.breezeNumbers[householdIndex];
-              if (breezeNumber && breezeNumber.trim().length > 0) {
-                breezeLink = buildBreezeUrl(breezeNumber);
-              }
+         // Get Breeze link (build from Breeze number)
+            let breezeLink = '';
+            const breezeNumber = config.breezeLinks[householdIndex];
+            if (breezeNumber && breezeNumber.toString().trim().length > 0) {
+              breezeLink = buildBreezeUrl(breezeNumber);
             }
             
-            // Get Notes link (use shortened if available)
-            let notesLink = 'Not available';
-            const shortNotesLink = config.notesShortLinks[householdIndex];
-            if (shortNotesLink && shortNotesLink.trim().length > 0) {
-              notesLink = shortNotesLink;
-            } else {
-              const fullNotesLink = config.notesLinks[householdIndex];
-              if (fullNotesLink && fullNotesLink.trim().length > 0) {
-                notesLink = fullNotesLink;
-              }
-            }
+          // Get Notes link (use full URL)
+             let notesLink = '';
+             const fullNotesLink = config.notesLinks[householdIndex];
+             if (fullNotesLink && fullNotesLink.toString().trim().length > 0) {
+                notesLink = fullNotesLink.toString().trim();
+             }
             
             // Create updated description
             const updatedDescription = `Household: ${household}
